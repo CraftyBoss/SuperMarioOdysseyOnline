@@ -1,0 +1,51 @@
+[version=100, target=main]
+
+// Tag Layout Edits
+//529B68: // makes GameDataFunction::getCoinCollectNumMax return zero so purple coin counter gets killed during layout init
+//    MOV X0, #0
+//    RET
+
+
+
+// needed to make gpu perf show on screen
+//BDFAD4:
+//    MOV W9, #1
+//BDFAE4:
+//    CMP W8, #1
+
+// use this to crash the game
+//    MOV X0, #0
+//    STR X0, [X0]
+
+
+
+//4C8958:
+//    BL initDebugListHook
+
+//859FFC: // Changes controller applet to require two controllers to start (isnt enforced)
+//    MOV W22, #2
+
+//86696C: // sets controller mode to index (game normally uses any which means p1 controls slots p2-p4 while in one player mode)
+//    MOV W8, WZR
+
+//9A3E2C: // makes the max player number function return 1 so that only the first player (main player) is the one that gets checked when any function loops through the player buffer
+//    MOV W0, #1
+
+// Snapshot Button Disabling
+//576FB8: // rs::isTriggerSnapShotMode
+//    MOV X0, #0
+//    RET
+
+// Pause Menu Edits
+//4EAF04:
+//    BL overrideNerveHook
+//    MOV X1, X0
+//    MOV X0, #1
+
+//4EAE58: // forces StageSceneStatePauseMenu to immediately select continue
+//    MOV X0, #1
+
+20CB4C BL modeE3Hook // PlayGuideMenuLyt at StageSceneStateLayout::start+140
+20CA5C BL modeE3Hook // MapMini::appearSlideIn at StageSceneStateLayout::start+50
+20D160 BL modeE3Hook // MapMini::end at StageSceneStateLayout::exeEnd+8C
+20D154 BL playGuideEndHook

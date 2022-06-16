@@ -1,0 +1,9 @@
+starlight_patch_100/**
+build100/**
+romfs stuff/**
+.vscode/**
+Crash Reports/**
+.cache/**
+Custom Stage Builds/**
+
+compile_commands.json

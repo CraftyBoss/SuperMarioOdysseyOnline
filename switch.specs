@@ -1,0 +1,7 @@
+%rename link                old_link
+
+*link:
+%(old_link) -T ../linkerscripts/symstemp.ld -T ../linkerscripts/application.ld --shared --build-id=sha1 --build-id=sha1
+
+*startfile:
+crti%O%s crtbegin%O%s

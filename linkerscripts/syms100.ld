@@ -1,0 +1,1 @@
+_ZN14PlayerFunction20initMarioModelCommonEPN2al9LiveActorERKNS0_13ActorInitInfoEPKcS7_ibPNS0_11AudioKeeperEbb = 0x444028 - 0x2C63000;

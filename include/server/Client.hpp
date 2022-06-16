@@ -1,0 +1,292 @@
+/**
+ * @file server/Client.hpp
+ * @author CraftyBoss (https://github.com/CraftyBoss)
+ * @brief main class responsible for handing all client-server related communications, as well as any gamemodes.
+ * 
+ * @copyright Copyright (c) 2022
+ * 
+ */
+#pragma once
+
+#include "Keyboard.hpp"
+#include "al/actor/ActorInitInfo.h"
+#include "al/actor/ActorSceneInfo.h"
+#include "al/async/AsyncFunctorThread.h"
+#include "al/async/FunctorV0M.hpp"
+#include "al/LiveActor/LiveActor.h"
+#include "al/layout/LayoutInitInfo.h"
+#include "al/layout/WindowConfirmWait.h"
+#include "al/util.hpp"
+#include "al/layout/LayoutActor.h"
+#include "al/gamepad/util.h"
+#include "al/camera/CameraPoser.h"
+#include "al/camera/alCameraPoserFunction.h"
+
+#include "container/seadPtrArray.h"
+#include "game/Actors/Shine.h"
+#include "game/Player/PlayerActorHakoniwa.h"
+#include "game/StageScene/StageScene.h"
+#include "game/Layouts/CoinCounter.h"
+#include "game/Player/PlayerFunction.h"
+#include "game/GameData/GameDataHolderWriter.h"
+#include "game/GameData/GameDataFunction.h"
+
+#include "layouts/HideAndSeekIcon.h"
+#include "rs/util.hpp"
+
+#include "sead/heap/seadDisposer.h"
+#include "sead/math/seadVector.h"
+#include "sead/math/seadMatrix.h"
+#include "sead/prim/seadSafeString.h"
+#include "sead/prim/seadSafeString.hpp"
+#include "sead/gfx/seadCamera.h"
+#include "sead/basis/seadNew.h"
+#include "sead/container/seadSafeArray.h"
+#include "sead/thread/seadMutex.h"
+
+#include "nn/account.h"
+
+#include "server/gamemode/GameModeBase.hpp"
+#include "server/gamemode/GameModeConfigMenu.hpp"
+#include "server/gamemode/GameModeInfoBase.hpp"
+#include "server/gamemode/GameModeTimer.hpp"
+#include "types.h"
+
+#include "logger.hpp"
+#include "server/SocketClient.hpp"
+#include "helpers.hpp"
+#include "puppets/HackModelHolder.hpp"
+#include "puppets/PuppetHolder.hpp"
+#include "syssocket/sockdefines.h"
+#include "debugMenu.hpp"
+#include "Keyboard.hpp"
+
+#include "puppets/PuppetInfo.h"
+
+#include <stdlib.h>
+
+struct UIDIndexNode {
+    nn::account::Uid uid;
+    int puppetIndex;
+};
+
+class HideAndSeekIcon;
+
+class Client {
+    public:
+        static Client *sInstance;
+
+        Client(int bufferSize);
+
+        void init(al::LayoutInitInfo const &initInfo);
+
+        bool StartThreads();
+        void readFunc();
+        void recvFunc();
+        static void stopConnection();
+
+        bool isDone() { return mReadThread->isDone(); };
+        static bool isSocketActive() { return sInstance ? sInstance->mSocket->isConnected() : false; };
+        bool isPlayerConnected(int index) { return mPuppetInfoArr[index]->isConnected; }
+        static bool isNeedUpdateShines();
+        bool isShineCollected(int shineId);
+
+        static void initMode(GameModeInitInfo const &initInfo);
+        
+        static void sendHackCapInfPacket(const HackCap *hackCap);
+        static void sendPlayerInfPacket(const PlayerActorHakoniwa *player);
+        static void sendGameInfPacket(const PlayerActorHakoniwa *player, GameDataHolderAccessor holder);
+        static void sendGameInfPacket(GameDataHolderAccessor holder);
+        static void sendCostumeInfPacket(const char *body, const char *cap);
+        static void sendShineCollectPacket(int shineId);
+        static void sendTagInfPacket();
+        static void sendCaptureInfPacket(const PlayerActorHakoniwa *player);
+
+        int getCollectedShinesCount() { return curCollectedShines.size(); }
+        int getShineID(int index) { if (index < curCollectedShines.size()) { return curCollectedShines[index]; } return -1; }
+
+        static void setGameActive(bool state);
+
+        static void setStageInfo(GameDataHolderAccessor holder);
+
+        static bool tryAddPuppet(PuppetActor *puppet);
+
+        static bool tryAddDebugPuppet(PuppetActor* puppet);
+
+        static const char *getClientName() { return sInstance ? sInstance->mUsername.cstr() : "Player"; }
+
+        static PuppetActor *getPuppet(int idx);
+
+        static PuppetInfo *getPuppetInfo(int idx);
+
+        static PuppetInfo *getLatestInfo();
+
+        static PuppetInfo *getDebugPuppetInfo();
+
+        static PuppetActor* getDebugPuppet();
+
+        static GameMode getServerMode() {
+            return sInstance ? sInstance->mServerMode : GameMode::NONE;
+        }
+
+        static void setServerMode(GameMode mode) {
+            if (sInstance) sInstance->mServerMode = mode;
+        }
+
+        static GameMode getCurrentMode();
+
+        static GameModeBase* getModeBase() { return sInstance ? sInstance->mCurMode : nullptr; }
+
+        template <typename T>
+        static T* getMode() {return sInstance ? (T*)sInstance->mCurMode : nullptr;}
+
+        static GameModeConfigMenu* tryCreateModeMenu();
+
+        static int getMaxPlayerCount() { return sInstance ? sInstance->maxPuppets : 10;}
+
+        static void toggleCurrentMode();
+
+        static void updateStates();
+
+        static void clearArrays();
+
+        static const char* getCurrentIP();
+
+        static void setLastUsedIP(const char* ip);
+
+        static void setTagState(bool state);
+
+        static int getConnectCount() {
+            if (sInstance)
+                return sInstance->mConnectCount;
+            return 0;
+        }
+
+        static void setSceneInfo(const al::ActorInitInfo& initInfo, const StageScene *stageScene);
+
+        static bool tryRegisterShine(Shine* shine);
+
+        static Shine* findStageShine(int shineID);
+
+        static void updateShines();
+
+        static void openKeyboardIP();
+
+        static GameModeInfoBase* getModeInfo() {
+            return sInstance ? sInstance->mModeInfo : nullptr;
+        }
+
+        // should only be called during mode init
+        static void setModeInfo(GameModeInfoBase* info) {
+            if(sInstance) sInstance->mModeInfo = info;
+        }
+
+        static void tryRestartCurrentMode();
+
+        static bool isModeActive() { return sInstance ? sInstance->mIsModeActive : false; }
+        
+        static bool isSelectedMode(GameMode mode) { return sInstance ? sInstance->mCurMode->getMode() == mode: false; }
+
+        void resetCollectedShines();
+
+        void removeShine(int shineId);
+
+        // public for debug purposes
+        SocketClient *mSocket;
+
+        int maxPuppets;
+
+    private:
+        void updatePlayerInfo(PlayerInf *packet);
+        void updateHackCapInfo(HackCapInf *packet);
+        void updateGameInfo(GameInf *packet);
+        void updateCostumeInfo(CostumeInf *packet);
+        void updateShineInfo(ShineCollect *packet);
+        void updatePlayerConnect(PlayerConnect *packet);
+        void updateTagInfo(TagInf *packet);
+        void updateCaptureInfo(CaptureInf* packet);
+        void sendToStage(ChangeStagePacket* packet);
+        void disconnectPlayer(PlayerDC *packet);
+
+        int findPuppetID(const nn::account::Uid& id);
+
+        bool startConnection();
+
+        // --- General Server Members ---
+
+        // currently, only readThread is used to recieve and update PuppetInfo, while the main game thread is used to send packets without queueing them up first, which might cause performance issues
+        al::AsyncFunctorThread *mReadThread = nullptr;    // TODO: use this thread to send any queued packets
+        // al::AsyncFunctorThread *mRecvThread; // TODO: use this thread to recieve packets and update PuppetInfo
+        
+        sead::SafeArray<UIDIndexNode, 16> puppetPlayerID;
+
+        int mConnectCount = 0;
+
+        nn::account::Uid mUserID;
+
+        sead::FixedSafeString<0x20> mUsername;
+
+        // --- Server Syncing Members --- 
+        
+        // array of shine IDs for checking if multiple shines have been collected in quick sucession, all moons within the players stage that match the ID will be deleted
+        sead::SafeArray<int, 128> curCollectedShines; 
+        int collectedShineCount = 0;
+
+        int lastCollectedShine = -1;
+
+        PlayerInf lastPlayerInfPacket =
+            PlayerInf();  // Info struct for storing our currently logged player information
+
+        GameInf lastGameInfPacket = GameInf();
+
+        Keyboard* mKeyboard = nullptr; // keyboard for setting server IP
+
+        sead::FixedSafeString<0x10> mServerIP;
+
+        int mServerPort = 1027; // TODO: implement a way to set this the same way the IP can
+
+        bool isFirstConnect = true;
+
+        // --- Game Layouts ---
+
+        al::WindowConfirmWait* mConnectionWait;
+
+        // --- Game Info ---
+
+        bool mIsInGame = false;
+
+        bool isClientCaptured = false;
+
+        bool isSentCaptureInf = false;
+
+        bool isSentHackInf = false;
+
+        al::ActorSceneInfo*
+            mSceneInfo  = nullptr;  // TODO: create custom scene info class with only the info we actually need
+
+        const StageScene *mCurStageScene = nullptr;
+
+        sead::PtrArray<Shine> mShineArray;  // List of all Shines currently in a Stage
+
+        sead::FixedSafeString<0x40> mStageName;
+
+        u8 mScenario = 0;
+
+        // --- Mode Info ---
+
+        GameModeBase* mCurMode = nullptr;
+
+        GameMode mServerMode = GameMode::NONE; // current mode set by server, will sometimes not match up with current game mode (until scene re-init) if server switches gamemodes
+
+        GameModeInfoBase *mModeInfo = nullptr;
+
+        bool mIsModeActive = false;
+
+        // --- Puppet Info ---
+
+        PuppetInfo *mPuppetInfoArr[32];
+
+        PuppetHolder *mPuppetHolder = nullptr;
+
+        PuppetInfo mDebugPuppetInfo;
+};
