@@ -84,14 +84,6 @@ B59E28 B seadPrintHook // sead::system::print
     NOP
     NOP
 
-// Costume Setup
-54C498: // rs::isHaveCloth
-    MOV W0, #1
-    RET
-54C4A4: // rs::isHaveCap
-    MOV W0, #1
-    RET
-
 // Coin Counter Changes
 
 20CA78 BL startCounterHook // starts coin counter if a gamemode is not active
