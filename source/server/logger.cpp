@@ -104,7 +104,7 @@ bool Logger::pingSocket() {
 
 void tryInitSocket() {
     __asm("STR X20, [X8,#0x18]");
-    #if DEBUGLOG
+    #ifdef DEBUGLOG
     Logger::createInstance();  // creates a static instance for debug logger
     #endif
 }
