@@ -35,7 +35,7 @@ nn::Result SocketClient::init(const char* ip, u16 port) {
     }
     #endif
     
-    if ((this->socket_log_socket = nn::socket::Socket(2, 1, 0)) < 0) {
+    if ((this->socket_log_socket = nn::socket::Socket(2, 1, 6)) < 0) {
 
         Logger::log("Socket Unavailable.\n");
 
@@ -51,9 +51,9 @@ nn::Result SocketClient::init(const char* ip, u16 port) {
     serverAddress.port = nn::socket::InetHtons(this->port);
     serverAddress.family = 2;
 
-    bool sockOptValue = true;
+    int sockOptValue = true;
 
-    nn::socket::SetSockOpt(this->socket_log_socket, 0, TCP_NODELAY, &sockOptValue, sizeof(bool));
+    nn::socket::SetSockOpt(this->socket_log_socket, 6, TCP_NODELAY, &sockOptValue, sizeof(sockOptValue));
 
     nn::Result result;
     
