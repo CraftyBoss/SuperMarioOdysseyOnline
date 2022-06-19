@@ -325,7 +325,7 @@ bool hakoniwaSequenceHook(HakoniwaSequence* sequence) {
 
     updatePlayerInfo(stageScene->mHolder, p1);
 
-    static bool isDisableMusic = true;
+    static bool isDisableMusic = false;
 
     if (al::isPadHoldZR(-1)) {
         if (al::isPadTriggerUp(-1)) debugMode = !debugMode;
