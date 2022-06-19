@@ -1362,6 +1362,18 @@ const char* Client::getCurrentIP() {
 }
 
 /**
+ * @brief 
+ * 
+ * @return const int 
+ */
+const int Client::getCurrentPort() {
+    if (sInstance) {
+        return sInstance->mServerPort;
+    }
+    return -1;
+}
+
+/**
  * @brief sets server IP to supplied string, used specifically for loading IP from the save file.
  * 
  * @param ip 
@@ -1369,6 +1381,17 @@ const char* Client::getCurrentIP() {
 void Client::setLastUsedIP(const char* ip) {
     if (sInstance) {
         sInstance->mServerIP = ip;
+    }
+}
+
+/**
+ * @brief sets server port to supplied string, used specifically for loading port from the save file.
+ * 
+ * @param port 
+ */
+void Client::setLastUsedPort(const int port) {
+    if (sInstance) {
+        sInstance->mServerPort = port;
     }
 }
 
