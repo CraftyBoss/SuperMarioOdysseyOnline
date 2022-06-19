@@ -16,6 +16,8 @@
 #include "math/seadVector.h"
 #include "nn/err.h"
 #include "nn/result.h"
+#include "nn/swkbd/swkbd.h"
+#include "nn/util.h"
 #include "packets/ChangeStagePacket.h"
 #include "packets/InitPacket.h"
 #include "packets/Packet.h"
@@ -200,19 +202,17 @@ void Client::stopConnection() {
  */
 bool Client::startConnection() {
     if (mServerIP.isEmpty()) {
-
         mKeyboard->setHeaderText(u"Save File does not contain an IP!");
         mKeyboard->setSubText(u"Please set a Server IP Below.");
+        mServerIP = "0.0.0.0";
+        Client::openKeyboardIP();
+    }
 
-        mKeyboard->openKeyboard("0.0.0.0");
-
-        while (true) {
-            if (mKeyboard->isThreadDone()) {
-                mServerIP = mKeyboard->getResult();
-                break;
-            }
-            nn::os::YieldThread(); // allow other threads to run
-        }
+    if (!mServerPort) {
+        mKeyboard->setHeaderText(u"Save File does not contain a port!");
+        mKeyboard->setSubText(u"Please set a Server Port Below.");
+        mServerPort = 1027;
+        Client::openKeyboardPort();
     }
 
     bool result = mSocket->init(mServerIP.cstr(), mServerPort).isSuccess();
@@ -260,11 +260,51 @@ void Client::openKeyboardIP() {
         return;
     }
 
-    sInstance->mKeyboard->openKeyboard(sInstance->mServerIP.cstr());  // opens swkbd with the initial text set to the last saved IP
+    // opens swkbd with the initial text set to the last saved IP
+    sInstance->mKeyboard->openKeyboard(sInstance->mServerIP.cstr(), [] (nn::swkbd::KeyboardConfig& config) {
+        config.keyboardMode = nn::swkbd::KeyboardMode::ModeNumeric;
+        config.leftOptionalSymbolKey = '.';
+        config.textMaxLength = 15;
+        config.textMinLength = 1;
+        config.isUseUtf8 = true;
+        config.inputFormMode = nn::swkbd::InputFormMode::OneLine;
+    });
 
     while (true) {
         if (sInstance->mKeyboard->isThreadDone()) {
             sInstance->mServerIP = sInstance->mKeyboard->getResult();
+            break;
+        }
+        nn::os::YieldThread(); // allow other threads to run
+    }
+}
+
+/**
+ * @brief Opens up OS's software keyboard in order to change the currently used server port.
+ * 
+ */
+void Client::openKeyboardPort() {
+
+    if (!sInstance) {
+        Logger::log("Static Instance is null!\n");
+        return;
+    }
+
+    // opens swkbd with the initial text set to the last saved port
+    char buf[6];
+    nn::util::SNPrintf(buf, 6, "%u", sInstance->mServerPort);
+    
+    sInstance->mKeyboard->openKeyboard(buf, [] (nn::swkbd::KeyboardConfig& config) {
+        config.keyboardMode = nn::swkbd::KeyboardMode::ModeNumeric;
+        config.textMaxLength = 5;
+        config.textMinLength = 2;
+        config.isUseUtf8 = true;
+        config.inputFormMode = nn::swkbd::InputFormMode::OneLine;
+    });
+
+    while (true) {
+        if (sInstance->mKeyboard->isThreadDone()) {
+            sInstance->mServerPort = ::atoi(sInstance->mKeyboard->getResult());
             break;
         }
         nn::os::YieldThread(); // allow other threads to run
@@ -1295,6 +1335,18 @@ PuppetActor *Client::getDebugPuppet() {
     }else {
         return nullptr;
     }
+}
+
+/**
+ * @brief 
+ * 
+ * @return Keyboard* 
+ */
+Keyboard* Client::getKeyboard() {
+    if (sInstance) {
+        return sInstance->mKeyboard;
+    }
+    return nullptr;
 }
 
 /**

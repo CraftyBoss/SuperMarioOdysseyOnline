@@ -150,9 +150,15 @@ class Client {
 
         static void clearArrays();
 
+        static Keyboard* getKeyboard();
+
         static const char* getCurrentIP();
 
         static void setLastUsedIP(const char* ip);
+
+        static const int getCurrentPort();
+
+        static void setLastUsedPort(const int port);
 
         static void setTagState(bool state);
 
@@ -171,6 +177,7 @@ class Client {
         static void updateShines();
 
         static void openKeyboardIP();
+        static void openKeyboardPort();
 
         static GameModeInfoBase* getModeInfo() {
             return sInstance ? sInstance->mModeInfo : nullptr;
@@ -243,7 +250,7 @@ class Client {
 
         sead::FixedSafeString<0x10> mServerIP;
 
-        int mServerPort = 1027; // TODO: implement a way to set this the same way the IP can
+        int mServerPort = 0;
 
         bool isFirstConnect = true;
 

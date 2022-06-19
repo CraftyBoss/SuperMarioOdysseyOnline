@@ -39,11 +39,18 @@ bool comboBtnHook(int port) {
 void saveWriteHook(al::ByamlWriter* saveByml) {
 
     const char *serverIP = Client::getCurrentIP();
+    const int serverPort = Client::getCurrentPort();
 
     if (serverIP) {
         saveByml->addString("ServerIP", serverIP);
     } else {
         saveByml->addString("ServerIP", "0.0.0.0");
+    }
+
+    if (serverPort) {
+        saveByml->addInt("ServerPort", serverPort);
+    } else {
+        saveByml->addInt("ServerPort", 0);
     }
 
     saveByml->pop();
@@ -52,9 +59,14 @@ void saveWriteHook(al::ByamlWriter* saveByml) {
 bool saveReadHook(int* padRumbleInt, al::ByamlIter const& saveByml, char const* padRumbleKey) {
 
     const char *serverIP = "";
+    int serverPort = 0;
 
     if (al::tryGetByamlString(&serverIP, saveByml, "ServerIP")) {
         Client::setLastUsedIP(serverIP);
+    }
+
+    if (al::tryGetByamlS32(&serverPort, saveByml, "ServerPort")) {
+        Client::setLastUsedPort(serverPort);
     }
     
     return al::tryGetByamlS32(padRumbleInt, saveByml, padRumbleKey);

@@ -29,7 +29,8 @@ class StageSceneStateServerConfig : public al::HostStateBase<al::Scene>, public 
             GAMEMODECONFIG,
             GAMEMODESWITCH,
             RECONNECT,
-            SETIP
+            SETIP,
+            SETPORT
         };
 
         virtual al::MessageSystem* getMessageSystem(void) const override;
@@ -38,7 +39,8 @@ class StageSceneStateServerConfig : public al::HostStateBase<al::Scene>, public 
         virtual void kill(void) override;
 
         void exeMainMenu();
-        void exeOpenKeyboard();
+        void exeOpenKeyboardIP();
+        void exeOpenKeyboardPort();
         void exeRestartServer();
         void exeGamemodeConfig();
         void exeGamemodeSelect();
@@ -75,7 +77,8 @@ class StageSceneStateServerConfig : public al::HostStateBase<al::Scene>, public 
 
 namespace {
     NERVE_HEADER(StageSceneStateServerConfig, MainMenu)
-    NERVE_HEADER(StageSceneStateServerConfig, OpenKeyboard)
+    NERVE_HEADER(StageSceneStateServerConfig, OpenKeyboardIP)
+    NERVE_HEADER(StageSceneStateServerConfig, OpenKeyboardPort)
     NERVE_HEADER(StageSceneStateServerConfig, RestartServer)
     NERVE_HEADER(StageSceneStateServerConfig, GamemodeConfig)
     NERVE_HEADER(StageSceneStateServerConfig, GamemodeSelect)

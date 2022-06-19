@@ -28,15 +28,16 @@ StageSceneStateServerConfig::StageSceneStateServerConfig(const char *name, al::S
 
     al::setPaneString(mMainOptions, "TxtOption", u"Server Configuration", 0);
 
-    mMainOptionsList->initDataNoResetSelected(4);
+    mMainOptionsList->initDataNoResetSelected(5);
 
-    sead::SafeArray<sead::WFixedSafeString<0x200>, 4>* mainMenuOptions =
-        new sead::SafeArray<sead::WFixedSafeString<0x200>, 4>();
+    sead::SafeArray<sead::WFixedSafeString<0x200>, 5>* mainMenuOptions =
+        new sead::SafeArray<sead::WFixedSafeString<0x200>, 5>();
 
-    mainMenuOptions->mBuffer[0].copy(u"Gamemode Config");
-    mainMenuOptions->mBuffer[1].copy(u"Change Gamemode");
-    mainMenuOptions->mBuffer[2].copy(u"Reconnect to Server");
-    mainMenuOptions->mBuffer[3].copy(u"Change Server IP");
+    mainMenuOptions->mBuffer[ServerConfigOption::GAMEMODECONFIG].copy(u"Gamemode Config");
+    mainMenuOptions->mBuffer[ServerConfigOption::GAMEMODESWITCH].copy(u"Change Gamemode");
+    mainMenuOptions->mBuffer[ServerConfigOption::RECONNECT].copy(u"Reconnect to Server");
+    mainMenuOptions->mBuffer[ServerConfigOption::SETIP].copy(u"Change Server IP");
+    mainMenuOptions->mBuffer[ServerConfigOption::SETPORT].copy(u"Change Server Port");
 
     mMainOptionsList->addStringData(mainMenuOptions->mBuffer, "TxtContent");
 
@@ -147,7 +148,11 @@ void StageSceneStateServerConfig::exeMainMenu() {
             break;
         }
         case ServerConfigOption::SETIP: {
-            al::setNerve(this, &nrvStageSceneStateServerConfigOpenKeyboard);
+            al::setNerve(this, &nrvStageSceneStateServerConfigOpenKeyboardIP);
+            break;
+        }
+        case ServerConfigOption::SETPORT: {
+            al::setNerve(this, &nrvStageSceneStateServerConfigOpenKeyboardPort);
             break;
         }
         default:
@@ -157,11 +162,27 @@ void StageSceneStateServerConfig::exeMainMenu() {
     }
 }
 
-void StageSceneStateServerConfig::exeOpenKeyboard() {
+void StageSceneStateServerConfig::exeOpenKeyboardIP() {
     if (al::isFirstStep(this)) {
 
         mCurrentList->deactivate();
 
+        Client::getKeyboard()->setHeaderText(u"Set a Server IP Below.");
+        Client::getKeyboard()->setSubText(u"");
+        Client::openKeyboardIP();
+        // anything that happens after this will be ran after the keyboard closes
+        al::startHitReaction(mCurrentMenu, "リセット", 0);
+        al::setNerve(this, &nrvStageSceneStateServerConfigMainMenu);
+    }
+}
+
+void StageSceneStateServerConfig::exeOpenKeyboardPort() {
+    if (al::isFirstStep(this)) {
+
+        mCurrentList->deactivate();
+
+        Client::getKeyboard()->setHeaderText(u"Set a Server Port Below.");
+        Client::getKeyboard()->setSubText(u"");
         Client::openKeyboardIP();
         // anything that happens after this will be ran after the keyboard closes
         al::startHitReaction(mCurrentMenu, "リセット", 0);
@@ -272,7 +293,8 @@ void StageSceneStateServerConfig::subMenuUpdate() {
 
 namespace {
 NERVE_IMPL(StageSceneStateServerConfig, MainMenu)
-NERVE_IMPL(StageSceneStateServerConfig, OpenKeyboard)
+NERVE_IMPL(StageSceneStateServerConfig, OpenKeyboardIP)
+NERVE_IMPL(StageSceneStateServerConfig, OpenKeyboardPort)
 NERVE_IMPL(StageSceneStateServerConfig, RestartServer)
 NERVE_IMPL(StageSceneStateServerConfig, GamemodeConfig)
 NERVE_IMPL(StageSceneStateServerConfig, GamemodeSelect)

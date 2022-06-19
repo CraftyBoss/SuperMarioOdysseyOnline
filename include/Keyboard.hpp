@@ -9,12 +9,14 @@
 #include "logger.hpp"
 #include "sead/prim/seadSafeString.h"
 
+typedef void (*KeyboardSetup)(nn::swkbd::KeyboardConfig&);
+
 class Keyboard {
     public:
         Keyboard(ulong strSize);
         void keyboardThread();
 
-        void openKeyboard(const char* initialText);
+        void openKeyboard(const char* initialText, KeyboardSetup setup);
 
         const char* getResult() {
             if (mThread->isDone()) {
@@ -36,6 +38,7 @@ class Keyboard {
         bool mIsDoneKeyboard;
 
         sead::FixedSafeString<0x10> mInitialText;
+        KeyboardSetup mSetupFunc;
 
         const char16_t *mHeaderText = u"Enter Server IP Here!";
         const char16_t *mSubText = u"Must be a Valid Address.";

@@ -27,12 +27,7 @@ void Keyboard::keyboardThread() {
     nn::swkbd::ShowKeyboardArg keyboardArg = nn::swkbd::ShowKeyboardArg();
     nn::swkbd::MakePreset(&keyboardArg.keyboardConfig, nn::swkbd::Preset::Default);
 
-    keyboardArg.keyboardConfig.keyboardMode = nn::swkbd::KeyboardMode::ModeNumeric;
-    keyboardArg.keyboardConfig.leftOptionalSymbolKey = '.';
-    keyboardArg.keyboardConfig.textMaxLength = 15;
-    keyboardArg.keyboardConfig.textMinLength = 1;
-    keyboardArg.keyboardConfig.isUseUtf8 = true;
-    keyboardArg.keyboardConfig.inputFormMode = nn::swkbd::InputFormMode::OneLine;
+    mSetupFunc(keyboardArg.keyboardConfig);
 
     nn::swkbd::SetHeaderText(&keyboardArg.keyboardConfig, mHeaderText);
     nn::swkbd::SetSubText(&keyboardArg.keyboardConfig, mSubText);
@@ -55,9 +50,10 @@ void Keyboard::keyboardThread() {
 
 }
 
-void Keyboard::openKeyboard(const char* initialText) {
+void Keyboard::openKeyboard(const char* initialText, KeyboardSetup setupFunc) {
 
     mInitialText = initialText;
+    mSetupFunc = setupFunc;
     
     mThread->start();
 }
