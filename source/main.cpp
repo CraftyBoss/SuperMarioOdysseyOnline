@@ -89,6 +89,7 @@ void drawMainHook(HakoniwaSequence *curSequence, sead::Viewport *viewport, sead:
     gTextWriter->setScaleFromFontHeight(20.f);
 
     gTextWriter->printf("Client Socket Connection Status: %s\n", Client::sInstance->mSocket->getStateChar());
+    gTextWriter->printf("nn::socket::GetLastErrno: 0x%x\n", Client::sInstance->mSocket->socket_errno);
     gTextWriter->printf("Packet Queue Length: %d\n", Client::sInstance->mSocket->mPacketQueue.size());
     gTextWriter->printf("Total Connected Players: %d\n", Client::getConnectCount() + 1);
 

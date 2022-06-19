@@ -34,4 +34,6 @@ s32 Recv(s32 socket, void* out, ulong outLen, s32 flags);
 u16 InetHtons(u16 val);
 s32 InetAton(const char* addressStr, in_addr* addressOut);
 
+u32 GetLastErrno();
+
 } }

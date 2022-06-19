@@ -30,6 +30,7 @@ nn::Result SocketClient::init(const char* ip, u16 port) {
     if (!nn::nifm::IsNetworkAvailable()) {
         Logger::log("Network Unavailable.\n");
         this->socket_log_state = SOCKET_LOG_UNAVAILABLE;
+        this->socket_errno = nn::socket::GetLastErrno();
         return -1;
     }
     #endif
@@ -38,6 +39,7 @@ nn::Result SocketClient::init(const char* ip, u16 port) {
 
         Logger::log("Socket Unavailable.\n");
 
+        this->socket_errno = nn::socket::GetLastErrno();
         this->socket_log_state = SOCKET_LOG_UNAVAILABLE;
         return -1;
     }
@@ -56,6 +58,7 @@ nn::Result SocketClient::init(const char* ip, u16 port) {
     nn::Result result;
     
     if((result = nn::socket::Connect(this->socket_log_socket, &serverAddress, sizeof(serverAddress))).isFailure()) {
+        this->socket_errno = nn::socket::GetLastErrno();
         this->socket_log_state = SOCKET_LOG_UNAVAILABLE;
         return result;
     }
@@ -81,6 +84,7 @@ bool SocketClient::SEND(Packet *packet) {
         return true;
     } else {
         Logger::log("Failed to Fully Send Packet! Result: %d Type: %s Packet Size: %d\n", valread, packetNames[packet->mType], packet->mPacketSize);
+        this->socket_errno = nn::socket::GetLastErrno();
         this->closeSocket();
         return false;
     }
@@ -91,6 +95,7 @@ bool SocketClient::RECV() {
 
     if (this->socket_log_state != SOCKET_LOG_CONNECTED) {
         Logger::log("Unable To Recieve! Socket Not Connected.\n");
+        this->socket_errno = nn::socket::GetLastErrno();
         return false;
     }
     
@@ -105,6 +110,7 @@ bool SocketClient::RECV() {
             valread += result;
         } else {
             Logger::log("Header Read Failed! Value: %d Total Read: %d\n", result, valread);
+        this->socket_errno = nn::socket::GetLastErrno();
             this->closeSocket();
             return false;
         }
@@ -132,6 +138,7 @@ bool SocketClient::RECV() {
                     }else {
                         free(packetBuf);
                         Logger::log("Packet Read Failed! Value: %d\nPacket Size: %d\nPacket Type: %s\n", result, header->mPacketSize, packetNames[header->mType]);
+                        this->socket_errno = nn::socket::GetLastErrno();
                         this->closeSocket();
                         return false;
                     }
@@ -154,6 +161,7 @@ bool SocketClient::RECV() {
         return true;
     } else {  // if we error'd, close the socket
         Logger::log("valread was zero! Disconnecting.\n");
+        this->socket_errno = nn::socket::GetLastErrno();
         this->closeSocket();
         return false;
     }

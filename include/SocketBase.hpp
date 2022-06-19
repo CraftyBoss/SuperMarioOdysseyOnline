@@ -22,6 +22,7 @@ class SocketBase {
         bool closeSocket();
 
         void setName(const char *name) {strcpy(sockName, name);};
+        u32 socket_errno;
 
     protected:
         s32 socket_log(const char* str);
