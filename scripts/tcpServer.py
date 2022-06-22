@@ -23,11 +23,11 @@ while True:
         while True:
             data = connection.recv(1024)
             if data:
-                print(data.decode("utf-8"))
+                print(data.decode("utf-8"), end='', flush=True)
             else:
                 print(f'Connection Terminated.')
                 break
-            
+
     finally:
         # Clean up the connection
         connection.close()
