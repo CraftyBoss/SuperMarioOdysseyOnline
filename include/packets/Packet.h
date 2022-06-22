@@ -31,6 +31,7 @@ enum PacketType : short {
 // attribute otherwise the build log is spammed with unused warnings
 USED static const char *packetNames[] = {
     "Unknown",
+    "Client Initialization",
     "Player Info",
     "Player Cap Info",
     "Game Info",
@@ -40,6 +41,7 @@ USED static const char *packetNames[] = {
     "Costume Info",
     "Moon Collection",
     "Capture Info",
+    "Change Stage",
     "Server Command"
 };
 
