@@ -783,12 +783,16 @@ void Client::updatePlayerInfo(PlayerInf *packet) {
         } else {
             strcpy(curInfo->curAnimStr, "Wait");
         }
+        if (strlen(curInfo->curAnimStr) == 0)
+            Logger::log("[ERROR] %s: actName was out of bounds: %d", __func__, packet->actName);
 
         if(packet->subActName != PlayerAnims::Type::Unknown) {
             strcpy(curInfo->curSubAnimStr, PlayerAnims::FindStr(packet->subActName));
         } else {
             strcpy(curInfo->curSubAnimStr, "");
         }
+        if (strlen(curInfo->curSubAnimStr) == 0)
+            Logger::log("[ERROR] %s: subActName was out of bounds: %d", __func__, packet->subActName);
 
         curInfo->curAnim = packet->actName;
         curInfo->curSubAnim = packet->subActName;
