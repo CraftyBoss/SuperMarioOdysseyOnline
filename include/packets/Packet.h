@@ -5,6 +5,8 @@
 
 #include "nn/account.h"
 
+#include "types.h"
+
 #define PACKBUFSIZE      0x30
 #define COSTUMEBUFSIZE   0x20
 
@@ -27,7 +29,7 @@ enum PacketType : short {
 };
 
 // attribute otherwise the build log is spammed with unused warnings
-__attribute((used)) static const char *packetNames[] = {
+USED static const char *packetNames[] = {
     "Unknown",
     "Player Info",
     "Player Cap Info",
@@ -59,7 +61,7 @@ static const char *senderNames[] = {
 };
 */
 
-struct Packet {
+struct PACKED Packet {
     nn::account::Uid mUserID; // User ID of the packet owner
     PacketType mType = PacketType::UNKNOWN;
     short mPacketSize = 0; // represents packet size without size of header
