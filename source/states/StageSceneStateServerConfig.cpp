@@ -183,7 +183,7 @@ void StageSceneStateServerConfig::exeOpenKeyboardPort() {
 
         Client::getKeyboard()->setHeaderText(u"Set a Server Port Below.");
         Client::getKeyboard()->setSubText(u"");
-        Client::openKeyboardIP();
+        Client::openKeyboardPort();
         // anything that happens after this will be ran after the keyboard closes
         al::startHitReaction(mCurrentMenu, "リセット", 0);
         al::setNerve(this, &nrvStageSceneStateServerConfigMainMenu);
