@@ -17,8 +17,7 @@ nn::Result SocketClient::init(const char* ip, u16 port) {
     in_addr hostAddress = { 0 };
     sockaddr serverAddress = { 0 };
 
-    if (socket_log_state != SOCKET_LOG_UNINITIALIZED && socket_log_state != SOCKET_LOG_DISCONNECTED)
-        return -1;
+    Logger::log("SocketClient::init: %s:%d sock %s\n", ip, port, getStateChar());
 
     nn::nifm::Initialize();
     nn::nifm::SubmitNetworkRequest();
