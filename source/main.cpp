@@ -346,7 +346,7 @@ bool hakoniwaSequenceHook(HakoniwaSequence* sequence) {
             if(debugPuppetIndex < 0) {
                 debugPuppetIndex = playBufSize - 2;
             }
-            if (debugPuppetIndex >= playBufSize)
+            if (debugPuppetIndex >= playBufSize - 1)
                 debugPuppetIndex = 0;
         }
 
