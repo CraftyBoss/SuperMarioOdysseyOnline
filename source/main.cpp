@@ -137,6 +137,7 @@ void drawMainHook(HakoniwaSequence *curSequence, sead::Viewport *viewport, sead:
                     gTextWriter->printf("Is in Capture: %s\n", curPupInfo->isCaptured ? "True" : "False");
                     gTextWriter->printf("Puppet Stage: %s\n", curPupInfo->stageName);
                     gTextWriter->printf("Puppet Scenario: %u\n", curPupInfo->scenarioNo);
+                    gTextWriter->printf("Puppet Costume: H: %s B: %s\n", curPupInfo->costumeHead, curPupInfo->costumeBody);
                     //gTextWriter->printf("Packet Coords:\nX: %f\nY: %f\nZ: %f\n", curPupInfo->playerPos.x, curPupInfo->playerPos.y, curPupInfo->playerPos.z);
                     // if (curModel) {
                     //     sead::Vector3f* pupPos = al::getTrans(curModel);
@@ -165,7 +166,7 @@ void drawMainHook(HakoniwaSequence *curSequence, sead::Viewport *viewport, sead:
                 if (debugPuppet && debugInfo) {
 
                     al::LiveActor *curModel = debugPuppet->getCurrentModel();
-                    
+
                     gTextWriter->printf("Is Nametag Visible: %s\n", BTOC(debugPuppet->mNameTag->isVisible()));
                     gTextWriter->printf("Is Nametag Alive: %s\n", BTOC(debugPuppet->mNameTag->mIsAlive));
                     gTextWriter->printf("Nametag Normalized Dist: %f\n", debugPuppet->mNameTag->mNormalizedDist);
@@ -178,14 +179,14 @@ void drawMainHook(HakoniwaSequence *curSequence, sead::Viewport *viewport, sead:
             }
             break;
         case 2:
-            {  
+            {
                 al::PlayerHolder *pHolder = al::getScenePlayerHolder(curScene);
                 PlayerActorHakoniwa *p1 = pHolder->tryGetPlayer(0);
 
                 if (p1->mHackKeeper && p1->mHackKeeper->currentHackActor) {
 
                     al::LiveActor *curHack = p1->mHackKeeper->currentHackActor;
-                    
+
                     gTextWriter->printf("Current Hack Animation: %s\n", al::getActionName(curHack));
                     gTextWriter->printf("Current Hack Name: %s\n",
                                         p1->mHackKeeper->getCurrentHackName());
@@ -209,14 +210,14 @@ void drawMainHook(HakoniwaSequence *curSequence, sead::Viewport *viewport, sead:
                         gTextWriter->printf("Cap Skew: %f\n", p1->mHackCap->mJointKeeper->mSkew);
                     }
                 }
-            }   
+            }
             break;
         default:
             break;
         }
 
         renderer->begin();
-        
+
         //sead::Matrix34f mat = sead::Matrix34f::ident;
         //mat.setBase(3, sead::Vector3f::zero); // Sets the position of the matrix.
                              // For cubes, you need to put this at the location.
@@ -244,7 +245,7 @@ void sendShinePacket(GameDataHolderWriter thisPtr, Shine* curShine) {
     if (!curShine->isGot()) {
         Client::sendShineCollectPacket(curShine->shineId);
     }
-    
+
     GameDataFunction::setGotShine(thisPtr, curShine->curShineInfo);
 }
 
@@ -252,7 +253,7 @@ void stageInitHook(al::ActorInitInfo *info, StageScene *curScene, al::PlacementI
 
     al::initActorInitInfo(info, curScene, placement, lytInfo, factory, sceneMsgCtrl,
                           dataHolder);
-    
+
     Client::clearArrays();
 
     Client::setSceneInfo(*info, curScene);
@@ -264,7 +265,7 @@ void stageInitHook(al::ActorInitInfo *info, StageScene *curScene, al::PlacementI
     }
 
     Client::sendGameInfPacket(info->mActorSceneInfo.mSceneObjHolder);
-    
+
 }
 
 PlayerCostumeInfo *setPlayerModel(al::LiveActor *player, const al::ActorInitInfo &initInfo, const char *bodyModel, const char *capModel, al::AudioKeeper *keeper, bool isCloset) {
@@ -281,7 +282,7 @@ ulong constructHook() {  // hook for constructing anything we need to globally b
     __asm("MOV %[result], X20"
           : [result] "=r"(
               initInfo));  // Save our scenes init info to a gloabl ptr so we can access it later
-    
+
     Client::sInstance = new Client(playBufSize);
 
     return 0x20;
@@ -311,7 +312,7 @@ bool hakoniwaSequenceHook(HakoniwaSequence* sequence) {
     if (isFirstStep) {
         Client::tryRestartCurrentMode();
     }
-    
+
     isInGame = !stageScene->isPause();
 
     Client::setGameActive(!stageScene->isPause());
@@ -348,7 +349,7 @@ bool hakoniwaSequenceHook(HakoniwaSequence* sequence) {
             if (debugPuppetIndex >= playBufSize)
                 debugPuppetIndex = 0;
         }
-        
+
     } else if (al::isPadHoldL(-1)) {
         if (al::isPadTriggerLeft(-1)) Client::toggleCurrentMode();
         if (al::isPadTriggerRight(-1)) {
@@ -389,7 +390,7 @@ bool hakoniwaSequenceHook(HakoniwaSequence* sequence) {
 
 }
 
-void seadPrintHook(const char *fmt, ...) 
+void seadPrintHook(const char *fmt, ...)
 {
     va_list args;
 	va_start(args, fmt);

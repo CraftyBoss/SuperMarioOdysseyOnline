@@ -80,7 +80,7 @@ StageSceneStateServerConfig::StageSceneStateServerConfig(const char *name, al::S
     mCurrentMenu = mMainOptions;
 }
 
-void StageSceneStateServerConfig::init() {    
+void StageSceneStateServerConfig::init() {
     initNerve(&nrvStageSceneStateServerConfigMainMenu, 0);
 }
 
@@ -183,7 +183,7 @@ void StageSceneStateServerConfig::exeOpenKeyboardPort() {
 
         Client::getKeyboard()->setHeaderText(u"Set a Server Port Below.");
         Client::getKeyboard()->setSubText(u"");
-        Client::openKeyboardIP();
+        Client::openKeyboardPort();
         // anything that happens after this will be ran after the keyboard closes
         al::startHitReaction(mCurrentMenu, "リセット", 0);
         al::setNerve(this, &nrvStageSceneStateServerConfigMainMenu);
@@ -193,13 +193,20 @@ void StageSceneStateServerConfig::exeOpenKeyboardPort() {
 void StageSceneStateServerConfig::exeRestartServer() {
     if (al::isFirstStep(this)) {
         mCurrentList->deactivate();
+        Logger::log("Stopping connection\n");
         Client::stopConnection();
     }
 
-    if (Client::isSocketActive()) {
-        al::startHitReaction(mCurrentMenu, "リセット", 0);
-        al::setNerve(this, &nrvStageSceneStateServerConfigMainMenu);
+    auto* client = Client::sInstance;
+
+    if (client) {
+        Logger::log("%s: Socket state: %s\n", __func__, client->mSocket->getStateChar());
+
+        client->StartThreads();
     }
+
+    al::startHitReaction(mCurrentMenu, "リセット", 0);
+    al::setNerve(this, &nrvStageSceneStateServerConfigMainMenu);
 }
 
 void StageSceneStateServerConfig::exeGamemodeConfig() {
@@ -210,7 +217,7 @@ void StageSceneStateServerConfig::exeGamemodeConfig() {
     }
 
     subMenuUpdate();
-    
+
     if (mIsDecideConfig && mCurrentList->isDecideEnd()) {
         if (mGamemodeConfigMenu->updateMenu(mCurrentList->mCurSelected)) {
             endSubMenu();
@@ -220,7 +227,7 @@ void StageSceneStateServerConfig::exeGamemodeConfig() {
 
 void StageSceneStateServerConfig::exeGamemodeSelect() {
     if (al::isFirstStep(this)) {
-        
+
         mCurrentList = mModeSelectList;
         mCurrentMenu = mModeSelect;
 

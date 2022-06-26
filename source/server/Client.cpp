@@ -215,14 +215,16 @@ bool Client::startConnection() {
         Client::openKeyboardPort();
     }
 
-    bool result = mSocket->init(mServerIP.cstr(), mServerPort).isSuccess();
+    bool socketConnected = mSocket->isConnected();
+    if (!socketConnected) {
+        socketConnected = mSocket->init(mServerIP.cstr(), mServerPort).isSuccess();
+    }
 
-    if (result) {
+    bool clientConnected = false;
+    if (socketConnected) {
         // wait for client init packet
         while (true) {
-
             if (mSocket->RECV()) {
-
                 Packet* curPacket = mSocket->mPacketQueue.popFront();
 
                 if (curPacket->mType == PacketType::CLIENTINIT) {
@@ -232,21 +234,20 @@ bool Client::startConnection() {
 
                     maxPuppets = initPacket->maxPlayers - 1;
 
-                }else {
+                    clientConnected = true;
+                } else {
                     Logger::log("First Packet was not Init!\n");
-                    result = false;
+                    clientConnected = false;
                 }
 
                 free(curPacket);
-
             }
 
             break;
         }
     }
     
-    
-    return result;
+    return clientConnected;
 }
 
 /**
@@ -317,9 +318,10 @@ void Client::openKeyboardPort() {
  */
 void Client::readFunc() {
 
-    if (isFirstConnect) {
+    if (waitForGameInit) {
         nn::os::YieldThread(); // sleep the thread for the first thing we do so that game init can finish
         nn::os::SleepThread(nn::TimeSpan::FromSeconds(2));
+        waitForGameInit = false;
     }
 
     // we can use the start of readFunc to display an al::WindowConfirmWait while the server
@@ -398,7 +400,8 @@ void Client::readFunc() {
                 mSocket->SEND(&initPacket);  // re-send init packet as reconnect packet
                 mConnectionWait->tryEnd();
                 continue;
-
+            } else {
+                Logger::log("%s: not reconnected\n", __func__);
             }
 
             nn::os::YieldThread(); // if we're currently waiting on the socket to be initialized, wait until it is
@@ -449,7 +452,7 @@ void Client::readFunc() {
                     updateShineInfo((ShineCollect*)curPacket);
                     break;
                 case PacketType::PLAYERDC:
-                    Logger::log("Recieved Player Disconnect!\n");
+                    Logger::log("Received Player Disconnect!\n");
                     curPacket->mUserID.print();
                     disconnectPlayer((PlayerDC*)curPacket);
                     break;
@@ -780,19 +783,19 @@ void Client::updatePlayerInfo(PlayerInf *packet) {
 
         if (packet->actName != PlayerAnims::Type::Unknown) {
             strcpy(curInfo->curAnimStr, PlayerAnims::FindStr(packet->actName));
+            if (curInfo->curAnimStr[0] == '\0')
+                Logger::log("[ERROR] %s: actName was out of bounds: %d\n", __func__, packet->actName);
         } else {
             strcpy(curInfo->curAnimStr, "Wait");
         }
-        if (strlen(curInfo->curAnimStr) == 0)
-            Logger::log("[ERROR] %s: actName was out of bounds: %d", __func__, packet->actName);
 
         if(packet->subActName != PlayerAnims::Type::Unknown) {
             strcpy(curInfo->curSubAnimStr, PlayerAnims::FindStr(packet->subActName));
+            if (curInfo->curSubAnimStr[0] == '\0')
+                Logger::log("[ERROR] %s: subActName was out of bounds: %d\n", __func__, packet->subActName);
         } else {
             strcpy(curInfo->curSubAnimStr, "");
         }
-        if (strlen(curInfo->curSubAnimStr) == 0)
-            Logger::log("[ERROR] %s: subActName was out of bounds: %d", __func__, packet->subActName);
 
         curInfo->curAnim = packet->actName;
         curInfo->curSubAnim = packet->subActName;

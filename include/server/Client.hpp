@@ -2,9 +2,9 @@
  * @file server/Client.hpp
  * @author CraftyBoss (https://github.com/CraftyBoss)
  * @brief main class responsible for handing all client-server related communications, as well as any gamemodes.
- * 
+ *
  * @copyright Copyright (c) 2022
- * 
+ *
  */
 #pragma once
 
@@ -92,7 +92,7 @@ class Client {
         bool isShineCollected(int shineId);
 
         static void initMode(GameModeInitInfo const &initInfo);
-        
+
         static void sendHackCapInfPacket(const HackCap *hackCap);
         static void sendPlayerInfPacket(const PlayerActorHakoniwa *player);
         static void sendGameInfPacket(const PlayerActorHakoniwa *player, GameDataHolderAccessor holder);
@@ -191,7 +191,7 @@ class Client {
         static void tryRestartCurrentMode();
 
         static bool isModeActive() { return sInstance ? sInstance->mIsModeActive : false; }
-        
+
         static bool isSelectedMode(GameMode mode) { return sInstance ? sInstance->mCurMode->getMode() == mode: false; }
 
         void resetCollectedShines();
@@ -224,7 +224,7 @@ class Client {
         // currently, only readThread is used to recieve and update PuppetInfo, while the main game thread is used to send packets without queueing them up first, which might cause performance issues
         al::AsyncFunctorThread *mReadThread = nullptr;    // TODO: use this thread to send any queued packets
         // al::AsyncFunctorThread *mRecvThread; // TODO: use this thread to recieve packets and update PuppetInfo
-        
+
         sead::SafeArray<UIDIndexNode, 16> puppetPlayerID;
 
         int mConnectCount = 0;
@@ -233,10 +233,10 @@ class Client {
 
         sead::FixedSafeString<0x20> mUsername;
 
-        // --- Server Syncing Members --- 
-        
+        // --- Server Syncing Members ---
+
         // array of shine IDs for checking if multiple shines have been collected in quick sucession, all moons within the players stage that match the ID will be deleted
-        sead::SafeArray<int, 128> curCollectedShines; 
+        sead::SafeArray<int, 128> curCollectedShines;
         int collectedShineCount = 0;
 
         int lastCollectedShine = -1;
@@ -252,6 +252,7 @@ class Client {
 
         int mServerPort = 0;
 
+        bool waitForGameInit = true;
         bool isFirstConnect = true;
 
         // --- Game Layouts ---
