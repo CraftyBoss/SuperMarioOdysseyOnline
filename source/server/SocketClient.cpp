@@ -77,7 +77,8 @@ bool SocketClient::SEND(Packet *packet) {
 
     int valread = 0;
 
-    //Logger::log("Sending Packet Size: %d Sending Type: %s\n", packet->mPacketSize, packetNames[packet->mType]);
+    if (packet->mType != PLAYERINF && packet->mType != HACKCAPINF)
+        Logger::log("Sending packet: %s\n", packetNames[packet->mType]);
 
     if ((valread = nn::socket::Send(this->socket_log_socket, buffer, packet->mPacketSize + sizeof(Packet), this->sock_flags) > 0)) {
         return true;
@@ -93,7 +94,7 @@ bool SocketClient::SEND(Packet *packet) {
 bool SocketClient::RECV() {
 
     if (this->socket_log_state != SOCKET_LOG_CONNECTED) {
-        Logger::log("Unable To Recieve! Socket Not Connected.\n");
+        Logger::log("Unable To Receive! Socket Not Connected.\n");
         this->socket_errno = nn::socket::GetLastErrno();
         return false;
     }
@@ -121,6 +122,10 @@ bool SocketClient::RECV() {
         int fullSize = header->mPacketSize + sizeof(Packet);
 
         if (header->mType != PacketType::UNKNOWN && fullSize <= MAXPACKSIZE && fullSize > 0) {
+
+            if (header->mType != PLAYERINF && header->mType != HACKCAPINF)
+                Logger::log("Received packet (from %02X%02X): %s\n",
+                    header->mUserID.data[0], header->mUserID.data[1], packetNames[header->mType]);
 
             char* packetBuf = (char*)malloc(fullSize);
 
