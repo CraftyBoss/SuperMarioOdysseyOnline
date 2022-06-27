@@ -435,15 +435,20 @@ void Client::readFunc() {
                     break;
                 case PacketType::PLAYERCON:
                     updatePlayerConnect((PlayerConnect*)curPacket);
-                    // send game info packet when client recieves connection
 
-                    if (lastGameInfPacket.mUserID != mUserID) {
-                        // assume game info packet is empty from first connection
+                    // Send relevant info packets when another client is connected
+
+                    // Assume game packets are empty from first connection
+                    if (lastGameInfPacket.mUserID != mUserID)
                         lastGameInfPacket.mUserID = mUserID;
-                        // leave rest blank
-                    }
-
                     mSocket->SEND(&lastGameInfPacket);
+
+                    // No need to send player/costume packets if they're empty
+                    if (lastPlayerInfPacket.mUserID == mUserID)
+                        mSocket->SEND(&lastPlayerInfPacket);
+                    if (lastCostumeInfPacket.mUserID == mUserID)
+                        mSocket->SEND(&lastCostumeInfPacket);
+
                     break;
                 case PacketType::COSTUMEINF:
                     updateCostumeInfo((CostumeInf*)curPacket);
@@ -698,6 +703,7 @@ void Client::sendCostumeInfPacket(const char* body, const char* cap) {
     CostumeInf packet = CostumeInf(body, cap);
     packet.mUserID = sInstance->mUserID;
     sInstance->mSocket->SEND(&packet);
+    sInstance->lastCostumeInfPacket = packet;
 }
 
 /**

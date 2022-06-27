@@ -241,10 +241,10 @@ class Client {
 
         int lastCollectedShine = -1;
 
-        PlayerInf lastPlayerInfPacket =
-            PlayerInf();  // Info struct for storing our currently logged player information
-
+        // Backups for our last player/game packets, used for example to re-send them for newly connected clients
+        PlayerInf lastPlayerInfPacket = PlayerInf();
         GameInf lastGameInfPacket = GameInf();
+        CostumeInf lastCostumeInfPacket = CostumeInf();
 
         Keyboard* mKeyboard = nullptr; // keyboard for setting server IP
 
