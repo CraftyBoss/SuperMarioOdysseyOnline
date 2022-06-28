@@ -18,7 +18,9 @@ typedef signed int          s32;
 typedef int64_t             s64;
 typedef __int128_t          s128;
 
-typedef u32                 bool4; // guaranteed to be 4 bytes, 'bool' is impl. defined
+// bool size is implementation defined, so use these where it's important
+typedef u8                  bool1;
+typedef u32                 bool4;
 
 typedef float               f32;
 typedef double              f64;

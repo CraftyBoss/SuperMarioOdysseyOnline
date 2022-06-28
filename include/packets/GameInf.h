@@ -5,7 +5,7 @@
 
 struct PACKED GameInf : Packet {
     GameInf() : Packet() {this->mType = PacketType::GAMEINF; mPacketSize = sizeof(GameInf) - sizeof(Packet);};
-    bool4 is2D = false;
+    bool1 is2D = false;
     u8 scenarioNo = -1;
     char stageName[0x40] = {};
 

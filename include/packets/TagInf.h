@@ -11,7 +11,7 @@ enum TagUpdateType : u8 {
 struct PACKED TagInf : Packet {
     TagInf() : Packet() { this->mType = PacketType::TAGINF; mPacketSize = sizeof(TagInf) - sizeof(Packet);};
     TagUpdateType updateType;
-    bool4 isIt = false;
+    bool1 isIt = false;
     u8 seconds;
     u16 minutes;
 };
