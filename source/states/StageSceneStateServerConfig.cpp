@@ -1,6 +1,7 @@
 #include "game/StageScene/StageSceneStateServerConfig.hpp"
 #include <cstdlib>
 #include <math.h>
+#include "game/SaveData/SaveDataAccessFunction.h"
 #include "server/Client.hpp"
 #include "al/util.hpp"
 #include "al/util/NerveUtil.h"
@@ -172,7 +173,7 @@ void StageSceneStateServerConfig::exeOpenKeyboardIP() {
         Client::openKeyboardIP();
         // anything that happens after this will be ran after the keyboard closes
         al::startHitReaction(mCurrentMenu, "リセット", 0);
-        al::setNerve(this, &nrvStageSceneStateServerConfigMainMenu);
+        al::setNerve(this, &nrvStageSceneStateServerConfigSaveData);
     }
 }
 
@@ -183,23 +184,22 @@ void StageSceneStateServerConfig::exeOpenKeyboardPort() {
 
         Client::getKeyboard()->setHeaderText(u"Set a Server Port Below.");
         Client::getKeyboard()->setSubText(u"");
-        Client::openKeyboardIP();
+        Client::openKeyboardPort();
         // anything that happens after this will be ran after the keyboard closes
-        al::startHitReaction(mCurrentMenu, "リセット", 0);
-        al::setNerve(this, &nrvStageSceneStateServerConfigMainMenu);
+        al::setNerve(this, &nrvStageSceneStateServerConfigSaveData);
     }
 }
 
 void StageSceneStateServerConfig::exeRestartServer() {
     if (al::isFirstStep(this)) {
         mCurrentList->deactivate();
-        Client::stopConnection();
+        Client::restartConnection();
     }
 
-    if (Client::isSocketActive()) {
+    //if (Client::isSocketActive()) {
         al::startHitReaction(mCurrentMenu, "リセット", 0);
         al::setNerve(this, &nrvStageSceneStateServerConfigMainMenu);
-    }
+    //}
 }
 
 void StageSceneStateServerConfig::exeGamemodeConfig() {
@@ -291,6 +291,18 @@ void StageSceneStateServerConfig::subMenuUpdate() {
     }
 }
 
+void StageSceneStateServerConfig::exeSaveData() {
+
+    if (al::isFirstStep(this)) {
+        SaveDataAccessFunction::startSaveDataWrite(mGameDataHolder);
+    }
+
+    if (SaveDataAccessFunction::updateSaveDataAccess(mGameDataHolder, false)) {
+        al::startHitReaction(mCurrentMenu, "リセット", 0);
+        al::setNerve(this, &nrvStageSceneStateServerConfigMainMenu);
+    }
+}
+
 namespace {
 NERVE_IMPL(StageSceneStateServerConfig, MainMenu)
 NERVE_IMPL(StageSceneStateServerConfig, OpenKeyboardIP)
@@ -298,4 +310,5 @@ NERVE_IMPL(StageSceneStateServerConfig, OpenKeyboardPort)
 NERVE_IMPL(StageSceneStateServerConfig, RestartServer)
 NERVE_IMPL(StageSceneStateServerConfig, GamemodeConfig)
 NERVE_IMPL(StageSceneStateServerConfig, GamemodeSelect)
+NERVE_IMPL(StageSceneStateServerConfig, SaveData)
 }

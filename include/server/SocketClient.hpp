@@ -22,7 +22,8 @@ class SocketClient : public SocketBase {
             mPacketQueue = sead::PtrArray<Packet>();
             mPacketQueue.tryAllocBuffer(maxBufSize, nullptr);
         };
-        nn::Result init(const char * ip, u16 port) override;
+        nn::Result init(const char* ip, u16 port) override;
+        bool closeSocket() override;
         bool SEND(Packet *packet);
         bool RECV();
         void printPacket(Packet* packet);

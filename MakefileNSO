@@ -44,7 +44,7 @@ ARCH	:=	-march=armv8-a -mtune=cortex-a57 -mtp=soft -fPIC -ftls-model=local-exec
 CFLAGS	:=	-g -Wall -ffunction-sections \
 			$(ARCH) $(DEFINES)
 
-CFLAGS	+=	$(INCLUDE) -D__SWITCH__ -DSMOVER=$(SMOVER) -O3 -DNNSDK -DSWITCH -DBUILDVER=$(BUILDVER) -DDEBUGLOG=$(DEBUGLOG) -DSERVERIP=$(SERVERIP)
+CFLAGS	+=	$(INCLUDE) -D__SWITCH__ -DSMOVER=$(SMOVER) -O3 -DNNSDK -DSWITCH -DBUILDVERSTR=$(BUILDVERSTR) -DBUILDVER=$(BUILDVER) -DDEBUGLOG=$(DEBUGLOG) -DSERVERIP=$(SERVERIP) -DEMU=$(EMU)
 
 CXXFLAGS	:= $(CFLAGS) -fno-rtti -fomit-frame-pointer -fno-exceptions -fno-asynchronous-unwind-tables -fno-unwind-tables -std=gnu++20
 

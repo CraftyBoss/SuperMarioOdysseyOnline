@@ -4,9 +4,11 @@
 
 namespace al {
 
+    typedef al::ISceneObj* (*SceneObjCreator)(int);
+
     class SceneObjHolder {
     public:
-        SceneObjHolder(al::ISceneObj* (*)(int), int);
+        SceneObjHolder(SceneObjCreator, int);
         
         ISceneObj *tryGetObj(int) const; // unsafe get still
         void setSceneObj(al::ISceneObj *,int);
@@ -15,7 +17,13 @@ namespace al {
         ISceneObj *getObj(int) const;
         void create(int);
 
+        SceneObjCreator mObjCreator;
+        al::ISceneObj **mSceneObjs;
+        int mMaxObjCount;
+        
     };
+
+    static_assert(sizeof(SceneObjHolder) == 0x18, "SceneObjHolder Size");
 
     class IUseSceneObjHolder
     {

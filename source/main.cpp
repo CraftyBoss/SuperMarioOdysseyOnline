@@ -293,7 +293,7 @@ bool threadInit(HakoniwaSequence *mainSeq) {  // hook for initializing client cl
 
     al::initLayoutInitInfo(&lytInfo, mainSeq->mLytKit, 0, mainSeq->mAudioDirector, initInfo->mSystemInfo->mLayoutSys, initInfo->mSystemInfo->mMessageSys, initInfo->mSystemInfo->mGamePadSys);
 
-    Client::sInstance->init(lytInfo);
+    Client::sInstance->init(lytInfo, mainSeq->mGameDataHolder);
 
     return GameDataFunction::isPlayDemoOpening(mainSeq->mGameDataHolder);
 }

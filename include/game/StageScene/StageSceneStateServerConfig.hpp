@@ -44,6 +44,7 @@ class StageSceneStateServerConfig : public al::HostStateBase<al::Scene>, public 
         void exeRestartServer();
         void exeGamemodeConfig();
         void exeGamemodeSelect();
+        void exeSaveData();
 
         void endSubMenu();
 
@@ -82,4 +83,5 @@ namespace {
     NERVE_HEADER(StageSceneStateServerConfig, RestartServer)
     NERVE_HEADER(StageSceneStateServerConfig, GamemodeConfig)
     NERVE_HEADER(StageSceneStateServerConfig, GamemodeSelect)
+    NERVE_HEADER(StageSceneStateServerConfig, SaveData)
 }

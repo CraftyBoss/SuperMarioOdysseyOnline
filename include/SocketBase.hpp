@@ -12,6 +12,7 @@ class SocketBase {
         SocketBase(const char *name);
 
         virtual nn::Result init(const char * ip, u16 port) = 0;
+        virtual bool closeSocket();
 
         const char *getStateChar();
         u8 getLogState();
@@ -19,7 +20,6 @@ class SocketBase {
 
         void set_sock_flags(int flags);
 
-        bool closeSocket();
 
         void setName(const char *name) {strcpy(sockName, name);};
         u32 socket_errno;
