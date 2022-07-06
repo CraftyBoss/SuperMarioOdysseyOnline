@@ -6,8 +6,12 @@ import sys
 # Create a TCP/IP socket
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
+port = 3080
+if len(sys.argv) == 3:
+    port = int(sys.argv[2])
+
 # Bind the socket to the port
-server_address = (sys.argv[1], 3080)
+server_address = (sys.argv[1], port)
 print(f"Starting TCP Server with IP {server_address[0]} and Port {server_address[1]}.")
 sock.bind(server_address)
 
@@ -22,12 +26,17 @@ while True:
         print(f'Switch Connected! IP: {client_address[0]} Port: {client_address[1]}')
         while True:
             data = connection.recv(1024)
+
             if data:
-                print(data.decode("utf-8"))
+                print(data.decode("utf-8"), end='', flush=True)
             else:
                 print(f'Connection Terminated.')
                 break
-            
+
+    except ConnectionResetError:
+        print("Connection reset")
+
     finally:
         # Clean up the connection
         connection.close()
+

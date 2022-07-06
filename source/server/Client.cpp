@@ -247,9 +247,7 @@ bool Client::startConnection() {
 
         // wait for client init packet
         while (true) {
-
             if (mSocket->RECV()) {
-
                 Packet* curPacket = mSocket->mPacketQueue.popFront();
 
                 if (curPacket->mType == PacketType::CLIENTINIT) {
@@ -258,8 +256,7 @@ bool Client::startConnection() {
                     Logger::log("Server Max Player Size: %d\n", initPacket->maxPlayers);
 
                     maxPuppets = initPacket->maxPlayers - 1;
-
-                }else {
+                } else {
                     Logger::log("First Packet was not Init!\n");
                     mIsConnectionActive = false;
                 }
@@ -346,9 +343,10 @@ void Client::openKeyboardPort() {
  */
 void Client::readFunc() {
 
-    if (isFirstConnect) {
+    if (waitForGameInit) {
         nn::os::YieldThread(); // sleep the thread for the first thing we do so that game init can finish
         nn::os::SleepThread(nn::TimeSpan::FromSeconds(2));
+        waitForGameInit = false;
     }
 
     // we can use the start of readFunc to display an al::WindowConfirmWait while the server
@@ -414,9 +412,8 @@ void Client::readFunc() {
                 mSocket->SEND(&initPacket);  // re-send init packet as reconnect packet
                 mConnectionWait->tryEnd();
                 continue;
-
             } else {
-                Logger::log("Connection Failed! Retrying in 5 Seconds.\n");
+                Logger::log("%s: not reconnected\n", __func__);
             }
 
             nn::os::YieldThread(); // if we're currently waiting on the socket to be initialized, wait until it is
@@ -448,15 +445,20 @@ void Client::readFunc() {
                     break;
                 case PacketType::PLAYERCON:
                     updatePlayerConnect((PlayerConnect*)curPacket);
-                    // send game info packet when client recieves connection
 
-                    if (lastGameInfPacket.mUserID != mUserID) {
-                        // assume game info packet is empty from first connection
+                    // Send relevant info packets when another client is connected
+
+                    // Assume game packets are empty from first connection
+                    if (lastGameInfPacket.mUserID != mUserID)
                         lastGameInfPacket.mUserID = mUserID;
-                        // leave rest blank
-                    }
-
                     mSocket->SEND(&lastGameInfPacket);
+
+                    // No need to send player/costume packets if they're empty
+                    if (lastPlayerInfPacket.mUserID == mUserID)
+                        mSocket->SEND(&lastPlayerInfPacket);
+                    if (lastCostumeInfPacket.mUserID == mUserID)
+                        mSocket->SEND(&lastCostumeInfPacket);
+
                     break;
                 case PacketType::COSTUMEINF:
                     updateCostumeInfo((CostumeInf*)curPacket);
@@ -465,7 +467,7 @@ void Client::readFunc() {
                     updateShineInfo((ShineCollect*)curPacket);
                     break;
                 case PacketType::PLAYERDC:
-                    Logger::log("Recieved Player Disconnect!\n");
+                    Logger::log("Received Player Disconnect!\n");
                     curPacket->mUserID.print();
                     disconnectPlayer((PlayerDC*)curPacket);
                     break;
@@ -713,6 +715,7 @@ void Client::sendCostumeInfPacket(const char* body, const char* cap) {
     CostumeInf packet = CostumeInf(body, cap);
     packet.mUserID = sInstance->mUserID;
     sInstance->mSocket->SEND(&packet);
+    sInstance->lastCostumeInfPacket = packet;
 }
 
 /**
@@ -791,17 +794,21 @@ void Client::updatePlayerInfo(PlayerInf *packet) {
         }
     }
 
-    if (packet->actName != PlayerAnims::Type::Unknown) {
-        strcpy(curInfo->curAnimStr, PlayerAnims::FindStr(packet->actName));
-    } else {
-        strcpy(curInfo->curAnimStr, "Wait");
-    }
+        if (packet->actName != PlayerAnims::Type::Unknown) {
+            strcpy(curInfo->curAnimStr, PlayerAnims::FindStr(packet->actName));
+            if (curInfo->curAnimStr[0] == '\0')
+                Logger::log("[ERROR] %s: actName was out of bounds: %d\n", __func__, packet->actName);
+        } else {
+            strcpy(curInfo->curAnimStr, "Wait");
+        }
 
-    if(packet->subActName != PlayerAnims::Type::Unknown) {
-        strcpy(curInfo->curSubAnimStr, PlayerAnims::FindStr(packet->subActName));
-    } else {
-        strcpy(curInfo->curSubAnimStr, "");
-    }
+        if(packet->subActName != PlayerAnims::Type::Unknown) {
+            strcpy(curInfo->curSubAnimStr, PlayerAnims::FindStr(packet->subActName));
+            if (curInfo->curSubAnimStr[0] == '\0')
+                Logger::log("[ERROR] %s: subActName was out of bounds: %d\n", __func__, packet->subActName);
+        } else {
+            strcpy(curInfo->curSubAnimStr, "");
+        }
 
     curInfo->curAnim = packet->actName;
     curInfo->curSubAnim = packet->subActName;

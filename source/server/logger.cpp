@@ -2,6 +2,10 @@
 #include "helpers.hpp"
 #include "nn/result.h"
 
+// If connection fails, try X ports above the specified one
+// Useful for debugging multple clients on the same machine
+constexpr u32 ADDITIONAL_LOG_PORT_COUNT = 2;
+
 Logger* Logger::sInstance = nullptr;
 
 void Logger::createInstance() {
@@ -15,9 +19,9 @@ void Logger::createInstance() {
 nn::Result Logger::init(const char* ip, u16 port) {
 
     sock_ip = ip;
-    
+
     this->port = port;
-    
+
     in_addr hostAddress = { 0 };
     sockaddr serverAddress = { 0 };
 
@@ -38,12 +42,12 @@ nn::Result Logger::init(const char* ip, u16 port) {
     }
 
     #endif
-    
+
     if ((this->socket_log_socket = nn::socket::Socket(2, 1, 0)) < 0) {
         this->socket_log_state = SOCKET_LOG_UNAVAILABLE;
         return -1;
     }
-    
+
     nn::socket::InetAton(this->sock_ip, &hostAddress);
 
     serverAddress.address = hostAddress;
@@ -51,17 +55,25 @@ nn::Result Logger::init(const char* ip, u16 port) {
     serverAddress.family = 2;
 
     nn::Result result;
+    bool connected = false;
+    for (u32 i = 0; i < ADDITIONAL_LOG_PORT_COUNT + 1; ++i) {
+        result = nn::socket::Connect(this->socket_log_socket, &serverAddress, sizeof(serverAddress));
+        if (result.isSuccess()) {
+            connected = true;
+            break;
+        }
+        this->port++;
+        serverAddress.port = nn::socket::InetHtons(this->port);
+    }
 
-    if ((result = nn::socket::Connect(this->socket_log_socket, &serverAddress, sizeof(serverAddress))).isFailure()) {
+    if (connected) {
+        this->socket_log_state = SOCKET_LOG_CONNECTED;
+        this->isDisableName = false;
+        return 0;
+    } else {
         this->socket_log_state = SOCKET_LOG_UNAVAILABLE;
         return result;
     }
-    
-    this->socket_log_state = SOCKET_LOG_CONNECTED;
-
-    this->isDisableName = false;
-
-    return 0;
 }
 
 void Logger::log(const char *fmt, va_list args) { // impl for replacing seads system::print

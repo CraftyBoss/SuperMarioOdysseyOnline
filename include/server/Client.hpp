@@ -2,9 +2,9 @@
  * @file server/Client.hpp
  * @author CraftyBoss (https://github.com/CraftyBoss)
  * @brief main class responsible for handing all client-server related communications, as well as any gamemodes.
- * 
+ *
  * @copyright Copyright (c) 2022
- * 
+ *
  */
 #pragma once
 
@@ -95,7 +95,7 @@ class Client {
         bool isShineCollected(int shineId);
 
         static void initMode(GameModeInitInfo const &initInfo);
-        
+
         static void sendHackCapInfPacket(const HackCap *hackCap);
         static void sendPlayerInfPacket(const PlayerActorHakoniwa *player);
         static void sendGameInfPacket(const PlayerActorHakoniwa *player, GameDataHolderAccessor holder);
@@ -194,7 +194,7 @@ class Client {
         static void tryRestartCurrentMode();
 
         static bool isModeActive() { return sInstance ? sInstance->mIsModeActive : false; }
-        
+
         static bool isSelectedMode(GameMode mode) { return sInstance ? sInstance->mCurMode->getMode() == mode: false; }
 
         void resetCollectedShines();
@@ -241,15 +241,15 @@ class Client {
         // --- Server Syncing Members --- 
         
         // array of shine IDs for checking if multiple shines have been collected in quick sucession, all moons within the players stage that match the ID will be deleted
-        sead::SafeArray<int, 128> curCollectedShines; 
+        sead::SafeArray<int, 128> curCollectedShines;
         int collectedShineCount = 0;
 
         int lastCollectedShine = -1;
 
-        PlayerInf lastPlayerInfPacket =
-            PlayerInf();  // Info struct for storing our currently logged player information
-
+        // Backups for our last player/game packets, used for example to re-send them for newly connected clients
+        PlayerInf lastPlayerInfPacket = PlayerInf();
         GameInf lastGameInfPacket = GameInf();
+        CostumeInf lastCostumeInfPacket = CostumeInf();
 
         Keyboard* mKeyboard = nullptr; // keyboard for setting server IP
 
@@ -257,6 +257,7 @@ class Client {
 
         int mServerPort = 0;
 
+        bool waitForGameInit = true;
         bool isFirstConnect = true;
 
         // --- Game Layouts ---

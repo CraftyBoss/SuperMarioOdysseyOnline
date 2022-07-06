@@ -72,6 +72,10 @@ namespace WipeTypes {
     }
 
     static constexpr const char *FindStr(Type type) {
-        return s_Strs.at(ToValue(type));
+        const s16 type_ = (s16)type;
+        if (0 <= type_ && type_ < s_Strs.size())
+            return s_Strs[type_];
+        else
+            return "";
     }
 }

@@ -81,7 +81,7 @@ StageSceneStateServerConfig::StageSceneStateServerConfig(const char *name, al::S
     mCurrentMenu = mMainOptions;
 }
 
-void StageSceneStateServerConfig::init() {    
+void StageSceneStateServerConfig::init() {
     initNerve(&nrvStageSceneStateServerConfigMainMenu, 0);
 }
 
@@ -196,10 +196,10 @@ void StageSceneStateServerConfig::exeRestartServer() {
         Client::restartConnection();
     }
 
-    //if (Client::isSocketActive()) {
+    if (Client::isSocketActive()) {
         al::startHitReaction(mCurrentMenu, "リセット", 0);
         al::setNerve(this, &nrvStageSceneStateServerConfigMainMenu);
-    //}
+    }
 }
 
 void StageSceneStateServerConfig::exeGamemodeConfig() {
@@ -210,7 +210,7 @@ void StageSceneStateServerConfig::exeGamemodeConfig() {
     }
 
     subMenuUpdate();
-    
+
     if (mIsDecideConfig && mCurrentList->isDecideEnd()) {
         if (mGamemodeConfigMenu->updateMenu(mCurrentList->mCurSelected)) {
             endSubMenu();
@@ -220,7 +220,7 @@ void StageSceneStateServerConfig::exeGamemodeConfig() {
 
 void StageSceneStateServerConfig::exeGamemodeSelect() {
     if (al::isFirstStep(this)) {
-        
+
         mCurrentList = mModeSelectList;
         mCurrentMenu = mModeSelect;
 
