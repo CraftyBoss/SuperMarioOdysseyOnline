@@ -1,4 +1,5 @@
 #include <cmath>
+#include <cstddef>
 #include "al/util/SensorUtil.h"
 #include "rs/util/SensorUtil.h"
 #include "server/Client.hpp"
@@ -217,18 +218,14 @@ void PuppetActor::makeActorAlive() {
         curModel->makeActorAlive();
     }
 
-    if (al::isDead(this)) {
-
-        // update name tag when puppet becomes active again
-        if (mInfo) {
-            if (mNameTag) {
-                mNameTag->setText(mInfo->puppetName);
-            }
+    // update name tag when puppet becomes active again
+    if (mInfo) {
+        if (mNameTag) {
+            mNameTag->setText(mInfo->puppetName);
         }
-
-        al::LiveActor::makeActorAlive();
-        
     }
+
+    al::LiveActor::makeActorAlive();
 
 }
 
@@ -240,11 +237,9 @@ void PuppetActor::makeActorDead() {
         curModel->makeActorDead();
     }
 
-    if (!al::isDead(this)) {
-        mPuppetCap->makeActorDead();  // make sure we kill the cap puppet along with regular puppet
-
-        al::LiveActor::makeActorDead();
-    }
+    mPuppetCap->makeActorDead();
+    
+    al::LiveActor::makeActorDead();
 }
 
 void PuppetActor::attackSensor(al::HitSensor* source, al::HitSensor* target) {
@@ -402,4 +397,11 @@ void PuppetActor::syncPose() {
     
     al::setTrans(curModel, al::getTrans(this));
 
+}
+
+void PuppetActor::emitJoinEffect() {
+
+    al::tryDeleteEffect(this, "Disappear"); // remove previous effect (if played previously)
+
+    al::tryEmitEffect(this, "Disappear", nullptr);
 }

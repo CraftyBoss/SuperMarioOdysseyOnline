@@ -82,13 +82,13 @@ Client::Client() {
 
     nn::account::GetLastOpenedUser(&mUserID);
 
-    mUserID.print();
-
     nn::account::Nickname playerName;
     nn::account::GetNickname(&playerName, mUserID);
     Logger::setLogName(playerName.name);  // set Debug logger name to player name
 
     mUsername = playerName.name;
+    
+    mUserID.print();
 
     Logger::log("Player Name: %s\n", playerName.name);
 
@@ -1064,7 +1064,7 @@ PuppetInfo* Client::findPuppetInfo(const nn::account::Uid& id, bool isFindAvaila
 
     PuppetInfo *firstAvailable = nullptr;
 
-    for (size_t i = 0; i < getMaxPlayerCount(); i++) {
+    for (size_t i = 0; i < getMaxPlayerCount() - 1; i++) {
 
         PuppetInfo* curInfo = mPuppetInfoArr[i];
 

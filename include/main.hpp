@@ -51,8 +51,6 @@
 #include "Keyboard.hpp"
 #include "server/DeltaTime.hpp"
 
-static const int playBufSize = 8;
-
 static bool isInGame = false;
 
 static bool debugMode = false;

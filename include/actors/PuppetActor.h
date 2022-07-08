@@ -66,27 +66,29 @@ class PuppetActor : public al::LiveActor {
 
         void debugTeleportCapture(const sead::Vector3f& pos, int index);
 
-        bool mIsDebug = false;
+        void emitJoinEffect();
 
-        float mClosingSpeed = 0;
+        bool mIsDebug = false;
         
-        NameTag *mNameTag = nullptr; // temp public 
     private:
         void changeModel(const char* newModel);
 
         bool setCapture(const char* captureName);
 
         void syncPose();
-        
+
         PlayerCostumeInfo *mCostumeInfo = nullptr;
         PuppetInfo *mInfo = nullptr;
         PuppetCapActor *mPuppetCap = nullptr;
         PlayerModelHolder *mModelHolder = nullptr;
         HackModelHolder* mCaptures = nullptr;
+        NameTag *mNameTag = nullptr;
 
         CaptureTypes::Type mCurCapture = CaptureTypes::Type::Unknown;
 
         bool mIs2DModel = false;
 
         bool mIsCaptureModel = false;
+
+        float mClosingSpeed = 0;
 };

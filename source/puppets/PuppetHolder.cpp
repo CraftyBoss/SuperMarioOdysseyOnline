@@ -2,6 +2,7 @@
 #include <math.h>
 #include "actors/PuppetActor.h"
 #include "al/util.hpp"
+#include "al/util/LiveActorUtil.h"
 #include "container/seadPtrArray.h"
 #include "heap/seadHeap.h"
 #include "heap/seadHeapMgr.h"
@@ -78,10 +79,14 @@ void PuppetHolder::update() {
 
         curInfo->isInSameStage = checkInfoIsInStage(curInfo);
 
-        if(curInfo->isInSameStage) {
+        if(curInfo->isInSameStage && al::isDead(curPuppet)) {
             curPuppet->makeActorAlive();
-        }else if(!curInfo->isInSameStage) {
+
+            curPuppet->emitJoinEffect();
+        }else if(!curInfo->isInSameStage && !al::isDead(curPuppet)) {
             curPuppet->makeActorDead();
+            
+            curPuppet->emitJoinEffect();
         }
     }
 }
