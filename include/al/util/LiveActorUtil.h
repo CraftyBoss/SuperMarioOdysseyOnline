@@ -29,7 +29,7 @@ namespace al {
     void startAction(LiveActor*, char const*);
     void startAction(IUseLayoutAction*, const char *, const char *);
     void startFreezeActionEnd(IUseLayoutAction *,char const*,char const*);
-    void startHitReaction(LiveActor*, char const*);
+    void startHitReaction(const LiveActor *, char const*);
     void invalidateClipping(const LiveActor *);
     void validateClipping(const LiveActor *);
     void setNerveAtActionEnd(LiveActor*, const al::Nerve*);

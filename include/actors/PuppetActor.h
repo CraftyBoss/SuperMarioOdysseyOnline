@@ -33,6 +33,9 @@ class PuppetActor : public al::LiveActor {
         virtual void movement(void) override;
         virtual void makeActorAlive(void) override;
         virtual void makeActorDead(void) override;
+        
+        virtual void attackSensor(al::HitSensor *, al::HitSensor *) override;
+        virtual bool receiveMsg(const al::SensorMsg *, al::HitSensor *, al::HitSensor *) override;
 
         void initOnline(PuppetInfo *pupInfo);
 

@@ -1,3 +1,6 @@
+#include <cmath>
+#include "al/util/SensorUtil.h"
+#include "rs/util/SensorUtil.h"
 #include "server/Client.hpp"
 #include "al/LiveActor/LiveActor.h"
 #include "al/layout/BalloonMessage.h"
@@ -31,7 +34,7 @@ void PuppetActor::init(al::ActorInitInfo const &initInfo) {
 
     mPuppetCap->init(initInfo);
 
-    al::initActorWithArchiveName(this, initInfo, "PlayerActorHakoniwa", nullptr);
+    al::initActorWithArchiveName(this, initInfo, "PuppetActor", nullptr);
 
     const char *bodyName = "Mario";
     const char *capName = "Mario";
@@ -241,6 +244,26 @@ void PuppetActor::makeActorDead() {
 
         al::LiveActor::makeActorDead();
     }
+}
+
+void PuppetActor::attackSensor(al::HitSensor* source, al::HitSensor* target) {
+    
+    if (!al::sendMsgPush(target, source)) {
+        rs::sendMsgPushToPlayer(target, source);
+    }
+
+}
+
+bool PuppetActor::receiveMsg(const al::SensorMsg* msg, al::HitSensor* source,
+                             al::HitSensor* target) {
+
+    if ((al::isMsgPlayerTrampleReflect(msg) || rs::isMsgPlayerAndCapObjHipDropReflectAll(msg)) && al::isSensorName(target, "Body"))
+    {
+        rs::requestHitReactionToAttacker(msg, target, source);
+        return true;
+    }
+
+    return false;
 }
 
 // this is more or less how nintendo does it with marios demo puppet

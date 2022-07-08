@@ -3,6 +3,7 @@
 #include <cstring>
 #include "al/actor/ActorSceneInfo.h"
 #include "al/layout/WindowConfirmWait.h"
+#include "al/util/ControllerUtil.h"
 #include "al/util/LiveActorUtil.h"
 #include "algorithms/PlayerAnims.h"
 #include "game/GameData/GameDataFunction.h"
@@ -219,7 +220,9 @@ bool Client::startConnection() {
 
     bool isNeedSave = false;
 
-    if (mServerIP.isEmpty()) {
+    bool isOverride = al::isPadHoldZL(-1);
+
+    if (mServerIP.isEmpty() || isOverride) {
         mKeyboard->setHeaderText(u"Save File does not contain an IP!");
         mKeyboard->setSubText(u"Please set a Server IP Below.");
         mServerIP = "0.0.0.0";
@@ -227,7 +230,7 @@ bool Client::startConnection() {
         isNeedSave = true;
     }
 
-    if (!mServerPort) {
+    if (!mServerPort || isOverride) {
         mKeyboard->setHeaderText(u"Save File does not contain a port!");
         mKeyboard->setSubText(u"Please set a Server Port Below.");
         mServerPort = 1027;
@@ -585,7 +588,7 @@ void Client::sendHackCapInfPacket(const HackCap* hackCap) {
         packet.mUserID = sInstance->mUserID;
         packet.capPos = al::getTrans(hackCap);
 
-        packet.isCapVisible = hackCap->isFlying();
+        packet.isCapVisible = isFlying;
 
         packet.capQuat.x = hackCap->mJointKeeper->mJointRot.x;
         packet.capQuat.y = hackCap->mJointKeeper->mJointRot.y;
@@ -1016,7 +1019,7 @@ void Client::disconnectPlayer(PlayerDC *packet) {
 
     PuppetInfo* curInfo = findPuppetInfo(packet->mUserID, false);
 
-    if (!curInfo) {
+    if (!curInfo || !curInfo->isConnected) {
         return;
     }
     
