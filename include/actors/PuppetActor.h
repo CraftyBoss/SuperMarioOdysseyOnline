@@ -35,7 +35,13 @@ class PuppetActor : public al::LiveActor {
         virtual void makeActorDead(void) override;
         
         virtual void attackSensor(al::HitSensor *, al::HitSensor *) override;
-        virtual bool receiveMsg(const al::SensorMsg *, al::HitSensor *, al::HitSensor *) override;
+        virtual bool receiveMsg(const al::SensorMsg*, al::HitSensor*, al::HitSensor*) override;
+
+        virtual const char* getName() const override {
+            if (mInfo)
+                return mInfo->puppetName;
+            return mActorName;
+        }
 
         void initOnline(PuppetInfo *pupInfo);
 
@@ -49,8 +55,6 @@ class PuppetActor : public al::LiveActor {
         bool isInCaptureList(const char *hackName);
 
         PuppetInfo* getInfo() { return mInfo; }
-
-        const char *getPuppetName() { return mInfo->puppetName; }
 
         bool addCapture(PuppetHackActor *capture, const char *hackType);
 

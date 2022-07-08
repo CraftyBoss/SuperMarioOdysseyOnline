@@ -210,7 +210,7 @@ void PuppetActor::control() {
 }
 
 void PuppetActor::makeActorAlive() {
-
+    
     al::LiveActor *curModel = getCurrentModel();
 
     if (al::isDead(curModel)) {
@@ -227,6 +227,7 @@ void PuppetActor::makeActorAlive() {
         }
 
         al::LiveActor::makeActorAlive();
+        
     }
 
 }

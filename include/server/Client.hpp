@@ -32,6 +32,7 @@
 #include "game/GameData/GameDataHolderWriter.h"
 #include "game/GameData/GameDataFunction.h"
 
+#include "heap/seadHeap.h"
 #include "layouts/HideAndSeekIcon.h"
 #include "rs/util.hpp"
 
@@ -76,10 +77,10 @@ struct UIDIndexNode {
 class HideAndSeekIcon;
 
 class Client {
-    public:
-        static Client *sInstance;
+    SEAD_SINGLETON_DISPOSER(Client)
 
-        Client(int bufferSize);
+    public:
+        Client();
 
         void init(al::LayoutInitInfo const &initInfo, GameDataHolderAccessor holder);
 
@@ -145,7 +146,7 @@ class Client {
 
         static GameModeConfigMenu* tryCreateModeMenu();
 
-        static int getMaxPlayerCount() { return sInstance ? sInstance->maxPuppets : 10;}
+        static int getMaxPlayerCount() { return sInstance ? sInstance->maxPuppets + 1 : 10;}
 
         static void toggleCurrentMode();
 
@@ -203,8 +204,6 @@ class Client {
 
         // public for debug purposes
         SocketClient *mSocket;
-
-        int maxPuppets;
 
     private:
         void updatePlayerInfo(PlayerInf *packet);
@@ -287,6 +286,8 @@ class Client {
 
         u8 mScenario = 0;
 
+        sead::Heap *mHeap = nullptr; // Heap that Client::sInstance was created in 
+
         // --- Mode Info ---
 
         GameModeBase* mCurMode = nullptr;
@@ -299,6 +300,8 @@ class Client {
 
         // --- Puppet Info ---
 
+        int maxPuppets = 9;  // default max player count is 10, so default max puppets will be 9
+        
         PuppetInfo *mPuppetInfoArr[MAXPUPINDEX];
 
         PuppetHolder *mPuppetHolder = nullptr;

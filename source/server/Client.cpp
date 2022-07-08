@@ -12,6 +12,9 @@
 #include "game/Player/PlayerActorHakoniwa.h"
 #include "game/SaveData/SaveDataAccessFunction.h"
 #include "game/StageScene/StageScene.h"
+#include "heap/seadDisposer.h"
+#include "heap/seadHeap.h"
+#include "heap/seadFrameHeap.h"
 #include "heap/seadHeapMgr.h"
 #include "helpers.hpp"
 #include "layouts/HideAndSeekIcon.h"
@@ -35,7 +38,7 @@
 #include "server/HideAndSeekConfigMenu.hpp"
 #include "server/HideAndSeekMode.hpp"
 
-Client* Client::sInstance;
+SEAD_SINGLETON_DISPOSER_IMPL(Client)
 
 typedef void (Client::*ClientThreadFunc)(void);
 
@@ -44,21 +47,21 @@ typedef void (Client::*ClientThreadFunc)(void);
  * 
  * @param bufferSize defines the maximum amount of puppets the client can handle
  */
-Client::Client(int bufferSize) {
+Client::Client() {
+
+    mHeap = sead::FrameHeap::create(0x100000, "ClientHeap", sead::HeapMgr::instance()->getCurrentHeap(), 8, sead::Heap::cHeapDirection_Forward, false);
+
+    sead::ScopedCurrentHeapSetter heapSetter(mHeap); // every new call after this will use ClientHeap instead of SequenceHeap
+
     this->mReadThread = new al::AsyncFunctorThread("ClientReadThread", al::FunctorV0M<Client*, ClientThreadFunc>(this, &Client::readFunc), 0, 0x10000, {0});
-    // this->recvThread = new al::AsyncFunctorThread("ClientRecvThread",
-    // al::FunctorV0M<typeof(this), typeof(&Client::recvFunc)>(this, &Client::recvFunc), 0, 0x10000,
-    // {0});
 
     mKeyboard = new Keyboard(nn::swkbd::GetRequiredStringBufferSize());
 
     mSocket = new SocketClient("SocketClient");
     
-    maxPuppets = bufferSize - 1;
-
     mPuppetHolder = new PuppetHolder(maxPuppets);
 
-    for (size_t i = 0; i < bufferSize + 1; i++)
+    for (size_t i = 0; i < maxPuppets; i++)
     {
         mPuppetInfoArr[i] = new PuppetInfo();
 
@@ -83,6 +86,7 @@ Client::Client(int bufferSize) {
 
     nn::account::Nickname playerName;
     nn::account::GetNickname(&playerName, mUserID);
+    Logger::setLogName(playerName.name);  // set Debug logger name to player name
 
     mUsername = playerName.name;
 
@@ -90,13 +94,8 @@ Client::Client(int bufferSize) {
 
     Logger::log("%s Build Number: %s\n", playerName.name, TOSTRING(BUILDVERSTR));
 
-    Logger::setLogName(playerName.name);  // set Debug logger name to player name
+    mServerMode = GameMode::HIDEANDSEEK;  // temp for testing
 
-    mServerMode = GameMode::HIDEANDSEEK; // temp for testing
-
-    if(!sInstance) {
-        sInstance = this;
-    }
 }
 
 /**
@@ -106,7 +105,7 @@ Client::Client(int bufferSize) {
  */
 void Client::init(al::LayoutInitInfo const &initInfo, GameDataHolderAccessor holder) {
 
-    mConnectionWait = new al::WindowConfirmWait("ServerWaitConnect", "WindowConfirmWait", initInfo);
+    mConnectionWait = new (mHeap) al::WindowConfirmWait("ServerWaitConnect", "WindowConfirmWait", initInfo);
 
     mConnectionWait->setTxtMessage(u"Connecting to Server.");
 
@@ -115,6 +114,7 @@ void Client::init(al::LayoutInitInfo const &initInfo, GameDataHolderAccessor hol
     mHolder = holder;
 
     StartThreads();
+
 }
 
 /**
@@ -352,7 +352,7 @@ void Client::readFunc() {
         waitForGameInit = false;
     }
 
-    // we can use the start of readFunc to display an al::WindowConfirmWait while the server
+    // we can use the start of readFunc to display an al::WindowConfirmWait while the client
     // connects
 
     mConnectionWait->appear();
@@ -1094,7 +1094,7 @@ void Client::setStageInfo(GameDataHolderAccessor holder) {
         sInstance->mStageName = GameDataFunction::getCurrentStageName(holder);
         sInstance->mScenario = holder.mData->mGameDataFile->getScenarioNo(); //holder.mData->mGameDataFile->getMainScenarioNoCurrent();
         
-        Client::sInstance->mPuppetHolder->setStageInfo(sInstance->mStageName.cstr(), sInstance->mScenario);
+        sInstance->mPuppetHolder->setStageInfo(sInstance->mStageName.cstr(), sInstance->mScenario);
     }
 }
 
@@ -1106,8 +1106,8 @@ void Client::setStageInfo(GameDataHolderAccessor holder) {
  * @return false 
  */
 bool Client::tryAddPuppet(PuppetActor *puppet) {
-    if(Client::sInstance) {
-        return Client::sInstance->mPuppetHolder->tryRegisterPuppet(puppet);
+    if(sInstance) {
+        return sInstance->mPuppetHolder->tryRegisterPuppet(puppet);
     }else {
         return false;
     }
@@ -1121,8 +1121,8 @@ bool Client::tryAddPuppet(PuppetActor *puppet) {
  * @return false 
  */
 bool Client::tryAddDebugPuppet(PuppetActor *puppet) {
-    if(Client::sInstance) {
-        return Client::sInstance->mPuppetHolder->tryRegisterDebugPuppet(puppet);
+    if(sInstance) {
+        return sInstance->mPuppetHolder->tryRegisterDebugPuppet(puppet);
     }else {
         return false;
     }
@@ -1135,8 +1135,8 @@ bool Client::tryAddDebugPuppet(PuppetActor *puppet) {
  * @return PuppetActor* 
  */
 PuppetActor *Client::getPuppet(int idx) {
-    if(Client::sInstance) {
-        return Client::sInstance->mPuppetHolder->getPuppetActor(idx);
+    if(sInstance) {
+        return sInstance->mPuppetHolder->getPuppetActor(idx);
     }else {
         return nullptr;
     }
@@ -1148,8 +1148,8 @@ PuppetActor *Client::getPuppet(int idx) {
  * @return PuppetInfo* 
  */
 PuppetInfo *Client::getLatestInfo() {
-    if(Client::sInstance) {
-        return Client::getPuppetInfo(Client::sInstance->mPuppetHolder->getSize() - 1);
+    if(sInstance) {
+        return Client::getPuppetInfo(sInstance->mPuppetHolder->getSize() - 1);
     }else {
         return nullptr;
     }
@@ -1162,9 +1162,9 @@ PuppetInfo *Client::getLatestInfo() {
  * @return PuppetInfo* 
  */
 PuppetInfo *Client::getPuppetInfo(int idx) {
-    if(Client::sInstance) {
+    if(sInstance) {
         // unsafe get
-        PuppetInfo *curInfo = Client::sInstance->mPuppetInfoArr[idx];
+        PuppetInfo *curInfo = sInstance->mPuppetInfoArr[idx];
 
         if (!curInfo) {
             Logger::log("Attempting to Access Puppet Out of Bounds! Value: %d\n", idx);
@@ -1317,8 +1317,8 @@ void Client::clearArrays() {
  * @return PuppetInfo* 
  */
 PuppetInfo *Client::getDebugPuppetInfo() {
-    if(Client::sInstance) {
-        return &Client::sInstance->mDebugPuppetInfo;
+    if(sInstance) {
+        return &sInstance->mDebugPuppetInfo;
     }else {
         return nullptr;
     }
@@ -1330,8 +1330,8 @@ PuppetInfo *Client::getDebugPuppetInfo() {
  * @return PuppetActor* 
  */
 PuppetActor *Client::getDebugPuppet() {
-    if(Client::sInstance) {
-        return Client::sInstance->mPuppetHolder->getDebugPuppet();
+    if(sInstance) {
+        return sInstance->mPuppetHolder->getDebugPuppet();
     }else {
         return nullptr;
     }

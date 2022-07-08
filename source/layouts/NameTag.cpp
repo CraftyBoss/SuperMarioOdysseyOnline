@@ -37,7 +37,7 @@ void NameTag::appear() {
         return;
     }
 
-    setText(mPuppet->getPuppetName());
+    setText(mPuppet->getName());
     
     al::startAction(this, "Appear", 0);
     LayoutActor::appear();
