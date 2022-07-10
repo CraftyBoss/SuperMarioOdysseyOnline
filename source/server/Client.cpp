@@ -30,7 +30,6 @@
 #include "packets/PlayerConnect.h"
 #include "packets/PlayerDC.h"
 #include "packets/TagInf.h"
-#include "prim/seadSafeString.h"
 #include "puppets/PuppetInfo.h"
 #include "sead/basis/seadRawPrint.h"
 #include "sead/math/seadQuat.h"
@@ -300,13 +299,13 @@ bool Client::openKeyboardIP() {
         sInstance->mServerIP.cstr(), [](nn::swkbd::KeyboardConfig& config) {
             config.keyboardMode = nn::swkbd::KeyboardMode::ModeNumeric;
             config.leftOptionalSymbolKey = '.';
-            config.textMaxLength = 15;
+            config.textMaxLength = MAX_HOSTNAME_LENGTH;
             config.textMinLength = 1;
             config.isUseUtf8 = true;
             config.inputFormMode = nn::swkbd::InputFormMode::OneLine;
         });
 
-    sead::FixedSafeString<0x10> prevIp = sInstance->mServerIP;
+    hostname prevIp = sInstance->mServerIP;
 
     while (true) {
         if (sInstance->mKeyboard->isThreadDone()) {

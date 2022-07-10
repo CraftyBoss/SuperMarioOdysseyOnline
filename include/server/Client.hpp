@@ -259,7 +259,7 @@ class Client {
 
         Keyboard* mKeyboard = nullptr; // keyboard for setting server IP
 
-        sead::FixedSafeString<0x10> mServerIP;
+        hostname mServerIP;
 
         int mServerPort = 0;
 
