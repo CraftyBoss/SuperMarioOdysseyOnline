@@ -66,6 +66,8 @@ nn::Result SocketClient::init(const char* ip, u16 port) {
 
     this->socket_log_state = SOCKET_LOG_CONNECTED;
 
+    Logger::log("Socket fd: %d\n", socket_log_socket);
+
     return result;
 
 }
@@ -126,7 +128,7 @@ bool SocketClient::RECV() {
 
         int fullSize = header->mPacketSize + sizeof(Packet);
 
-        if (header->mType != PacketType::UNKNOWN && fullSize <= MAXPACKSIZE && fullSize > 0) {
+        if (header->mType != PacketType::UNKNOWN && fullSize <= MAXPACKSIZE && fullSize > 0 && valread == sizeof(Packet)) {
 
             if (header->mType != PLAYERINF && header->mType != HACKCAPINF)
                 Logger::log("Received packet (from %02X%02X): %s\n",
@@ -163,6 +165,8 @@ bool SocketClient::RECV() {
                     free(packetBuf);
                 }
             }
+        } else {
+            Logger::log("Failed to aquire valid data! Packet Type: %d Full Packet Size %d valread size: %d", header->mType, fullSize, valread);
         }
         
         return true;
@@ -194,5 +198,11 @@ bool SocketClient::closeSocket() {
 
     Logger::log("Closing Socket.\n");
 
-    return SocketBase::closeSocket();
+    bool result = false;
+
+    if (!(result = SocketBase::closeSocket())) {
+        Logger::log("Failed to close socket!\n");
+    }
+
+    return result;
 }

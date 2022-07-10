@@ -59,7 +59,7 @@ s32 SocketBase::socket_read_char(char *out) {
     return valread;
 }
 
-s32 SocketBase::getSocket() {
+s32 SocketBase::getFd() {
     if(this->socket_log_state == SOCKET_LOG_CONNECTED) {
         return this->socket_log_socket;
     }else {
@@ -69,11 +69,9 @@ s32 SocketBase::getSocket() {
 
 bool SocketBase::closeSocket() {
 
-    nn::Result result = nn::socket::Close(this->socket_log_socket);
+    this->socket_log_state = SOCKET_LOG_DISCONNECTED; // probably not safe to assume socket will be closed
 
-    if (result.isSuccess()) {
-        this->socket_log_state = SOCKET_LOG_DISCONNECTED;
-    }
+    nn::Result result = nn::socket::Close(this->socket_log_socket);
 
     return result.isSuccess();
 }

@@ -30,6 +30,7 @@
 #include "packets/PlayerConnect.h"
 #include "packets/PlayerDC.h"
 #include "packets/TagInf.h"
+#include "prim/seadSafeString.h"
 #include "puppets/PuppetInfo.h"
 #include "sead/basis/seadRawPrint.h"
 #include "sead/math/seadQuat.h"
@@ -61,7 +62,7 @@ Client::Client() {
     
     mPuppetHolder = new PuppetHolder(maxPuppets);
 
-    for (size_t i = 0; i < maxPuppets; i++)
+    for (size_t i = 0; i < MAXPUPINDEX; i++)
     {
         mPuppetInfoArr[i] = new PuppetInfo();
 
@@ -69,8 +70,6 @@ Client::Client() {
     }
 
     strcpy(mDebugPuppetInfo.puppetName, "PuppetDebug");
-
-    puppetPlayerID.fill({0});
 
     mConnectCount = 0;
 
@@ -114,6 +113,8 @@ void Client::init(al::LayoutInitInfo const &initInfo, GameDataHolderAccessor hol
     mHolder = holder;
 
     StartThreads();
+
+    Logger::log("Remaining Heap Size: %d\n", mHeap->getFreeSize());
 
 }
 
@@ -190,8 +191,6 @@ void Client::restartConnection() {
         Logger::log("Sucessfully Closed Socket.\n");
     }
 
-    sInstance->puppetPlayerID.fill({0,0});
-
     sInstance->mConnectCount = 0;
 
     sInstance->mIsConnectionActive = sInstance->mSocket->init(sInstance->mServerIP.cstr(), sInstance->mServerPort).isSuccess();
@@ -203,7 +202,14 @@ void Client::restartConnection() {
         PlayerConnect initPacket;
         initPacket.mUserID = sInstance->mUserID;
         strcpy(initPacket.clientName, sInstance->mUsername.cstr());
-        initPacket.conType = ConnectionTypes::RECONNECT;
+
+        if (sInstance->isFirstConnect) {
+            initPacket.conType = ConnectionTypes::INIT;
+            sInstance->isFirstConnect = false;
+        } else {
+            initPacket.conType = ConnectionTypes::RECONNECT;
+        }
+
         sInstance->mSocket->SEND(&initPacket);
 
     } else {
@@ -280,50 +286,58 @@ bool Client::startConnection() {
 
 /**
  * @brief Opens up OS's software keyboard in order to change the currently used server IP.
- * 
+ * @returns whether or not a new IP has been defined and needs to be saved.
  */
-void Client::openKeyboardIP() {
+bool Client::openKeyboardIP() {
 
     if (!sInstance) {
         Logger::log("Static Instance is null!\n");
-        return;
+        return false;
     }
 
     // opens swkbd with the initial text set to the last saved IP
-    sInstance->mKeyboard->openKeyboard(sInstance->mServerIP.cstr(), [] (nn::swkbd::KeyboardConfig& config) {
-        config.keyboardMode = nn::swkbd::KeyboardMode::ModeNumeric;
-        config.leftOptionalSymbolKey = '.';
-        config.textMaxLength = 15;
-        config.textMinLength = 1;
-        config.isUseUtf8 = true;
-        config.inputFormMode = nn::swkbd::InputFormMode::OneLine;
-    });
+    sInstance->mKeyboard->openKeyboard(
+        sInstance->mServerIP.cstr(), [](nn::swkbd::KeyboardConfig& config) {
+            config.keyboardMode = nn::swkbd::KeyboardMode::ModeNumeric;
+            config.leftOptionalSymbolKey = '.';
+            config.textMaxLength = 15;
+            config.textMinLength = 1;
+            config.isUseUtf8 = true;
+            config.inputFormMode = nn::swkbd::InputFormMode::OneLine;
+        });
+
+    sead::FixedSafeString<0x10> prevIp = sInstance->mServerIP;
 
     while (true) {
         if (sInstance->mKeyboard->isThreadDone()) {
-            sInstance->mServerIP = sInstance->mKeyboard->getResult();
+            if(!sInstance->mKeyboard->isKeyboardCancelled())
+                sInstance->mServerIP = sInstance->mKeyboard->getResult();
             break;
         }
         nn::os::YieldThread(); // allow other threads to run
     }
+
+    sInstance->isFirstConnect = prevIp != sInstance->mServerIP;
+
+    return sInstance->isFirstConnect;
 }
 
 /**
  * @brief Opens up OS's software keyboard in order to change the currently used server port.
- * 
+ * @returns whether or not a new port has been defined and needs to be saved.
  */
-void Client::openKeyboardPort() {
+bool Client::openKeyboardPort() {
 
     if (!sInstance) {
         Logger::log("Static Instance is null!\n");
-        return;
+        return false;
     }
 
     // opens swkbd with the initial text set to the last saved port
     char buf[6];
     nn::util::SNPrintf(buf, 6, "%u", sInstance->mServerPort);
-    
-    sInstance->mKeyboard->openKeyboard(buf, [] (nn::swkbd::KeyboardConfig& config) {
+
+    sInstance->mKeyboard->openKeyboard(buf, [](nn::swkbd::KeyboardConfig& config) {
         config.keyboardMode = nn::swkbd::KeyboardMode::ModeNumeric;
         config.textMaxLength = 5;
         config.textMinLength = 2;
@@ -331,13 +345,20 @@ void Client::openKeyboardPort() {
         config.inputFormMode = nn::swkbd::InputFormMode::OneLine;
     });
 
+    int prevPort = sInstance->mServerPort;
+
     while (true) {
         if (sInstance->mKeyboard->isThreadDone()) {
-            sInstance->mServerPort = ::atoi(sInstance->mKeyboard->getResult());
+            if(!sInstance->mKeyboard->isKeyboardCancelled())
+                sInstance->mServerPort = ::atoi(sInstance->mKeyboard->getResult());
             break;
         }
         nn::os::YieldThread(); // allow other threads to run
     }
+
+    sInstance->isFirstConnect = prevPort != sInstance->mServerPort;
+
+    return sInstance->isFirstConnect;
 }
 
 /**
@@ -380,6 +401,7 @@ void Client::readFunc() {
 
     if (isFirstConnect) {
         initPacket.conType = ConnectionTypes::INIT;
+        isFirstConnect = false;
     } else {
         initPacket.conType = ConnectionTypes::RECONNECT;
     }
@@ -389,8 +411,6 @@ void Client::readFunc() {
     nn::os::SleepThread(nn::TimeSpan::FromNanoSeconds(500000000)); // sleep for 0.5 seconds to let connection layout fully show (probably should find a better way to do this)
 
     mConnectionWait->tryEnd();
-
-    isFirstConnect = false;
 
     while(mIsConnectionActive) {
 
@@ -411,8 +431,16 @@ void Client::readFunc() {
 
                 Logger::log("Connected!\n");
 
-                initPacket.conType = ConnectionTypes::RECONNECT;
-                mSocket->SEND(&initPacket);  // re-send init packet as reconnect packet
+                if (isFirstConnect) {
+                    initPacket.conType =
+                        ConnectionTypes::INIT;  // if we've changed the IP/Port since last connect,
+                                                // send init instead of reconnect
+                    isFirstConnect = false;
+                } else {
+                    initPacket.conType = ConnectionTypes::RECONNECT;
+                }
+
+                mSocket->SEND(&initPacket);
                 mConnectionWait->tryEnd();
                 continue;
             } else {
@@ -421,7 +449,6 @@ void Client::readFunc() {
 
             nn::os::YieldThread(); // if we're currently waiting on the socket to be initialized, wait until it is
             nn::os::SleepThread(nn::TimeSpan::FromSeconds(5));
-            
         }
 
         if(mSocket->RECV()) { // will block until a packet has been recieved, or socket disconnected
@@ -1510,4 +1537,40 @@ GameModeConfigMenu* Client::tryCreateModeMenu() {
     default:
         return nullptr;
     }
+}
+
+
+
+void Client::showConnectError(const char16_t* msg) {
+    if (!sInstance)
+        return;
+
+    sInstance->mConnectionWait->setTxtMessageConfirm(msg);
+
+    al::hidePane(sInstance->mConnectionWait, "Page01");  // hide A button prompt
+
+    if (!sInstance->mConnectionWait->mIsAlive) {
+        sInstance->mConnectionWait->appear();
+
+        sInstance->mConnectionWait->playLoop();
+    }
+
+    al::startAction(sInstance->mConnectionWait, "Confirm", "State");
+}
+
+void Client::showConnect() {
+    if (!sInstance)
+        return;
+    
+    sInstance->mConnectionWait->appear();
+
+    sInstance->mConnectionWait->playLoop();
+    
+}
+
+void Client::hideConnect() {
+    if (!sInstance)
+        return;
+
+    sInstance->mConnectionWait->tryEnd();
 }

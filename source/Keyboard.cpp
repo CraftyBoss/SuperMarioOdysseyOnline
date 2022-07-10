@@ -15,14 +15,10 @@ Keyboard::Keyboard(ulong strSize) : mResultString(strSize) {
 
     mCustomizeDicSize = 0x400;
     mCustomizeDicBuf = (char*)malloc(mCustomizeDicSize);
-
-    mIsDoneKeyboard = false;
     
 }
 
 void Keyboard::keyboardThread() {
-
-    mIsDoneKeyboard = false;
     
     nn::swkbd::ShowKeyboardArg keyboardArg = nn::swkbd::ShowKeyboardArg();
     nn::swkbd::MakePreset(&keyboardArg.keyboardConfig, nn::swkbd::Preset::Default);
@@ -44,10 +40,9 @@ void Keyboard::keyboardThread() {
         nn::swkbd::SetInitialTextUtf8(&keyboardArg, mInitialText.cstr());
     }
 
-    nn::swkbd::ShowKeyboard(&mResultString, keyboardArg);
-
-    mIsDoneKeyboard = true;
-
+    mIsCancelled =
+        nn::swkbd::ShowKeyboard(&mResultString, keyboardArg) == 671;  // no idea what 671 could be
+    
 }
 
 void Keyboard::openKeyboard(const char* initialText, KeyboardSetup setupFunc) {

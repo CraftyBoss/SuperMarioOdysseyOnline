@@ -170,10 +170,15 @@ void StageSceneStateServerConfig::exeOpenKeyboardIP() {
 
         Client::getKeyboard()->setHeaderText(u"Set a Server IP Below.");
         Client::getKeyboard()->setSubText(u"");
-        Client::openKeyboardIP();
-        // anything that happens after this will be ran after the keyboard closes
+
+        bool isSave = Client::openKeyboardIP(); // anything that happens after this will be ran after the keyboard closes
+        
         al::startHitReaction(mCurrentMenu, "リセット", 0);
-        al::setNerve(this, &nrvStageSceneStateServerConfigSaveData);
+
+        if(isSave) 
+            al::setNerve(this, &nrvStageSceneStateServerConfigSaveData);
+        else
+            al::setNerve(this, &nrvStageSceneStateServerConfigMainMenu);
     }
 }
 
@@ -184,21 +189,36 @@ void StageSceneStateServerConfig::exeOpenKeyboardPort() {
 
         Client::getKeyboard()->setHeaderText(u"Set a Server Port Below.");
         Client::getKeyboard()->setSubText(u"");
-        Client::openKeyboardPort();
-        // anything that happens after this will be ran after the keyboard closes
-        al::setNerve(this, &nrvStageSceneStateServerConfigSaveData);
+
+        bool isSave = Client::openKeyboardPort(); // anything that happens after this will be ran after the keyboard closes
+
+        al::startHitReaction(mCurrentMenu, "リセット", 0);
+        
+        if(isSave) 
+            al::setNerve(this, &nrvStageSceneStateServerConfigSaveData);
+        else
+            al::setNerve(this, &nrvStageSceneStateServerConfigMainMenu);
     }
 }
 
 void StageSceneStateServerConfig::exeRestartServer() {
     if (al::isFirstStep(this)) {
         mCurrentList->deactivate();
+
+        Client::showConnect();
+
         Client::restartConnection();
     }
 
     if (Client::isSocketActive()) {
+
+        Client::hideConnect();
+
         al::startHitReaction(mCurrentMenu, "リセット", 0);
+        
         al::setNerve(this, &nrvStageSceneStateServerConfigMainMenu);
+    } else {
+        al::setNerve(this, &nrvStageSceneStateServerConfigConnectError);
     }
 }
 
@@ -234,6 +254,30 @@ void StageSceneStateServerConfig::exeGamemodeSelect() {
         Logger::log("Setting Server Mode to: %d\n", mCurrentList->mCurSelected);
         Client::setServerMode(static_cast<GameMode>(mCurrentList->mCurSelected));
         endSubMenu();
+    }
+}
+
+void StageSceneStateServerConfig::exeConnectError() {
+    if (al::isFirstStep(this)) {
+        Client::showConnectError(u"Failed to Reconnect!");
+    }
+
+    if (al::isGreaterEqualStep(this, 60)) { // close after 1 second
+        Client::hideConnect();
+        al::startHitReaction(mCurrentMenu, "リセット", 0);
+        al::setNerve(this, &nrvStageSceneStateServerConfigMainMenu);
+    }
+}
+
+void StageSceneStateServerConfig::exeSaveData() {
+
+    if (al::isFirstStep(this)) {
+        SaveDataAccessFunction::startSaveDataWrite(mGameDataHolder);
+    }
+
+    if (SaveDataAccessFunction::updateSaveDataAccess(mGameDataHolder, false)) {
+        al::startHitReaction(mCurrentMenu, "リセット", 0);
+        al::setNerve(this, &nrvStageSceneStateServerConfigMainMenu);
     }
 }
 
@@ -291,17 +335,6 @@ void StageSceneStateServerConfig::subMenuUpdate() {
     }
 }
 
-void StageSceneStateServerConfig::exeSaveData() {
-
-    if (al::isFirstStep(this)) {
-        SaveDataAccessFunction::startSaveDataWrite(mGameDataHolder);
-    }
-
-    if (SaveDataAccessFunction::updateSaveDataAccess(mGameDataHolder, false)) {
-        al::startHitReaction(mCurrentMenu, "リセット", 0);
-        al::setNerve(this, &nrvStageSceneStateServerConfigMainMenu);
-    }
-}
 
 namespace {
 NERVE_IMPL(StageSceneStateServerConfig, MainMenu)
@@ -311,4 +344,5 @@ NERVE_IMPL(StageSceneStateServerConfig, RestartServer)
 NERVE_IMPL(StageSceneStateServerConfig, GamemodeConfig)
 NERVE_IMPL(StageSceneStateServerConfig, GamemodeSelect)
 NERVE_IMPL(StageSceneStateServerConfig, SaveData)
+NERVE_IMPL(StageSceneStateServerConfig, ConnectError)
 }

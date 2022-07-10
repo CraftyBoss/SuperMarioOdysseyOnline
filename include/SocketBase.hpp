@@ -16,7 +16,7 @@ class SocketBase {
 
         const char *getStateChar();
         u8 getLogState();
-        s32 getSocket();
+        s32 getFd();
 
         void set_sock_flags(int flags);
 

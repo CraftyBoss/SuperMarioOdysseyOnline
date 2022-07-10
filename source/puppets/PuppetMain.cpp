@@ -66,7 +66,7 @@ void initPuppetActors(al::Scene *scene, al::ActorInitInfo const &rootInfo, char 
         }
         
         // create a debug puppet for testing purposes
-        createPuppetActorFromFactory(rootInfo, playerPlacement, true);
+        // createPuppetActorFromFactory(rootInfo, playerPlacement, true);
     }
 
     al::initPlacementObjectMap(scene, rootInfo, listName); // run init for ObjectList after we init our puppet actors 
