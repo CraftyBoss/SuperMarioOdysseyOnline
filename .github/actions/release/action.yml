@@ -1,0 +1,36 @@
+name: Create release
+
+
+inputs:
+  tag:
+    description : 'Version tag'
+    required    : true
+  GITHUB_TOKEN:
+    description : 'Secret GitHub token required to create the release'
+    required    : true
+
+
+outputs:
+  id:
+    value: ${{ steps.release.outputs.id }}
+  html_url:
+    value: ${{ steps.release.outputs.html_url }}
+  upload_url:
+    value: ${{ steps.release.outputs.upload_url }}
+
+
+runs:
+  using: composite
+  steps:
+  -
+    name : Create release
+    id   : release
+    uses : actions/create-release@v1
+    env:
+      GITHUB_TOKEN: ${{ inputs.GITHUB_TOKEN }}
+    with:
+      tag_name     : ${{ inputs.tag }}
+      release_name : Release ${{ inputs.tag }}
+      body         : ''
+      draft        : true
+      prerelease   : false
