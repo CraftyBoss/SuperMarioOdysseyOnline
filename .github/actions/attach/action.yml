@@ -1,0 +1,40 @@
+name: Attach build artifacts to release
+
+
+inputs:
+  filename:
+    description : 'Filename of the build artifact'
+    required    : true
+  upload_url:
+    description : 'Upload URL of the release'
+    required    : true
+  GITHUB_TOKEN:
+    description : 'Secret GitHub token required for uploading to the release'
+    required    : true
+
+
+runs:
+  using: composite
+  steps:
+  -
+    name : Download artifacts
+    uses : actions/download-artifact@v3
+    with:
+      name : ${{ inputs.filename }}
+      path : ./starlight_patch_100/
+  -
+    name  : Zip artifacts
+    shell : bash
+    run: |
+      cd  ./starlight_patch_100/
+      zip  -rmT9  ${{ inputs.filename }}.zip  ./*
+  -
+    name : Attach to release
+    uses : actions/upload-release-asset@v1
+    env:
+      GITHUB_TOKEN: ${{ inputs.GITHUB_TOKEN }}
+    with:
+      upload_url         : ${{ inputs.upload_url }}
+      asset_path         : ./starlight_patch_100/${{ inputs.filename }}.zip
+      asset_name         : ${{ inputs.filename }}.zip
+      asset_content_type : application/zip

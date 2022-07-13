@@ -1,0 +1,47 @@
+name: Release
+
+
+on:
+  push:
+    tags:
+    - 'v[0-9]+.[0-9]+.[0-9]+'
+
+
+jobs:
+
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      filename: ${{ steps.build.outputs.filename }}
+    steps:
+    -
+      name : Checkout
+      uses : actions/checkout@v3
+    -
+      name : Build artifacts
+      id   : build
+      uses : ./.github/actions/build
+      with:
+        tag : ${{ github.ref_name }}
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+    -
+      name : Checkout
+      uses : actions/checkout@v3
+    -
+      name : Create release
+      id   : release
+      uses : ./.github/actions/release
+      with:
+        tag          : ${{ github.ref_name }}
+        GITHUB_TOKEN : ${{ secrets.GITHUB_TOKEN }}
+    -
+      name : Attach build artifacts to release
+      uses : ./.github/actions/attach
+      with:
+        filename     : ${{ needs.build.outputs.filename }}
+        upload_url   : ${{ steps.release.outputs.upload_url }}
+        GITHUB_TOKEN : ${{ secrets.GITHUB_TOKEN }}

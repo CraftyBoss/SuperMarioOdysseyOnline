@@ -1,0 +1,61 @@
+name: Build artifacts
+
+
+inputs:
+  tag:
+    description : 'version tag'
+    required    : false
+    default     : ''
+
+
+outputs:
+  filename:
+    description : 'Filename for the build artifacts'
+    value       : ${{ steps.env.outputs.filename }}
+
+
+runs:
+  using: composite
+  steps:
+  -
+    name  : Environment
+    id    : env
+    shell : bash
+    run: |
+      VERS=${{ inputs.tag }}
+      echo "::set-output name=version::${VERS:1}"
+      echo "::set-output name=filename::SMO_Online${{ (inputs.tag != '' && format('_{0}', inputs.tag)) || '' }}"
+  -
+    name : Set up Docker Buildx
+    uses : docker/setup-buildx-action@v2
+  -
+    name : Build environment
+    uses : docker/build-push-action@v3
+    with:
+      pull       : true
+      push       : false
+      load       : true
+      context    : .
+      file       : ./Dockerfile
+      tags       : smoo-build-env
+      platforms  : linux/amd64
+      cache-from : type=gha,scope=smoo-build-env
+      cache-to   : type=gha,scope=smoo-build-env,mode=max
+  -
+    name  : Build mod
+    shell : bash
+    run: |
+      docker  run  --rm     \
+        -u `id -u`:`id -g`  \
+        -v "/$PWD/":/app/   \
+        ${{ (steps.env.outputs.version != '' && format('-e BUILDVER={0}', steps.env.outputs.version)) || '' }}  \
+        smoo-build-env      \
+      ;
+      cp  -r  ./romfs/  ./starlight_patch_100/atmosphere/contents/0100000000010000/.
+  -
+    name : Upload artifacts
+    uses : actions/upload-artifact@v3
+    with:
+      name              : ${{ steps.env.outputs.filename }}
+      path              : ./starlight_patch_100/
+      if-no-files-found : error
