@@ -297,8 +297,7 @@ bool Client::openKeyboardIP() {
     // opens swkbd with the initial text set to the last saved IP
     sInstance->mKeyboard->openKeyboard(
         sInstance->mServerIP.cstr(), [](nn::swkbd::KeyboardConfig& config) {
-            config.keyboardMode = nn::swkbd::KeyboardMode::ModeNumeric;
-            config.leftOptionalSymbolKey = '.';
+            config.keyboardMode = nn::swkbd::KeyboardMode::ModeASCII;
             config.textMaxLength = MAX_HOSTNAME_LENGTH;
             config.textMinLength = 1;
             config.isUseUtf8 = true;
