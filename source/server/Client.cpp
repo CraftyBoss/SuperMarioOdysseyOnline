@@ -230,7 +230,7 @@ bool Client::startConnection() {
     if (mServerIP.isEmpty() || isOverride) {
         mKeyboard->setHeaderText(u"Save File does not contain an IP!");
         mKeyboard->setSubText(u"Please set a Server IP Below.");
-        mServerIP = "0.0.0.0";
+        mServerIP = "127.0.0.1";
         Client::openKeyboardIP();
         isNeedSave = true;
     }
