@@ -17,6 +17,15 @@ struct sockaddr
     u8 _8[8];           // 8
 };
 
+struct hostent
+{
+    char*   h_name;
+    char**  h_aliases;
+    int     h_addrtype;
+    int     h_length;
+    char**  h_addr_list;
+};
+
 
 namespace nn { namespace socket {
 
@@ -33,6 +42,8 @@ s32 Recv(s32 socket, void* out, ulong outLen, s32 flags);
 
 u16 InetHtons(u16 val);
 s32 InetAton(const char* addressStr, in_addr* addressOut);
+
+struct hostent* GetHostByName(const char* name);
 
 u32 GetLastErrno();
 

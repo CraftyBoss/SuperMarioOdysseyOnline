@@ -5,6 +5,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#include "sead/prim/seadSafeString.h"
 
 typedef unsigned char       u8;
 typedef unsigned short      u16;
@@ -40,6 +41,9 @@ typedef unsigned short    undefined2;
 typedef unsigned int    undefined3;
 typedef unsigned int    undefined4;
 typedef unsigned long    undefined8;
+
+const u8 MAX_HOSTNAME_LENGTH = 50;
+typedef sead::FixedSafeString<MAX_HOSTNAME_LENGTH + 1> hostname;
 
 enum SocketLogState {
     SOCKET_LOG_UNINITIALIZED = 0,

@@ -7,7 +7,6 @@
 #include "nn/swkbd/swkbd.h"
 
 #include "logger.hpp"
-#include "sead/prim/seadSafeString.h"
 
 typedef void (*KeyboardSetup)(nn::swkbd::KeyboardConfig&);
 
@@ -37,7 +36,7 @@ class Keyboard {
         al::AsyncFunctorThread* mThread;
         nn::swkbd::String mResultString;
 
-        sead::FixedSafeString<0x10> mInitialText;
+        hostname mInitialText;
         KeyboardSetup mSetupFunc;
 
         const char16_t *mHeaderText = u"Enter Server IP Here!";
