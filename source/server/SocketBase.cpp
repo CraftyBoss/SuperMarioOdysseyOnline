@@ -7,7 +7,7 @@ SocketBase::SocketBase(const char *name)
 {
     strcpy(this->sockName, name);
 
-    this->sock_flags = 0;
+    this->sock_flags = 0x80;
 }
 
 const char *SocketBase::getStateChar() {
