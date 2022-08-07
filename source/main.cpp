@@ -21,7 +21,8 @@
 #include "logger.hpp"
 #include "rs/util.hpp"
 #include "server/gamemode/GameModeBase.hpp"
-#include "server/HideAndSeekMode.hpp"
+#include "server/hns/HideAndSeekMode.hpp"
+#include "server/gamemode/GameModeManager.hpp"
 
 static int pInfSendTimer = 0;
 static int gameInfSendTimer = 0;
@@ -252,10 +253,11 @@ void stageInitHook(al::ActorInitInfo *info, StageScene *curScene, al::PlacementI
 
     Client::setSceneInfo(*info, curScene);
 
-    if (Client::getServerMode() != NONE) {
+    if (GameModeManager::instance()->getGameMode() != NONE) {
         GameModeInitInfo initModeInfo(info, curScene);
+        initModeInfo.initServerInfo(GameModeManager::instance()->getGameMode(), Client::getPuppetHolder());
 
-        Client::initMode(initModeInfo);
+        GameModeManager::instance()->initScene(initModeInfo);
     }
 
     Client::sendGameInfPacket(info->mActorSceneInfo.mSceneObjHolder);
@@ -278,6 +280,7 @@ ulong constructHook() {  // hook for constructing anything we need to globally b
               initInfo));  // Save our scenes init info to a gloabl ptr so we can access it later
 
     Client::createInstance(al::getCurrentHeap());
+    GameModeManager::createInstance(al::getCurrentHeap()); // Create the GameModeManager on the current al heap
 
     return 0x20;
 }
@@ -303,13 +306,9 @@ bool hakoniwaSequenceHook(HakoniwaSequence* sequence) {
     al::PlayerHolder *pHolder = al::getScenePlayerHolder(stageScene);
     PlayerActorHakoniwa* p1 = (PlayerActorHakoniwa*)al::tryGetPlayerActor(pHolder, 0);
 
-    if (isFirstStep) {
-        Client::tryRestartCurrentMode();
-    }
-
     isInGame = !stageScene->isPause();
 
-    Client::setGameActive(!stageScene->isPause());
+    GameModeManager::instance()->setPaused(stageScene->isPause());
     Client::setStageInfo(stageScene->mHolder);
 
     Client::updateStates();
@@ -345,7 +344,7 @@ bool hakoniwaSequenceHook(HakoniwaSequence* sequence) {
         }
 
     } else if (al::isPadHoldL(-1)) {
-        if (al::isPadTriggerLeft(-1)) Client::toggleCurrentMode();
+        if (al::isPadTriggerLeft(-1)) GameModeManager::instance()->toggleActive();
         if (al::isPadTriggerRight(-1)) {
             if (debugMode) {
                 PuppetInfo *debugPuppet = Client::getDebugPuppetInfo();

@@ -1,4 +1,4 @@
-#include "server/HideAndSeekMode.hpp"
+#include "server/hns/HideAndSeekMode.hpp"
 #include <cmath>
 #include "al/async/FunctorV0M.hpp"
 #include "al/util.hpp"
@@ -7,15 +7,19 @@
 #include "game/Layouts/CoinCounter.h"
 #include "game/Layouts/MapMini.h"
 #include "game/Player/PlayerActorHakoniwa.h"
+#include "heap/seadHeapMgr.h"
 #include "layouts/HideAndSeekIcon.h"
 #include "logger.hpp"
 #include "rs/util.hpp"
 #include "server/gamemode/GameModeBase.hpp"
 #include "server/Client.hpp"
 #include "server/gamemode/GameModeTimer.hpp"
+#include <heap/seadHeap.h>
+#include "server/gamemode/GameModeManager.hpp"
+#include "server/gamemode/GameModeFactory.hpp"
 
 #include "basis/seadNew.h"
-#include "server/HideAndSeekConfigMenu.hpp"
+#include "server/hns/HideAndSeekConfigMenu.hpp"
 
 HideAndSeekMode::HideAndSeekMode(const char* name) : GameModeBase(name) {}
 
@@ -25,17 +29,21 @@ void HideAndSeekMode::init(const GameModeInitInfo& info) {
     mCurScene = (StageScene*)info.mScene;
     mPuppetHolder = info.mPuppetHolder;
 
-    GameModeInfoBase* curGameInfo = Client::getModeInfo();
+    GameModeInfoBase* curGameInfo = GameModeManager::instance()->getInfo<HideAndSeekInfo>();
 
+    sead::ScopedCurrentHeapSetter heapSetter(GameModeManager::instance()->getHeap());
+
+    if (curGameInfo) Logger::log("Gamemode info found: %s %s\n", GameModeFactory::getModeString(curGameInfo->mMode), GameModeFactory::getModeString(info.mMode));
+    else Logger::log("No gamemode info found\n");
     if (curGameInfo && curGameInfo->mMode == mMode) {
         mInfo = (HideAndSeekInfo*)curGameInfo;
         mModeTimer = new GameModeTimer(mInfo->mHidingTime);
+        Logger::log("Reinitialized timer with time %d:%.2d\n", mInfo->mHidingTime.mMinutes, mInfo->mHidingTime.mSeconds);
     } else {
-        sead::system::DeleteImpl(
-            curGameInfo);  // attempt to destory previous info before creating new one
+        if (curGameInfo) delete curGameInfo;  // attempt to destory previous info before creating new one
         
-        mInfo = createModeInfo<HideAndSeekInfo>();
-        Client::setModeInfo(mInfo);
+        mInfo = GameModeManager::instance()->createModeInfo<HideAndSeekInfo>();
+        
         mModeTimer = new GameModeTimer();
     }
 
@@ -48,7 +56,6 @@ void HideAndSeekMode::init(const GameModeInitInfo& info) {
 }
 
 void HideAndSeekMode::begin() {
-
     mModeLayout->appear();
 
     mIsFirstFrame = true;
@@ -118,9 +125,14 @@ void HideAndSeekMode::update() {
         if (mInvulnTime >= 5) {  
 
             if (mainPlayer) {
-                for (size_t i = 0; i < mPuppetHolder->getSize(); i++)
+                for (int i = 0; i < mPuppetHolder->getSize(); i++)
                 {
                     PuppetInfo *curInfo = Client::getPuppetInfo(i);
+
+                    if (!curInfo) {
+                        Logger::log("Checking %d, hit bounds %d-%d\n", i, mPuppetHolder->getSize(), Client::getMaxPlayerCount());
+                        break;
+                    }
 
                     if(curInfo->isConnected && curInfo->isInSameStage && curInfo->isIt) { 
 
