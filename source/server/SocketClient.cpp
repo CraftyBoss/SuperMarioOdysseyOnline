@@ -84,7 +84,7 @@ bool SocketClient::SEND(Packet *packet) {
     if (packet->mType != PLAYERINF && packet->mType != HACKCAPINF)
         Logger::log("Sending packet: %s\n", packetNames[packet->mType]);
 
-    if ((valread = nn::socket::Send(this->socket_log_socket, buffer, packet->mPacketSize + sizeof(Packet), this->sock_flags) > 0)) {
+    if ((valread = nn::socket::Send(this->socket_log_socket, buffer, packet->mPacketSize + sizeof(Packet), 0) > 0)) {
         return true;
     } else {
         Logger::log("Failed to Fully Send Packet! Result: %d Type: %s Packet Size: %d\n", valread, packetNames[packet->mType], packet->mPacketSize);
@@ -117,9 +117,13 @@ bool SocketClient::RECV() {
         if(result > 0) {
             valread += result;
         } else {
-            Logger::log("Header Read Failed! Value: %d Total Read: %d\n", result, valread);
-            this->closeSocket();
-            return false;
+            if(this->socket_errno==11){
+                return true;
+            } else {
+                Logger::log("Header Read Failed! Value: %d Total Read: %d\n", result, valread);
+                this->closeSocket();
+                return false;
+            }
         }
     }
 

@@ -250,30 +250,34 @@ bool Client::startConnection() {
 
         Logger::log("Sucessful Connection. Waiting to recieve init packet.\n");
 
+        bool waitingForInitPacket = true;
         // wait for client init packet
-        while (true) {
+        while (waitingForInitPacket) {
             if (mSocket->RECV()) {
-                Packet* curPacket = mSocket->mPacketQueue.popFront();
+                if(!mSocket->mPacketQueue.isEmpty()){
 
-                if (curPacket->mType == PacketType::CLIENTINIT) {
-                    InitPacket* initPacket = (InitPacket*)curPacket;
+                    Packet* curPacket = mSocket->mPacketQueue.popFront();
 
-                    Logger::log("Server Max Player Size: %d\n", initPacket->maxPlayers);
+                    if (curPacket->mType == PacketType::CLIENTINIT) {
+                        InitPacket* initPacket = (InitPacket*)curPacket;
 
-                    maxPuppets = initPacket->maxPlayers - 1;
-                } else {
-                    Logger::log("First Packet was not Init!\n");
-                    mIsConnectionActive = false;
+                        Logger::log("Server Max Player Size: %d\n", initPacket->maxPlayers);
+
+                        maxPuppets = initPacket->maxPlayers - 1;
+                    } else {
+                        Logger::log("First Packet was not Init!\n");
+                        mIsConnectionActive = false;
+                    }
+
+                    free(curPacket);
+                    waitingForInitPacket = false;
                 }
-
-                free(curPacket);
 
             } else {
                 Logger::log("Recieve failed! Stopping Connection.\n");
                 mIsConnectionActive = false;
+                waitingForInitPacket = false;
             }
-
-            break;
         }
     }
 
