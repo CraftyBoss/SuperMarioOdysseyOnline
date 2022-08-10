@@ -1,6 +1,6 @@
 #pragma once
 
-#include "gamemode/GameModeConfigMenu.hpp"
+#include "server/gamemode/GameModeConfigMenu.hpp"
 #include "game/Layouts/CommonVerticalList.h"
 #include "server/gamemode/GameModeBase.hpp"
 

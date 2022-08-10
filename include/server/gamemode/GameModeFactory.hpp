@@ -1,9 +1,8 @@
 #pragma once
 
 #include "al/factory/Factory.h"
-#include "layouts/HideAndSeekIcon.h"
 #include "server/gamemode/GameModeBase.hpp"
-#include "server/HideAndSeekMode.hpp"
+#include "server/hns/HideAndSeekMode.hpp"
 
 typedef GameModeBase* (*createMode)(const char* name);
 
@@ -37,19 +36,19 @@ class GameModeFactory : public al::Factory<createMode> {
 
 // TODO: possibly use shadows' crc32 hash algorithm for this
 constexpr const char* GameModeFactory::getModeString(GameMode mode) {
-    if(mode >= 0 && mode < sizeof(modeTable)/sizeof(modeTable[0]))
+    if(mode >= 0 && (size_t)mode < sizeof(modeTable)/sizeof(modeTable[0]))
         return modeTable[mode].creatorName;
     return nullptr;
 }
 
 constexpr const char* GameModeFactory::getModeName(GameMode mode) {
-    if(mode >= 0 && mode < sizeof(modeNames)/sizeof(modeNames[0]))
+    if(mode >= 0 && (size_t)mode < sizeof(modeNames)/sizeof(modeNames[0]))
         return modeNames[mode];
     return nullptr;
 }
 
 constexpr const char* GameModeFactory::getModeName(int idx) {
-    if(idx >= 0 && idx < sizeof(modeNames)/sizeof(modeNames[0]))
+    if(idx >= 0 && (size_t)idx < sizeof(modeNames)/sizeof(modeNames[0]))
         return modeNames[idx];
     return nullptr;
 }

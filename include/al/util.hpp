@@ -72,6 +72,9 @@ namespace al
     PlayerActorBase *tryGetPlayerActor(al::PlayerHolder const *, int);
 
     sead::Heap *getCurrentHeap(void);
+    sead::Heap* getStationedHeap();
+    sead::Heap* getSequenceHeap();
+    sead::Heap* getSceneHeap();
 
     al::Projection *getProjection(al::IUseCamera const *, int);
 
