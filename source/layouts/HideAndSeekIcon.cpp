@@ -80,7 +80,7 @@ void HideAndSeekIcon::exeWait() {
 
     
 
-    int playerCount = Client::getConnectCount();
+    int playerCount = Client::getMaxPlayerCount();
 
     if (playerCount > 0) {
 
@@ -91,7 +91,7 @@ void HideAndSeekIcon::exeWait() {
     
         for (size_t i = 0; i < playerCount; i++) {
             PuppetInfo* curPuppet = Client::getPuppetInfo(i);
-            if (curPuppet->isConnected && (curPuppet->isIt == mInfo->mIsPlayerIt)) {
+            if (curPuppet && curPuppet->isConnected && (curPuppet->isIt == mInfo->mIsPlayerIt)) {
                 playerList.appendWithFormat("%s\n", curPuppet->puppetName);
             }
         }

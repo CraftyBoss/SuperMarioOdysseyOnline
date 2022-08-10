@@ -99,7 +99,7 @@ class Client {
         static void initMode(GameModeInitInfo const &initInfo);
 
         static void sendHackCapInfPacket(const HackCap *hackCap);
-        static void sendPlayerInfPacket(const PlayerActorHakoniwa *player);
+        static void sendPlayerInfPacket(const PlayerActorBase *player, bool isYukimaru);
         static void sendGameInfPacket(const PlayerActorHakoniwa *player, GameDataHolderAccessor holder);
         static void sendGameInfPacket(GameDataHolderAccessor holder);
         static void sendCostumeInfPacket(const char *body, const char *cap);

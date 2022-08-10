@@ -128,11 +128,20 @@ bool SocketClient::RECV() {
 
         int fullSize = header->mPacketSize + sizeof(Packet);
 
-        if (header->mType != PacketType::UNKNOWN && fullSize <= MAXPACKSIZE && fullSize > 0 && valread == sizeof(Packet)) {
+        if (header->mType > PacketType::UNKNOWN && header->mType < PacketType::End &&
+            fullSize <= MAXPACKSIZE && fullSize > 0 && valread == sizeof(Packet)) {
 
-            if (header->mType != PLAYERINF && header->mType != HACKCAPINF)
-                Logger::log("Received packet (from %02X%02X): %s\n",
-                    header->mUserID.data[0], header->mUserID.data[1], packetNames[header->mType]);
+            if (header->mType != PLAYERINF && header->mType != HACKCAPINF) {
+                Logger::log("Received packet (from %02X%02X):", header->mUserID.data[0],
+                            header->mUserID.data[1]);
+                Logger::disableName();
+                Logger::log(" Size: %d", header->mPacketSize);
+                Logger::log(" Type: %d", header->mType);
+                if(packetNames[header->mType])
+                    Logger::log(" Type String: %s\n", packetNames[header->mType]);
+                Logger::enableName();
+            }
+                
 
             char* packetBuf = (char*)malloc(fullSize);
 

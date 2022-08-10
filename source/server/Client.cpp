@@ -9,6 +9,7 @@
 #include "game/GameData/GameDataFunction.h"
 #include "game/GameData/GameDataHolderAccessor.h"
 #include "game/Info/QuestInfo.h"
+#include "game/Player/PlayerActorBase.h"
 #include "game/Player/PlayerActorHakoniwa.h"
 #include "game/SaveData/SaveDataAccessFunction.h"
 #include "game/StageScene/StageScene.h"
@@ -203,12 +204,7 @@ void Client::restartConnection() {
         initPacket.mUserID = sInstance->mUserID;
         strcpy(initPacket.clientName, sInstance->mUsername.cstr());
 
-        if (sInstance->isFirstConnect) {
-            initPacket.conType = ConnectionTypes::INIT;
-            sInstance->isFirstConnect = false;
-        } else {
-            initPacket.conType = ConnectionTypes::RECONNECT;
-        }
+        initPacket.conType = ConnectionTypes::INIT;
 
         sInstance->mSocket->SEND(&initPacket);
 
@@ -541,14 +537,14 @@ void Client::recvFunc() {}
  * 
  * @param player pointer to current player class, used to get translation, animation, and capture data
  */
-void Client::sendPlayerInfPacket(const PlayerActorHakoniwa *player) {
+void Client::sendPlayerInfPacket(const PlayerActorBase *playerBase, bool isYukimaru) {
 
     if (!sInstance) {
         Logger::log("Static Instance is Null!\n");
         return;
     }
     
-    if(!player) {
+    if(!playerBase) {
         Logger::log("Error: Null Player Reference\n");
         return;
     }
@@ -556,36 +552,56 @@ void Client::sendPlayerInfPacket(const PlayerActorHakoniwa *player) {
     PlayerInf packet = PlayerInf();
     packet.mUserID = sInstance->mUserID;
 
-    packet.playerPos = al::getTrans(player);
+    packet.playerPos = al::getTrans(playerBase);
 
-    al::calcQuat(&packet.playerRot, player); // calculate rotation based off pose instead of using quat rotation
+    al::calcQuat(&packet.playerRot,
+                 playerBase);  // calculate rotation based off pose instead of using quat rotation
 
-    for (size_t i = 0; i < 6; i++)
-    {
-        packet.animBlendWeights[i] = player->mPlayerAnimator->getBlendWeight(i);
-    }
+    if (!isYukimaru) { 
+        
+        PlayerActorHakoniwa* player = (PlayerActorHakoniwa*)playerBase;
 
-    const char *hackName = player->mHackKeeper->getCurrentHackName();
-
-    if (hackName != nullptr) {
-
-        sInstance->isClientCaptured = true;
-
-        const char* actName = al::getActionName(player->mHackKeeper->currentHackActor);
-
-        if (actName) {
-            packet.actName = PlayerAnims::FindType(actName);
-            packet.subActName = PlayerAnims::Type::Unknown;
-            //strcpy(packet.actName, actName); 
-        } else {
-            packet.actName = PlayerAnims::Type::Unknown;
-            packet.subActName = PlayerAnims::Type::Unknown;
+        for (size_t i = 0; i < 6; i++)
+        {
+            packet.animBlendWeights[i] = player->mPlayerAnimator->getBlendWeight(i);
         }
+
+        const char *hackName = player->mHackKeeper->getCurrentHackName();
+
+        if (hackName != nullptr) {
+
+            sInstance->isClientCaptured = true;
+
+            const char* actName = al::getActionName(player->mHackKeeper->currentHackActor);
+
+            if (actName) {
+                packet.actName = PlayerAnims::FindType(actName);
+                packet.subActName = PlayerAnims::Type::Unknown;
+                //strcpy(packet.actName, actName); 
+            } else {
+                packet.actName = PlayerAnims::Type::Unknown;
+                packet.subActName = PlayerAnims::Type::Unknown;
+            }
+        } else {
+            packet.actName = PlayerAnims::FindType(player->mPlayerAnimator->mAnimFrameCtrl->getActionName());
+            packet.subActName = PlayerAnims::FindType(player->mPlayerAnimator->curSubAnim.cstr());
+
+            sInstance->isClientCaptured = false;
+        }
+
     } else {
-        packet.actName = PlayerAnims::FindType(player->mPlayerAnimator->mAnimFrameCtrl->getActionName());
-        packet.subActName = PlayerAnims::FindType(player->mPlayerAnimator->curSubAnim.cstr());
+
+        // TODO: implement YukimaruRacePlayer syncing
+        
+        for (size_t i = 0; i < 6; i++)
+        {
+            packet.animBlendWeights[i] = 0;
+        }
 
         sInstance->isClientCaptured = false;
+
+        packet.actName = PlayerAnims::Type::Unknown;
+        packet.subActName = PlayerAnims::Type::Unknown;
     }
 
     if(sInstance->lastPlayerInfPacket != packet) {
@@ -641,7 +657,7 @@ void Client::sendHackCapInfPacket(const HackCap* hackCap) {
 
 /**
  * @brief 
- * 
+ * Sends both stage info and player 2D info to the server.
  * @param player 
  * @param holder 
  */
@@ -673,7 +689,7 @@ void Client::sendGameInfPacket(const PlayerActorHakoniwa* player, GameDataHolder
 }
 /**
  * @brief 
- * 
+ * Sends only stage info to the server.
  * @param holder 
  */
 void Client::sendGameInfPacket(GameDataHolderAccessor holder) {
@@ -1284,7 +1300,7 @@ void Client::updateShines() {
     }
     
     sInstance->resetCollectedShines();
-    sInstance->mCurStageScene->stageSceneLayout->startShineCountAnim(false);
+    sInstance->mCurStageScene->mSceneLayout->startShineCountAnim(false);
 }
 
 /**

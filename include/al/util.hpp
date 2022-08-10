@@ -242,7 +242,7 @@ namespace al
     bool tryGetByamlColor(sead::Color4f *,al::ByamlIter const&);
     bool tryGetByamlColor(sead::Color4f *,al::ByamlIter const&,char const*);
     bool tryGetByamlBool(bool *,al::ByamlIter const&,char const*);
-    bool tryGetByamlKeyStringOrNULL(al::ByamlIter const&,char const*);
+    const char * tryGetByamlKeyStringOrNULL(al::ByamlIter const&,char const*);
     bool tryGetByamlKeyIntOrZero(al::ByamlIter const&,char const*);
     bool tryGetByamlKeyU32OrZero(al::ByamlIter const&,char const*);
     bool tryGetByamlKeyFloatOrZero(al::ByamlIter const&,char const*);

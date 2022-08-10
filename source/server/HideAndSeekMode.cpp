@@ -6,6 +6,7 @@
 #include "game/GameData/GameDataHolderAccessor.h"
 #include "game/Layouts/CoinCounter.h"
 #include "game/Layouts/MapMini.h"
+#include "game/Player/PlayerActorBase.h"
 #include "game/Player/PlayerActorHakoniwa.h"
 #include "layouts/HideAndSeekIcon.h"
 #include "logger.hpp"
@@ -61,10 +62,10 @@ void HideAndSeekMode::begin() {
         mModeLayout->showSeeking();
     }
 
-    CoinCounter *coinCollect = mCurScene->stageSceneLayout->mCoinCollectLyt;
-    CoinCounter* coinCounter = mCurScene->stageSceneLayout->mCoinCountLyt;
-    MapMini* compass = mCurScene->stageSceneLayout->mMapMiniLyt;
-    al::SimpleLayoutAppearWaitEnd* playGuideLyt = mCurScene->stageSceneLayout->mPlayGuideMenuLyt;
+    CoinCounter *coinCollect = mCurScene->mSceneLayout->mCoinCollectLyt;
+    CoinCounter* coinCounter = mCurScene->mSceneLayout->mCoinCountLyt;
+    MapMini* compass = mCurScene->mSceneLayout->mMapMiniLyt;
+    al::SimpleLayoutAppearWaitEnd* playGuideLyt = mCurScene->mSceneLayout->mPlayGuideMenuLyt;
 
     if(coinCounter->mIsAlive)
         coinCounter->tryEnd();
@@ -84,10 +85,10 @@ void HideAndSeekMode::end() {
 
     mModeTimer->disableTimer();
 
-    CoinCounter *coinCollect = mCurScene->stageSceneLayout->mCoinCollectLyt;
-    CoinCounter* coinCounter = mCurScene->stageSceneLayout->mCoinCountLyt;
-    MapMini* compass = mCurScene->stageSceneLayout->mMapMiniLyt;
-    al::SimpleLayoutAppearWaitEnd* playGuideLyt = mCurScene->stageSceneLayout->mPlayGuideMenuLyt;
+    CoinCounter *coinCollect = mCurScene->mSceneLayout->mCoinCollectLyt;
+    CoinCounter* coinCounter = mCurScene->mSceneLayout->mCoinCountLyt;
+    MapMini* compass = mCurScene->mSceneLayout->mMapMiniLyt;
+    al::SimpleLayoutAppearWaitEnd* playGuideLyt = mCurScene->mSceneLayout->mPlayGuideMenuLyt;
 
     if(!coinCounter->mIsAlive)
         coinCounter->tryStart();
@@ -103,7 +104,9 @@ void HideAndSeekMode::end() {
 
 void HideAndSeekMode::update() {
 
-    PlayerActorHakoniwa* mainPlayer = rs::getPlayerActor(mCurScene);
+    PlayerActorBase* playerBase = rs::getPlayerActor(mCurScene);
+
+    bool isYukimaru = !playerBase->getPlayerInfo(); // if PlayerInfo is a nullptr, that means we're dealing with the bound bowl racer
 
     if (mIsFirstFrame) {
 
@@ -117,39 +120,41 @@ void HideAndSeekMode::update() {
     if (!mInfo->mIsPlayerIt) {
         if (mInvulnTime >= 5) {  
 
-            if (mainPlayer) {
+            if (playerBase) {
                 for (size_t i = 0; i < mPuppetHolder->getSize(); i++)
                 {
                     PuppetInfo *curInfo = Client::getPuppetInfo(i);
 
                     if(curInfo->isConnected && curInfo->isInSameStage && curInfo->isIt) { 
 
-                        float pupDist = al::calcDistance(mainPlayer, curInfo->playerPos); // TODO: remove distance calculations and use hit sensors to determine this
+                        float pupDist = al::calcDistance(playerBase, curInfo->playerPos); // TODO: remove distance calculations and use hit sensors to determine this
 
-                        if(pupDist < 200.f && mainPlayer->mDimKeeper->is2DModel == curInfo->is2D) {
-                            if(!PlayerFunction::isPlayerDeadStatus(mainPlayer)) {
-                                
-                                GameDataFunction::killPlayer(GameDataHolderAccessor(this));
-                                mainPlayer->startDemoPuppetable();
-                                al::setVelocityZero(mainPlayer);
-                                rs::faceToCamera(mainPlayer);
-                                mainPlayer->mPlayerAnimator->endSubAnim();
-                                mainPlayer->mPlayerAnimator->startAnimDead();
+                        if (!isYukimaru) {
+                            if(pupDist < 200.f && ((PlayerActorHakoniwa*)playerBase)->mDimKeeper->is2DModel == curInfo->is2D) {
+                                if(!PlayerFunction::isPlayerDeadStatus(playerBase)) {
+                                    
+                                    GameDataFunction::killPlayer(GameDataHolderAccessor(this));
+                                    playerBase->startDemoPuppetable();
+                                    al::setVelocityZero(playerBase);
+                                    rs::faceToCamera(playerBase);
+                                    ((PlayerActorHakoniwa*)playerBase)->mPlayerAnimator->endSubAnim();
+                                    ((PlayerActorHakoniwa*)playerBase)->mPlayerAnimator->startAnimDead();
+
+                                    mInfo->mIsPlayerIt = true;
+                                    mModeTimer->disableTimer();
+                                    mModeLayout->showSeeking();
+                                    
+                                    Client::sendTagInfPacket();
+                                }
+                            } else if (PlayerFunction::isPlayerDeadStatus(playerBase)) {
 
                                 mInfo->mIsPlayerIt = true;
                                 mModeTimer->disableTimer();
                                 mModeLayout->showSeeking();
-                                
+
                                 Client::sendTagInfPacket();
+                                
                             }
-                        } else if (PlayerFunction::isPlayerDeadStatus(mainPlayer)) {
-
-                            mInfo->mIsPlayerIt = true;
-                            mModeTimer->disableTimer();
-                            mModeLayout->showSeeking();
-
-                            Client::sendTagInfPacket();
-                            
                         }
                     }
                 }
@@ -162,13 +167,13 @@ void HideAndSeekMode::update() {
         mModeTimer->updateTimer();
     }
 
-    if (mInfo->mIsUseGravity) {
+    if (mInfo->mIsUseGravity && !isYukimaru) {
         sead::Vector3f gravity;
-        if (rs::calcOnGroundNormalOrGravityDir(&gravity, mainPlayer, mainPlayer->mPlayerCollider)) {
+        if (rs::calcOnGroundNormalOrGravityDir(&gravity, playerBase, playerBase->getPlayerCollision())) {
             gravity = -gravity;
             al::normalize(&gravity);
-            al::setGravity(mainPlayer, gravity);
-            al::setGravity(mainPlayer->mHackCap, gravity);
+            al::setGravity(playerBase, gravity);
+            al::setGravity(((PlayerActorHakoniwa*)playerBase)->mHackCap, gravity);
         }
         
         if (al::isPadHoldL(-1)) {
@@ -183,7 +188,7 @@ void HideAndSeekMode::update() {
             }
         } else if (al::isPadTriggerZL(-1)) {
             if (al::isPadTriggerLeft(-1)) {
-                killMainPlayer(mainPlayer);
+                killMainPlayer(((PlayerActorHakoniwa*)playerBase));
             }
         }
     }

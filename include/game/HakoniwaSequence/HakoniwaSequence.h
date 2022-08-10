@@ -70,32 +70,6 @@ class HakoniwaSequence : public al::Sequence {
         HakoniwaStateBootLoadData *mBootLoadData; // 0xE8
         HakoniwaStateDeleteScene *mDeleteScene; // 0xF0
         al::LayoutKit* mLytKit;                 // 0xF8
-
-        // al::initSceneCreator(al::IUseSceneCreator *,al::SequenceInitInfo const&,al::GameDataHolderBase *,al::AudioDirector *,al::ScreenCaptureExecutor *,alSceneFunction::SceneFactory *)	.text	00000000009F2270	0000007C	00000050	FFFFFFFFFFFFFFF8	R	.	.	.	B	.	.
-
-
-        // undefined * * field_0x0;
-        // undefined padding_120[0x120];
-        //                     al::Scene * curScene;
-        // undefined padding_8[0x8];
-        //                     al::AudioDirector * field_0x90;
-        // undefined padding_24[0x24];
-        //                     StageScene * stageScene;
-        //                     GameDataHolderAccessor *gameDataHolder;
-        // undefined padding_024[0x24];
-        //                     HakoniwaStateDemoWorldWarp * stateDemoWorldWarp;
-        // undefined padding_192[0x192];
-        //                     int nextScenarioNo;
-        // undefined padding_12[0x12];
-        //                     al::WipeHolder * field_0x1b0;
-        // undefined padding_0024[0x24];
-        //                     long * field_0x1d0;
-        // undefined padding_48[0x48];
-        //                     WorldResourceLoader * worldResourceLoader;
-        // undefined padding_0x16[0x16];
-        // undefined * field_0x220;
-        // undefined padding_0x144[0x144];
-        // undefined * field_0x2b8;
-        // undefined padding_0x160[0x160];
-        // undefined8 field_0x360;
+        unsigned char padding_168[0x108];
+        WorldResourceLoader* mResourceLoader;  // 0x208
 };

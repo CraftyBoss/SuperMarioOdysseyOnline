@@ -25,7 +25,8 @@ enum PacketType : short {
     SHINECOLL,
     CAPTUREINF,
     CHANGESTAGE,
-    CMD
+    CMD,
+    End // end of enum for bounds checking
 };
 
 // attribute otherwise the build log is spammed with unused warnings

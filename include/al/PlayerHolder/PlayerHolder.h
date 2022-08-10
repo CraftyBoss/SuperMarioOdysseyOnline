@@ -1,5 +1,6 @@
 #pragma once
 
+#include "game/Player/PlayerActorBase.h"
 #include "sead/math/seadVector.h"
 #include "al/scene/Scene.h"
 #include "al/LiveActor/LiveActor.h"
@@ -15,8 +16,8 @@ namespace al {
             PlayerHolder(int bufSize);
             void clear(void);
             void registerPlayer(al::LiveActor *, al::PadRumbleKeeper *);
-            PlayerActorHakoniwa *getPlayer(int) const;
-            PlayerActorHakoniwa *tryGetPlayer(int) const;
+            PlayerActorBase *getPlayer(int) const;
+            PlayerActorBase *tryGetPlayer(int) const;
             int getPlayerNum() const;
             int getBufferSize() const {return bufferSize;};
             bool isFull(void) const;

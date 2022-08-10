@@ -7,6 +7,7 @@
 #include "al/LiveActor/LiveActor.h"
 #include "al/async/FunctorBase.h"
 #include "al/collision/Collider.h"
+#include "game/Player/PlayerActorBase.h"
 #include "game/Player/PlayerActorHakoniwa.h"
 #include "al/layout/LayoutActor.h"
 #include "al/layout/LayoutInitInfo.h"
@@ -91,7 +92,7 @@ namespace al {
 
     bool tryOnSwitchDeadOn(IUseStageSwitch *);
     bool trySyncStageSwitchAppear(LiveActor *);
-    PlayerActorHakoniwa* tryFindNearestPlayerActor(const LiveActor *);
+    PlayerActorBase* tryFindNearestPlayerActor(const LiveActor *);
     bool tryFindNearestPlayerPos(sead::Vector3f *, const LiveActor *);
     bool tryAddRippleMiddle(LiveActor*);
     bool tryStartActionIfNotPlaying(LiveActor*, const char*);

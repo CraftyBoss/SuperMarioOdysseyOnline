@@ -1,6 +1,10 @@
 #include "game/StageScene/StageSceneStateServerConfig.hpp"
 #include <cstdlib>
+#include <cstring>
 #include <math.h>
+#include "al/string/StringTmp.h"
+#include "basis/seadNew.h"
+#include "game/Layouts/CommonVerticalList.h"
 #include "game/SaveData/SaveDataAccessFunction.h"
 #include "server/Client.hpp"
 #include "al/util.hpp"
@@ -14,6 +18,10 @@
 #include "server/gamemode/GameModeBase.hpp"
 #include "server/gamemode/GameModeFactory.hpp"
 #include "server/HideAndSeekMode.hpp"
+
+// WIP work on RollPartsData, not exactly working out atm
+const char16_t* testValues[] = {u"Test 1", u"Test 2", u"Test 3", u"Test 4", u"Test 5",
+                                u"Test 6", u"Test 7", u"Test 8", u"Test 9"};
 
 StageSceneStateServerConfig::StageSceneStateServerConfig(const char *name, al::Scene *scene, const al::LayoutInitInfo &initInfo, FooterParts *footerParts, GameDataHolder *dataHolder, bool) : al::HostStateBase<al::Scene>(name, scene) {
     mFooterParts = footerParts;
@@ -29,6 +37,8 @@ StageSceneStateServerConfig::StageSceneStateServerConfig(const char *name, al::S
 
     al::setPaneString(mMainOptions, "TxtOption", u"Server Configuration", 0);
 
+    mMainOptionsList->unkInt1 = 1;
+
     mMainOptionsList->initDataNoResetSelected(5);
 
     sead::SafeArray<sead::WFixedSafeString<0x200>, 5>* mainMenuOptions =
@@ -41,6 +51,22 @@ StageSceneStateServerConfig::StageSceneStateServerConfig(const char *name, al::S
     mainMenuOptions->mBuffer[ServerConfigOption::SETPORT].copy(u"Change Server Port");
 
     mMainOptionsList->addStringData(mainMenuOptions->mBuffer, "TxtContent");
+
+    // WIP work on RollPartsData, not exactly working out atm
+    // RollPartsData* testArr = new RollPartsData[2]();
+
+    // for (int i = 0; i < 2; i++) {
+    //     RollPartsData* part = &testArr[i];
+
+    //     part->mRollMsgCount = 3;
+    //     part->mRollMsgList = testValues;
+    //     part->unkInt1 = 0;
+    //     part->mUnkBool = i == 0;
+    // }
+
+    //mMainOptionsList->startLoopActionAll("Loop", "Loop");
+    
+    // mMainOptionsList->setRollPartsData(testArr);
 
     // gamemode select menu
 

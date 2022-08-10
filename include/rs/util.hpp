@@ -2,6 +2,7 @@
 
 #include "game/GameData/GameDataFile.h"
 #include "game/Info/QuestInfoHolder.h"
+#include "game/Player/PlayerActorBase.h"
 #include "sead/math/seadVector.h"
 #include "al/util.hpp"
 #include "al/sensor/SensorMsg.h"
@@ -33,7 +34,7 @@ namespace rs {
 
     bool isPlayerDamageStopDemo(const al::LiveActor *);
 
-    PlayerActorHakoniwa * getPlayerActor(const al::Scene *);
+    PlayerActorBase * getPlayerActor(const al::Scene *);
 
     void get2DAreaPos(sead::Vector3<f32> *, al::AreaObj const *);
 
@@ -75,5 +76,9 @@ namespace rs {
 
     void calcGroundNormalOrGravityDir(sead::Vector3f *result, al::LiveActor const *actor, IUsePlayerCollision const *col);
 
-    void calcPlayerFrontDir(sead::Vector3f *result, al::LiveActor const *);
+    void calcPlayerFrontDir(sead::Vector3f* result, al::LiveActor const*);
+
+    int getStageShineAnimFrame(al::LiveActor const*, char const*);
+    const char* getStageShineArchiveName(al::LiveActor const*, char const*);
+    const char* getStageShineEmptyArchiveName(al::LiveActor const*, char const*);
 }
