@@ -58,8 +58,9 @@ void GameModeManager::update() {
 void GameModeManager::initScene(const GameModeInitInfo& info) {
     sead::ScopedCurrentHeapSetter heapSetter(mHeap);
 
-    if (mCurModeBase != nullptr) {
+    if (mCurModeBase != nullptr && mWasSetMode) {
         delete mCurModeBase;
+        mCurModeBase = nullptr;
     }
 
     if (mLastInitInfo != nullptr) {
@@ -68,19 +69,17 @@ void GameModeManager::initScene(const GameModeInitInfo& info) {
 
     if (mCurMode == GameMode::NONE) {
         mCurModeBase = nullptr;
+        delete mModeInfo;
         mModeInfo = nullptr;
         return;
     }
 
     mLastInitInfo = new GameModeInitInfo(info);
 
-    if (!mCurModeBase && mWasSetMode) {
+    if (mWasSetMode) {
         GameModeFactory factory("GameModeFactory");
         const char* name = factory.getModeString(mCurMode);
         mCurModeBase = factory.getCreator(name)(name);
-        if (mLastInitInfo) {  // check if there's a previously used init info
-            mCurModeBase->init(*mLastInitInfo);
-        }
         mWasSetMode = false;
     }
 
