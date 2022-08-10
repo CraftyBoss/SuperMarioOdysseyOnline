@@ -31,7 +31,6 @@
 #include "packets/PlayerConnect.h"
 #include "packets/PlayerDC.h"
 #include "packets/TagInf.h"
-#include "prim/seadSafeString.h"
 #include "puppets/PuppetInfo.h"
 #include "sead/basis/seadRawPrint.h"
 #include "sead/math/seadQuat.h"
@@ -192,7 +191,7 @@ bool Client::startConnection() {
     if (mServerIP.isEmpty() || isOverride) {
         mKeyboard->setHeaderText(u"Save File does not contain an IP!");
         mKeyboard->setSubText(u"Please set a Server IP Below.");
-        mServerIP = "0.0.0.0";
+        mServerIP = "127.0.0.1";
         Client::openKeyboardIP();
         isNeedSave = true;
     }
@@ -263,15 +262,14 @@ bool Client::openKeyboardIP() {
     // opens swkbd with the initial text set to the last saved IP
     sInstance->mKeyboard->openKeyboard(
         sInstance->mServerIP.cstr(), [](nn::swkbd::KeyboardConfig& config) {
-            config.keyboardMode = nn::swkbd::KeyboardMode::ModeNumeric;
-            config.leftOptionalSymbolKey = '.';
-            config.textMaxLength = 15;
+            config.keyboardMode = nn::swkbd::KeyboardMode::ModeASCII;
+            config.textMaxLength = MAX_HOSTNAME_LENGTH;
             config.textMinLength = 1;
             config.isUseUtf8 = true;
             config.inputFormMode = nn::swkbd::InputFormMode::OneLine;
         });
 
-    sead::FixedSafeString<0x10> prevIp = sInstance->mServerIP;
+    hostname prevIp = sInstance->mServerIP;
 
     while (true) {
         if (sInstance->mKeyboard->isThreadDone()) {

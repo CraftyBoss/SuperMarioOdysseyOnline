@@ -44,7 +44,7 @@ void saveWriteHook(al::ByamlWriter* saveByml) {
     if (serverIP) {
         saveByml->addString("ServerIP", serverIP);
     } else {
-        saveByml->addString("ServerIP", "0.0.0.0");
+        saveByml->addString("ServerIP", "127.0.0.1");
     }
 
     if (serverPort) {

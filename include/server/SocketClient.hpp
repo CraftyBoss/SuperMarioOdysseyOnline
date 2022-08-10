@@ -33,4 +33,11 @@ class SocketClient : public SocketBase {
 
     private:
         int maxBufSize = 100;
+
+        /**
+         * @param str a string containing an IPv4 address or a hostname that can be resolved via DNS
+         * @param out IPv4 address
+         * @return if this function was successfull and out contains a valid IP address
+         */
+        bool stringToIPAddress(const char* str, in_addr* out);
 };

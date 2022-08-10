@@ -11,11 +11,10 @@
 
 nn::Result SocketClient::init(const char* ip, u16 port) {
 
-    sock_ip = ip;
-
-    this->port = port;
+    this->sock_ip = ip;
+    this->port    = port;
     
-    in_addr hostAddress = { 0 };
+    in_addr  hostAddress   = { 0 };
     sockaddr serverAddress = { 0 };
 
     Logger::log("SocketClient::init: %s:%d sock %s\n", ip, port, getStateChar());
@@ -34,18 +33,20 @@ nn::Result SocketClient::init(const char* ip, u16 port) {
         return -1;
     }
     #endif
-    
+
     if ((this->socket_log_socket = nn::socket::Socket(2, 1, 6)) < 0) {
-
         Logger::log("Socket Unavailable.\n");
-
         this->socket_errno = nn::socket::GetLastErrno();
         this->socket_log_state = SOCKET_LOG_UNAVAILABLE;
         return -1;
     }
 
-    
-    nn::socket::InetAton(this->sock_ip, &hostAddress);
+    if (! this->stringToIPAddress(this->sock_ip, &hostAddress)) {
+        Logger::log("IP address is invalid or hostname not resolveable.\n");
+        this->socket_errno = nn::socket::GetLastErrno();
+        this->socket_log_state = SOCKET_LOG_UNAVAILABLE;
+        return -1;
+    }
 
     serverAddress.address = hostAddress;
     serverAddress.port = nn::socket::InetHtons(this->port);
@@ -218,4 +219,24 @@ bool SocketClient::closeSocket() {
     }
 
     return result;
+}
+
+bool SocketClient::stringToIPAddress(const char* str, in_addr* out) {
+    // string to IPv4
+    if (nn::socket::InetAton(str, out)) {
+        return true;
+    }
+
+    // get IPs via DNS
+    struct hostent *he = nn::socket::GetHostByName(str);
+    if (! he) { return false; }
+
+    // might give us multiple IP addresses, so pick the first one
+    struct in_addr **addr_list = (struct in_addr **) he->h_addr_list;
+    for (int i = 0 ; addr_list[i] != NULL ; i++) {
+        *out = *addr_list[i];
+        return true;
+    }
+
+    return false;
 }
