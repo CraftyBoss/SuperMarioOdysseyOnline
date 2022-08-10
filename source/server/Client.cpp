@@ -423,9 +423,7 @@ void Client::readFunc() {
                 switch (curPacket->mType)
                 {
                 case PacketType::PLAYERINF:
-                    if(mIsInGame) {
-                        updatePlayerInfo((PlayerInf*)curPacket);
-                    }
+                    updatePlayerInfo((PlayerInf*)curPacket);
                     break;
                 case PacketType::GAMEINF:
                     updateGameInfo((GameInf*)curPacket);

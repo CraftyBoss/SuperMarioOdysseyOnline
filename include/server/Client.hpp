@@ -238,8 +238,6 @@ class Client {
 
         // --- Game Info ---
 
-        bool mIsInGame = false;
-
         bool isClientCaptured = false;
 
         bool isSentCaptureInf = false;
