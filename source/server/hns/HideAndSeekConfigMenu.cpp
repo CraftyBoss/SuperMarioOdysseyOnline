@@ -1,7 +1,8 @@
-#include "server/HideAndSeekConfigMenu.hpp"
+#include "server/hns/HideAndSeekConfigMenu.hpp"
 #include <cmath>
 #include "logger.hpp"
-#include "server/HideAndSeekMode.hpp"
+#include "server/gamemode/GameModeManager.hpp"
+#include "server/hns/HideAndSeekMode.hpp"
 #include "server/Client.hpp"
 
 HideAndSeekConfigMenu::HideAndSeekConfigMenu() : GameModeConfigMenu() {}
@@ -22,7 +23,7 @@ const sead::WFixedSafeString<0x200> *HideAndSeekConfigMenu::getStringData() {
 
 bool HideAndSeekConfigMenu::updateMenu(int selectIndex) {
 
-    HideAndSeekInfo *curMode = (HideAndSeekInfo*)Client::getModeInfo();
+    HideAndSeekInfo *curMode = GameModeManager::instance()->getInfo<HideAndSeekInfo>();
 
     Logger::log("Setting Gravity Mode.\n");
 
@@ -33,13 +34,13 @@ bool HideAndSeekConfigMenu::updateMenu(int selectIndex) {
     
     switch (selectIndex) {
         case 0: {
-            if (Client::isSelectedMode(GameMode::HIDEANDSEEK)) {
+            if (GameModeManager::instance()->isMode(GameMode::HIDEANDSEEK)) {
                 curMode->mIsUseGravity = true;
             }
             return true;
         }
         case 1: {
-            if (Client::isSelectedMode(GameMode::HIDEANDSEEK)) {
+            if (GameModeManager::instance()->isMode(GameMode::HIDEANDSEEK)) {
                 curMode->mIsUseGravity = false;
             }
             return true;

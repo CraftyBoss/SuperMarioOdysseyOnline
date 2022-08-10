@@ -2,11 +2,11 @@
 
 #include <math.h>
 #include "al/camera/CameraTicket.h"
-#include "gamemode/GameModeBase.hpp"
-#include "gamemode/GameModeInfoBase.hpp"
+#include "server/gamemode/GameModeBase.hpp"
+#include "server/gamemode/GameModeInfoBase.hpp"
 #include "server/gamemode/GameModeConfigMenu.hpp"
 #include "server/gamemode/GameModeTimer.hpp"
-#include "server/HideAndSeekConfigMenu.hpp"
+#include "server/hns/HideAndSeekConfigMenu.hpp"
 
 struct HideAndSeekInfo : GameModeInfoBase {
     HideAndSeekInfo() { mMode = GameMode::HIDEANDSEEK; }
