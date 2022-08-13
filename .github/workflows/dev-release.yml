@@ -1,0 +1,77 @@
+name: Dev Release
+
+
+on:
+  push:
+    branches:
+    - 'dev'
+
+
+env:
+  TAG : 'latest-dev'
+
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: true
+
+
+jobs:
+
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      filename: ${{ steps.build.outputs.filename }}
+    steps:
+    -
+      name : Checkout
+      uses : actions/checkout@v3
+    -
+      name  : Environment
+      id    : env
+      shell : bash
+      run: |
+        echo "::set-output name=prefix::$(date +'%Y%m%d_%H%M%S_' --utc)"
+    -
+      name : Build artifacts
+      id   : build
+      uses : ./.github/actions/build
+      with:
+        prefix : ${{ steps.env.outputs.prefix }}
+
+  attach:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+    -
+      name : Checkout
+      uses : actions/checkout@v3
+    -
+      name  : Get release info
+      id    : release
+      shell : bash
+      run: |
+        url=`curl -sS --fail ${{ github.api_url }}/repos/${{ github.repository }}/releases/tags/${{ env.TAG }} | jq .upload_url -r`
+        echo "::set-output name=upload_url::$url"
+    -
+      name : Attach build artifacts to release
+      uses : ./.github/actions/attach
+      with:
+        filename     : ${{ needs.build.outputs.filename }}
+        upload_url   : ${{ steps.release.outputs.upload_url }}
+        GITHUB_TOKEN : ${{ secrets.GITHUB_TOKEN }}
+
+  move:
+    needs: attach
+    runs-on: ubuntu-latest
+    steps:
+    -
+      name : Checkout
+      uses : actions/checkout@v3
+    -
+      name  : Move ${{ env.TAG }} tag
+      shell : bash
+      run: |
+        git config user.email "${{ github.actor }}@users.noreply.github.com"
+        git tag -f ${{ env.TAG }}
+        git push --force origin ${{ env.TAG }}

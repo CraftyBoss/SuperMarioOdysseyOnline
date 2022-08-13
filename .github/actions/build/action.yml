@@ -6,6 +6,10 @@ inputs:
     description : 'version tag'
     required    : false
     default     : ''
+  prefix:
+    description : 'filename prefix'
+    required    : false
+    default     : ''
 
 
 outputs:
@@ -24,7 +28,7 @@ runs:
     run: |
       VERS=${{ inputs.tag }}
       echo "::set-output name=version::${VERS:1}"
-      echo "::set-output name=filename::SMO_Online${{ (inputs.tag != '' && format('_{0}', inputs.tag)) || '' }}"
+      echo "::set-output name=filename::${{ inputs.prefix }}SMO_Online${{ (inputs.tag != '' && format('_{0}', inputs.tag)) || '' }}"
   -
     name : Set up Docker Buildx
     uses : docker/setup-buildx-action@v2
