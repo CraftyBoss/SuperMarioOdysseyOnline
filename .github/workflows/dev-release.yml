@@ -60,3 +60,18 @@ jobs:
         filename     : ${{ needs.build.outputs.filename }}
         upload_url   : ${{ steps.release.outputs.upload_url }}
         GITHUB_TOKEN : ${{ secrets.GITHUB_TOKEN }}
+
+  move:
+    needs: attach
+    runs-on: ubuntu-latest
+    steps:
+    -
+      name : Checkout
+      uses : actions/checkout@v3
+    -
+      name  : Move ${{ env.TAG }} tag
+      shell : bash
+      run: |
+        git config user.email "${{ github.actor }}@users.noreply.github.com"
+        git tag -f ${{ env.TAG }}
+        git push --force origin ${{ env.TAG }}
