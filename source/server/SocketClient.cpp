@@ -133,8 +133,7 @@ bool SocketClient::RECV() {
 
         int fullSize = header->mPacketSize + sizeof(Packet);
 
-        if (header->mType > PacketType::UNKNOWN && header->mType < PacketType::End &&
-            fullSize <= MAXPACKSIZE && fullSize > 0 && valread == sizeof(Packet)) {
+        if (fullSize <= MAXPACKSIZE && fullSize > 0 && valread == sizeof(Packet)) {
 
             if (header->mType != PLAYERINF && header->mType != HACKCAPINF) {
                 Logger::log("Received packet (from %02X%02X):", header->mUserID.data[0],
@@ -171,6 +170,12 @@ bool SocketClient::RECV() {
                     }
                 }
 
+                if (!(header->mType > PacketType::UNKNOWN && header->mType < PacketType::End)) {
+                    Logger::log("Failed to acquire valid packet type! Packet Type: %d Full Packet Size %d valread size: %d", header->mType, fullSize, valread);
+                    free(packetBuf);
+                    return true;
+                }
+
                 Packet *packet = reinterpret_cast<Packet*>(packetBuf);
 
                 if(mPacketQueue.size() < maxBufSize - 1) {
@@ -180,7 +185,7 @@ bool SocketClient::RECV() {
                 }
             }
         } else {
-            Logger::log("Failed to aquire valid data! Packet Type: %d Full Packet Size %d valread size: %d", header->mType, fullSize, valread);
+            Logger::log("Failed to acquire valid data! Packet Type: %d Full Packet Size %d valread size: %d", header->mType, fullSize, valread);
         }
         
         return true;
