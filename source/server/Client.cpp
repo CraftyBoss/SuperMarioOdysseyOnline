@@ -172,6 +172,10 @@ void Client::restartConnection() {
 
         sInstance->mSocket->SEND(&initPacket);
 
+        // on a reconnect resend the GameInfPacket
+        if (sInstance->lastGameInfPacket != sInstance->emptyGameInfPacket) {
+            sInstance->mSocket->SEND(&sInstance->lastGameInfPacket);
+        }
     } else {
         Logger::log("Reconnect Unsuccessful.\n");
     }
@@ -362,15 +366,8 @@ void Client::readFunc() {
     initPacket.mUserID = mUserID;
     strcpy(initPacket.clientName, mUsername.cstr());
 
-    if (isFirstConnect) {
-        initPacket.conType = ConnectionTypes::INIT;
-        isFirstConnect = false;
-    } else {
-        initPacket.conType = ConnectionTypes::RECONNECT;
-    }
+    sInstance->initConnection(&initPacket);
 
-    mSocket->SEND(&initPacket);  // send initial packet
-    
     nn::os::SleepThread(nn::TimeSpan::FromNanoSeconds(500000000)); // sleep for 0.5 seconds to let connection layout fully show (probably should find a better way to do this)
 
     mConnectionWait->tryEnd();
@@ -394,16 +391,7 @@ void Client::readFunc() {
 
                 Logger::log("Connected!\n");
 
-                if (isFirstConnect) {
-                    initPacket.conType =
-                        ConnectionTypes::INIT;  // if we've changed the IP/Port since last connect,
-                                                // send init instead of reconnect
-                    isFirstConnect = false;
-                } else {
-                    initPacket.conType = ConnectionTypes::RECONNECT;
-                }
-
-                mSocket->SEND(&initPacket);
+                sInstance->initConnection(&initPacket);
                 mConnectionWait->tryEnd();
                 continue;
             } else {
@@ -439,10 +427,12 @@ void Client::readFunc() {
 
                     // Send relevant info packets when another client is connected
 
-                    // Assume game packets are empty from first connection
-                    if (lastGameInfPacket.mUserID != mUserID)
-                        lastGameInfPacket.mUserID = mUserID;
-                    mSocket->SEND(&lastGameInfPacket);
+                    if (lastGameInfPacket != emptyGameInfPacket) {
+                        // Assume game packets are empty from first connection
+                        if (lastGameInfPacket.mUserID != mUserID)
+                            lastGameInfPacket.mUserID = mUserID;
+                        mSocket->SEND(&lastGameInfPacket);
+                    }
 
                     // No need to send player/costume packets if they're empty
                     if (lastPlayerInfPacket.mUserID == mUserID)
@@ -491,6 +481,7 @@ void Client::readFunc() {
 
     Logger::log("Client Read Thread ending.\n");
 }
+
 /**
  * @brief unused thread function for receiving thread
  * 
@@ -646,7 +637,7 @@ void Client::sendGameInfPacket(const PlayerActorHakoniwa* player, GameDataHolder
 
     strcpy(packet.stageName, GameDataFunction::getCurrentStageName(holder));
 
-    if(packet != sInstance->lastGameInfPacket) {
+    if (packet != sInstance->lastGameInfPacket && packet != sInstance->emptyGameInfPacket) {
         sInstance->mSocket->SEND(&packet);
     }
 
@@ -673,7 +664,9 @@ void Client::sendGameInfPacket(GameDataHolderAccessor holder) {
 
     strcpy(packet.stageName, GameDataFunction::getCurrentStageName(holder));
 
-    sInstance->mSocket->SEND(&packet);
+    if (packet != sInstance->emptyGameInfPacket) {
+        sInstance->mSocket->SEND(&packet);
+    }
 
     sInstance->lastGameInfPacket = packet;
 }
@@ -777,6 +770,29 @@ void Client::sendShineCollectPacket(int shineID) {
         sInstance->lastCollectedShine = shineID;
 
         sInstance->mSocket->SEND(&packet);
+    }
+}
+
+/**
+ * @brief sends the init packet to the server and also the GameInfPacket if it had been in a previous connection.
+ *
+ * @param initPacket
+ */
+void Client::initConnection(PlayerConnect *initPacket) {
+    // is this our first connection or a reconnect?
+    if (isFirstConnect) {
+        initPacket->conType = ConnectionTypes::INIT;
+        isFirstConnect = false;
+    } else {
+        initPacket->conType = ConnectionTypes::RECONNECT;
+    }
+
+    // send initial packet
+    mSocket->SEND(initPacket);
+
+    // on a reconnect resend the GameInfPacket
+    if (initPacket->conType == ConnectionTypes::RECONNECT && lastGameInfPacket != emptyGameInfPacket) {
+        mSocket->SEND(&lastGameInfPacket);
     }
 }
 

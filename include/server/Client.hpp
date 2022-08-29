@@ -181,6 +181,7 @@ class Client {
         SocketClient *mSocket;
 
     private:
+        void initConnection(PlayerConnect *initPacket);
         void updatePlayerInfo(PlayerInf *packet);
         void updateHackCapInfo(HackCapInf *packet);
         void updateGameInfo(GameInf *packet);
@@ -221,6 +222,7 @@ class Client {
         // Backups for our last player/game packets, used for example to re-send them for newly connected clients
         PlayerInf lastPlayerInfPacket = PlayerInf();
         GameInf lastGameInfPacket = GameInf();
+        GameInf emptyGameInfPacket = GameInf();
         CostumeInf lastCostumeInfPacket = CostumeInf();
 
         Keyboard* mKeyboard = nullptr; // keyboard for setting server IP
