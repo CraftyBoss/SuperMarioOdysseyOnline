@@ -16,6 +16,7 @@ nn::Result SocketClient::init(const char* ip, u16 port) {
     
     in_addr  hostAddress   = { 0 };
     sockaddr serverAddress = { 0 };
+    sockaddr udpAddress = { 0 };
 
     Logger::log("SocketClient::init: %s:%d sock %s\n", ip, port, getStateChar());
 
@@ -65,6 +66,33 @@ nn::Result SocketClient::init(const char* ip, u16 port) {
         return result;
     }
 
+	if ((this->udp_socket = nn::socket::Socket(2, 2, 17)) <= 0) {
+        Logger::log("Udp Socket failed to create");
+        this->socket_errno = nn::socket::GetLastErrno();
+        this->socket_log_state = SOCKET_LOG_UNAVAILABLE;
+        return -1;
+	}
+
+    udpAddress.address = 0;
+    udpAddress.port = 0;
+    udpAddress.family = 2;
+
+	if ((nn::socket::Bind(this->udp_socket, &udpAddress, sizeof(serverAddress))).isFailure()){
+        Logger::log("Udp Socket failed to bind");
+        this->socket_errno = nn::socket::GetLastErrno();
+        this->socket_log_state = SOCKET_LOG_UNAVAILABLE;
+        return -1;
+	}
+
+    if((result = nn::socket::Connect(this->udp_socket, &serverAddress, sizeof(serverAddress))).isFailure()) {
+        Logger::log("Udp Socket Connection Failed!\n");
+        this->socket_errno = nn::socket::GetLastErrno();
+        this->socket_log_state = SOCKET_LOG_UNAVAILABLE;
+        return result;
+    }
+
+
+
     this->socket_log_state = SOCKET_LOG_CONNECTED;
 
     Logger::log("Socket fd: %d\n", socket_log_socket);
@@ -82,10 +110,22 @@ bool SocketClient::SEND(Packet *packet) {
 
     int valread = 0;
 
-    if (packet->mType != PLAYERINF && packet->mType != HACKCAPINF)
-        Logger::log("Sending packet: %s\n", packetNames[packet->mType]);
+    if (packet->mType != PLAYERINF && packet->mType != HACKCAPINF) {
+		Logger::log("Sending packet: %s\n", packetNames[packet->mType]);
+	} else {
 
-    if ((valread = nn::socket::Send(this->socket_log_socket, buffer, packet->mPacketSize + sizeof(Packet), 0) > 0)) {
+		if ((valread = nn::socket::Send(this->udp_socket, buffer, packet->mPacketSize + sizeof(Packet), 0) > 0)) {
+			return true;
+		} else {
+			Logger::log("Failed to Fully Send Packet! Result: %d Type: %s Packet Size: %d\n", valread, packetNames[packet->mType], packet->mPacketSize);
+			this->socket_errno = nn::socket::GetLastErrno();
+			this->closeSocket();
+			return false;
+		}
+	}
+
+
+	if ((valread = nn::socket::Send(this->socket_log_socket, buffer, packet->mPacketSize + sizeof(Packet), 0) > 0)) {
         return true;
     } else {
         Logger::log("Failed to Fully Send Packet! Result: %d Type: %s Packet Size: %d\n", valread, packetNames[packet->mType], packet->mPacketSize);
@@ -108,9 +148,34 @@ bool SocketClient::RECV() {
     char headerBuf[sizeof(Packet)] = {};
     int valread = 0;
 
+	const int fd_count = 2;
+	struct pollfd pfds[fd_count] = {0};
+	pfds[0].fd = this->socket_log_socket;
+	pfds[0].events = 1;
+	pfds[0].revents = 0;
+	pfds[1].fd = this->udp_socket;
+	pfds[1].events = 1;
+	pfds[1].revents = 0;
+
+
+	if (poll(pfds, fd_count, -1) <= 0) {
+		return true;
+	}
+
+	s32 fd = -1;
+	for (int i = 0; i < fd_count; i++){
+		if (pfds[i].revents & 1) {
+			fd = pfds[i].fd;
+		}
+	}
+
+	if (fd == -1) {
+		return true;
+	}
+
     // read only the size of a header
     while(valread < headerSize) {
-        int result = nn::socket::Recv(this->socket_log_socket, headerBuf + valread,
+        int result = nn::socket::Recv(fd, headerBuf + valread,
                                       headerSize - valread, this->sock_flags);
 
         this->socket_errno = nn::socket::GetLastErrno();
@@ -155,10 +220,10 @@ bool SocketClient::RECV() {
 
                 while (valread < fullSize) {
 
-                    int result = nn::socket::Recv(this->socket_log_socket, packetBuf + valread,
+                    int result = nn::socket::Recv(fd, packetBuf + valread,
                                                   fullSize - valread, this->sock_flags);
 
-                    this->socket_errno = nn::socket::GetLastErrno();
+                    this->socket_errno = nn::socket::GetLastErrno();revents
 
                     if (result > 0) {
                         valread += result;

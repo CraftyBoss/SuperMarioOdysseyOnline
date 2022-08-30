@@ -34,6 +34,9 @@ class SocketClient : public SocketBase {
     private:
         int maxBufSize = 100;
 
+	s32 udp_socket;
+
+
         /**
          * @param str a string containing an IPv4 address or a hostname that can be resolved via DNS
          * @param out IPv4 address
