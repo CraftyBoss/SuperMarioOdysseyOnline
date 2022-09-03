@@ -243,6 +243,8 @@ bool Client::startConnection() {
                 waitingForInitPacket = false;
             }
         }
+
+
     }
 
     return mIsConnectionActive;
@@ -370,7 +372,11 @@ void Client::readFunc() {
     }
 
     mSocket->SEND(&initPacket);  // send initial packet
-    
+
+	UdpInit udp_init = UdpInit();
+	udp_init.port = mSocket->getUdpPort();
+	mSocket->SEND(&udp_init)
+
     nn::os::SleepThread(nn::TimeSpan::FromNanoSeconds(500000000)); // sleep for 0.5 seconds to let connection layout fully show (probably should find a better way to do this)
 
     mConnectionWait->tryEnd();

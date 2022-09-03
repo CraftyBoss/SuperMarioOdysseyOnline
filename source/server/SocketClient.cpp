@@ -7,6 +7,7 @@
 #include "nn/result.h"
 #include "nn/socket.h"
 #include "packets/Packet.h"
+#include "packets/UdpPacket.h"
 #include "types.h"
 
 nn::Result SocketClient::init(const char* ip, u16 port) {
@@ -73,25 +74,10 @@ nn::Result SocketClient::init(const char* ip, u16 port) {
         return -1;
 	}
 
-    udpAddress.address = 0;
-    udpAddress.port = 0;
+    udpAddress.address = hostAddress;
+    udpAddress.port = nn::socket::InetHtons(41553);
     udpAddress.family = 2;
-
-	if ((nn::socket::Bind(this->udp_socket, &udpAddress, sizeof(serverAddress))).isFailure()){
-        Logger::log("Udp Socket failed to bind");
-        this->socket_errno = nn::socket::GetLastErrno();
-        this->socket_log_state = SOCKET_LOG_UNAVAILABLE;
-        return -1;
-	}
-
-    if((result = nn::socket::Connect(this->udp_socket, &serverAddress, sizeof(serverAddress))).isFailure()) {
-        Logger::log("Udp Socket Connection Failed!\n");
-        this->socket_errno = nn::socket::GetLastErrno();
-        this->socket_log_state = SOCKET_LOG_UNAVAILABLE;
-        return result;
-    }
-
-
+	this->udp_addr = udpAddress;
 
     this->socket_log_state = SOCKET_LOG_CONNECTED;
 
@@ -99,6 +85,15 @@ nn::Result SocketClient::init(const char* ip, u16 port) {
 
     return result;
 
+}
+
+u16 SocketClient::getUdpPort() {
+	sockaddr udpAddress = { 0 };
+	if (nn::socket::GetSockName(this->udp_socket, &udpAddress, sizeof(udpAddress)) <= 0) {
+        return 0;
+	}
+
+	return udpAddress.port;
 }
 
 bool SocketClient::SEND(Packet *packet) {
@@ -114,7 +109,7 @@ bool SocketClient::SEND(Packet *packet) {
 		Logger::log("Sending packet: %s\n", packetNames[packet->mType]);
 	} else {
 
-		if ((valread = nn::socket::Send(this->udp_socket, buffer, packet->mPacketSize + sizeof(Packet), 0) > 0)) {
+		if ((valread = nn::socket::SendTo(this->udp_socket, buffer, packet->mPacketSize + sizeof(Packet), 0, this->udp_addr, sizeof(this->udp_addr)) > 0)) {
 			return true;
 		} else {
 			Logger::log("Failed to Fully Send Packet! Result: %d Type: %s Packet Size: %d\n", valread, packetNames[packet->mType], packet->mPacketSize);
@@ -163,20 +158,32 @@ bool SocketClient::RECV() {
 	}
 
 	s32 fd = -1;
+	s32 index = -1;
 	for (int i = 0; i < fd_count; i++){
 		if (pfds[i].revents & 1) {
 			fd = pfds[i].fd;
+			index = i;
 		}
 	}
 
 	if (fd == -1) {
 		return true;
 	}
+	sockaddr udp_addr = {0};
+	u32 udp_size = 0;
 
     // read only the size of a header
     while(valread < headerSize) {
-        int result = nn::socket::Recv(fd, headerBuf + valread,
-                                      headerSize - valread, this->sock_flags);
+        int result = 0;
+        if (index == 0) {
+            result = nn::socket::Recv(fd, headerBuf + valread,
+                                          headerSize - valread, this->sock_flags);
+        } else {
+            result = nn::socket::RecvFrom(fd, headerBuf + valread,
+                                            headerSize - valread, this->sock_flags,
+                                            &udp_addr, &udp_size);
+            Logger::log("Got udp packet: %s %s %s\n",udp_addr.family, udp_addr.port, udp_addr.address.data);
+        }
 
         this->socket_errno = nn::socket::GetLastErrno();
         

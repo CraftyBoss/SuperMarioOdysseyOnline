@@ -26,6 +26,7 @@ enum PacketType : short {
     CAPTUREINF,
     CHANGESTAGE,
     CMD,
+    UDPINIT,
     End // end of enum for bounds checking
 };
 
@@ -44,6 +45,7 @@ USED static const char *packetNames[] = {
     "Capture Info",
     "Change Stage",
     "Server Command"
+    "Udp Initialization"
 };
 
 enum SenderType {
@@ -84,3 +86,4 @@ struct PACKED Packet {
 #include "packets/HackCapInf.h"
 #include "packets/ChangeStagePacket.h"
 #include "packets/InitPacket.h"
+#include "packets/UdpPacket.h"

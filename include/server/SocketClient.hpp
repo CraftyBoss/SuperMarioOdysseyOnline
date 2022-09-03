@@ -28,13 +28,15 @@ class SocketClient : public SocketBase {
         bool RECV();
         void printPacket(Packet* packet);
         bool isConnected() {return socket_log_state == SOCKET_LOG_CONNECTED; }
+		u16 getUdpPort();
 
         sead::PtrArray<Packet> mPacketQueue;
 
     private:
         int maxBufSize = 100;
 
-	s32 udp_socket;
+		s32 udp_socket;
+		sockaddr udp_addr;
 
 
         /**

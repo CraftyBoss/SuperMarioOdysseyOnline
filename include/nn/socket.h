@@ -38,13 +38,18 @@ s32 Connect(s32 socket,	const sockaddr* address, u32 addressLen);
 Result Close(s32 socket);
 
 s32 Send(s32 socket, const void* data, ulong dataLen, s32 flags);
+s32 SendTo(s32 socket, const void* data, ulong dataLen, s32 flags, const struct sockaddr* to, u32 toLen);
 s32 Recv(s32 socket, void* out, ulong outLen, s32 flags);
+s32 RecvFrom(s32 socket, void* out, ulong outLen, s32 flags, struct sockaddr* from, u32* fromLen);
 
+s32 GetSockName(s32 socket, struct sockaddr* name, u32 dataLen);
 u16 InetHtons(u16 val);
 s32 InetAton(const char* addressStr, in_addr* addressOut);
 
 struct hostent* GetHostByName(const char* name);
 
 u32 GetLastErrno();
+s32 Bind(s32 fd, sockaddr* addr, u32 addrlen);
+s32 Poll(struct pollfd* fd, u64 addr, s32 timeout);
 
 } }
