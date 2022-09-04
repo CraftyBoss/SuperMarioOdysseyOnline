@@ -172,6 +172,11 @@ void Client::restartConnection() {
 
         sInstance->mSocket->SEND(&initPacket);
 
+        // on a reconnect resend the CostumeInfPacket
+        if (sInstance->lastCostumeInfPacket.mUserID == sInstance->mUserID) {
+            sInstance->mSocket->SEND(&sInstance->lastCostumeInfPacket);
+        }
+
         // on a reconnect resend the GameInfPacket
         if (sInstance->lastGameInfPacket != sInstance->emptyGameInfPacket) {
             sInstance->mSocket->SEND(&sInstance->lastGameInfPacket);
@@ -368,10 +373,6 @@ void Client::readFunc() {
 
     sInstance->initConnection(&initPacket);
 
-    nn::os::SleepThread(nn::TimeSpan::FromNanoSeconds(500000000)); // sleep for 0.5 seconds to let connection layout fully show (probably should find a better way to do this)
-
-    mConnectionWait->tryEnd();
-
     while(mIsConnectionActive) {
 
         if (mSocket->getLogState() != SOCKET_LOG_CONNECTED) {
@@ -392,7 +393,6 @@ void Client::readFunc() {
                 Logger::log("Connected!\n");
 
                 sInstance->initConnection(&initPacket);
-                mConnectionWait->tryEnd();
                 continue;
             } else {
                 Logger::log("%s: not reconnected\n", __func__);
@@ -435,10 +435,10 @@ void Client::readFunc() {
                     }
 
                     // No need to send player/costume packets if they're empty
-                    if (lastPlayerInfPacket.mUserID == mUserID)
-                        mSocket->SEND(&lastPlayerInfPacket);
                     if (lastCostumeInfPacket.mUserID == mUserID)
                         mSocket->SEND(&lastCostumeInfPacket);
+                    if (lastPlayerInfPacket.mUserID == mUserID)
+                        mSocket->SEND(&lastPlayerInfPacket);
 
                     break;
                 case PacketType::COSTUMEINF:
@@ -717,6 +717,8 @@ void Client::sendCostumeInfPacket(const char* body, const char* cap) {
         return;
     }
     
+    if (body == "" && cap == "") { return; }
+
     CostumeInf packet = CostumeInf(body, cap);
     packet.mUserID = sInstance->mUserID;
     sInstance->mSocket->SEND(&packet);
@@ -790,9 +792,19 @@ void Client::initConnection(PlayerConnect *initPacket) {
     // send initial packet
     mSocket->SEND(initPacket);
 
-    // on a reconnect resend the GameInfPacket
-    if (initPacket->conType == ConnectionTypes::RECONNECT && lastGameInfPacket != emptyGameInfPacket) {
-        mSocket->SEND(&lastGameInfPacket);
+    nn::os::SleepThread(nn::TimeSpan::FromNanoSeconds(500000000)); // sleep for 0.5 seconds to let connection layout fully show (probably should find a better way to do this)
+    mConnectionWait->tryEnd();
+
+    // on a reconnect, resend some maybe missing packets
+    if (initPacket->conType == ConnectionTypes::RECONNECT) {
+        // CostumeInfPacket
+        if (lastCostumeInfPacket.mUserID == mUserID) {
+            mSocket->SEND(&lastCostumeInfPacket);
+        }
+        // GameInfPacket
+        if (lastGameInfPacket != emptyGameInfPacket) {
+            mSocket->SEND(&lastGameInfPacket);
+        }
     }
 }
 
