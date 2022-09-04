@@ -90,6 +90,13 @@ B59E28 B seadPrintHook // sead::system::print
 20CA78 BL startCounterHook // starts coin counter if a gamemode is not active
 20CAA8 BL startCounterHook // starts purple coin counter if gamemode is not active
 
+// Other HUD Changes
+
+20CB4C BL modeE3Hook // PlayGuideMenuLyt at StageSceneStateLayout::start+140
+20CA5C BL modeE3Hook // MapMini::appearSlideIn at StageSceneStateLayout::start+50
+20D160 BL modeE3Hook // MapMini::end at StageSceneStateLayout::exeEnd+8C
+20D154 BL playGuideEndHook
+
 // Pause Menu Changes
 
 4EAEC4 B overrideNerveHook // makes any button on pause menu run a specific nerve
@@ -113,3 +120,8 @@ B59E28 B seadPrintHook // sead::system::print
 5C00B0 BL borderPullBackHook // hooks over isFirstStep in WorldEndBorderKeeper::exePullBack so we can kill the player if they reach the border of the map
 
 // 4E46BC NOP // removes call to setEnableData for one of the commonverticallists in the options menu, which makes all entries in the menu look the same
+
+8912B8 B drawTableHook
+
+// 891394 BL drawInitHook
+// 91328 BL updateInitHook

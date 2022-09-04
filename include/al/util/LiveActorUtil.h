@@ -26,6 +26,9 @@ namespace al {
     void onSyncClippingSubActor(LiveActor*, const LiveActor*);
     void onSyncHideSubActor(LiveActor*, const LiveActor*);
     void onSyncAlphaMaskSubActor(LiveActor*, const LiveActor*);
+    void onSyncAppearSubActor(al::LiveActor *,al::LiveActor const*);
+    void onSyncAppearSubActor(al::LiveActor *,char const*);
+    void onSyncAppearSubActorAll(al::LiveActor *);
     void setMaterialProgrammable(LiveActor*);
     void startAction(LiveActor*, char const*);
     void startAction(IUseLayoutAction*, const char *, const char *);
@@ -41,6 +44,8 @@ namespace al {
     void turnToTarget(LiveActor*, const al::LiveActor *, float);
 
     void expandClippingRadiusByShadowLength(LiveActor *,sead::Vector3f *, float);
+    void addPartialSklAnimPartsListRecursive(al::LiveActor*, char const*, int);
+    void setMaterialProgrammable(al::LiveActor *);
 
     void initJointLocalXRotator(const LiveActor *,const float *,const char *);
     void initJointLocalYRotator(const LiveActor *,const float *,const char *);
@@ -56,7 +61,23 @@ namespace al {
     void initActorPoseTQGSV(al::LiveActor *);
     void initActorPoseTQGMSV(al::LiveActor *);
     void initActorPoseT(al::LiveActor *,sead::Vector3<float> const&);
-    void initActorPoseTR(al::LiveActor *,sead::Vector3<float> const&,sead::Vector3<float> const&);
+    void initActorPoseTR(al::LiveActor*, sead::Vector3<float> const&, sead::Vector3<float> const&);
+
+    void initActorSRT(al::LiveActor*, al::ActorInitInfo const&);
+    void initActorSceneInfo(al::LiveActor *, al::ActorInitInfo const&);
+    void initActorModelKeeper(al::LiveActor *,al::ActorInitInfo const&,al::ActorResource const*,int);
+    void initActorModelKeeper(al::LiveActor*, al::ActorInitInfo const&, char const*, int,
+                              char const*);
+    void initActorEffectKeeper(al::LiveActor*, al::ActorInitInfo const&, char const*);
+    void initActorActionKeeper(al::LiveActor *,al::ActorInitInfo const&,char const*,char const*);
+    void initActorActionKeeper(al::LiveActor*, al::ActorResource const*, char const*, char const*);
+    void initActorClipping(al::LiveActor *,al::ActorInitInfo const&);
+    void initPartialSklAnim(al::LiveActor*, int, int, int);
+
+    bool tryGetActorInitFileIterAndName(al::ByamlIter *,sead::BufferedSafeStringBase<char> *,al::Resource const*,char const*,char const*);
+    bool tryGetActorInitFileIter(al::ByamlIter *,al::Resource const*,char const*,char const*);
+    bool tryGetActorInitFileIterAndName(al::ByamlIter *,sead::BufferedSafeStringBase<char> *,al::LiveActor const*,char const*,char const*);
+    bool tryGetActorInitFileIter(al::ByamlIter *,al::LiveActor const*,char const*,char const*);
 
     void initLayoutPartsActor(LayoutActor*, LayoutActor*, const LayoutInitInfo&, char const*,
                               char const*);
