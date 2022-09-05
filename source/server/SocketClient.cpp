@@ -73,14 +73,15 @@ nn::Result SocketClient::init(const char* ip, u16 port) {
         this->socket_log_state = SOCKET_LOG_UNAVAILABLE;
         return -1;
 	}
+
     udpAddress.address = hostAddress;
     udpAddress.port = nn::socket::InetHtons(41553);
     udpAddress.family = 2;
     this->udp_addr = udpAddress;
 
-    udpAddress.address = hostAddress;
-    udpAddress.port = nn::socket::InetHtons(57734);
-    udpAddress.family = 2;
+    // udpAddress.address = hostAddress;
+    // udpAddress.port = nn::socket::InetHtons(57734);
+    // udpAddress.family = 2;
 
     if((result = nn::socket::Connect(this->udp_socket, &udpAddress, sizeof(udpAddress))).isFailure()) {
         Logger::log("Udp Socket Connection Failed!\n");
