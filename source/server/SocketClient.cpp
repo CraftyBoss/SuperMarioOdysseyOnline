@@ -180,7 +180,7 @@ bool SocketClient::RECV() {
 	pfds[1].revents = 0;
 
 
-	if (nn::socket::Poll(pfds, fd_count, -1) <= 0) {
+	if (nn::socket::Poll(pfds, fd_count, 0) <= 0) {
 		return true;
 	}
 
