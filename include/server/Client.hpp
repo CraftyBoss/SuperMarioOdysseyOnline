@@ -103,6 +103,7 @@ class Client {
         static void sendShineCollectPacket(int shineId);
         static void sendTagInfPacket();
         static void sendCaptureInfPacket(const PlayerActorHakoniwa *player);
+        void resendInitPackets();
 
         int getCollectedShinesCount() { return curCollectedShines.size(); }
         int getShineID(int index) { if (index < curCollectedShines.size()) { return curCollectedShines[index]; } return -1; }
@@ -226,6 +227,7 @@ class Client {
         // Backups for our last player/game packets, used for example to re-send them for newly connected clients
         PlayerInf lastPlayerInfPacket = PlayerInf();
         GameInf lastGameInfPacket = GameInf();
+        GameInf emptyGameInfPacket = GameInf();
         CostumeInf lastCostumeInfPacket = CostumeInf();
 
         Keyboard* mKeyboard = nullptr; // keyboard for setting server IP

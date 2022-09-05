@@ -27,7 +27,7 @@ Client::Client() {
 
     mKeyboard = new Keyboard(nn::swkbd::GetRequiredStringBufferSize());
 
-    mSocket = new SocketClient("SocketClient", mHeap);
+    mSocket = new SocketClient("SocketClient", mHeap, this);
     
     mPuppetHolder = new PuppetHolder(maxPuppets);
 
@@ -87,6 +87,7 @@ void Client::init(al::LayoutInitInfo const &initInfo, GameDataHolderAccessor hol
 
     Logger::log("Heap Free Size: %f/%f\n", mHeap->getFreeSize() * 0.001f, mHeap->getSize() * 0.001f);
 }
+
 /**
  * @brief starts client read thread
  * 
@@ -103,6 +104,7 @@ bool Client::startThread() {
         return false;
     }
 }
+
 /**
  * @brief restarts currently active connection to server
  * 
@@ -140,6 +142,7 @@ void Client::restartConnection() {
         Logger::log("Reconnect Unsuccessful.\n");
     }
 }
+
 /**
  * @brief starts a connection using client's TCP socket class, pulling up the software keyboard for user inputted IP if save file does not have one saved.
  * 
@@ -346,16 +349,18 @@ void Client::readFunc() {
 
                 // Send relevant info packets when another client is connected
 
-                // Assume game packets are empty from first connection
-                 if (lastGameInfPacket.mUserID != mUserID)
-                     lastGameInfPacket.mUserID = mUserID;
-                 mSocket->send(&lastGameInfPacket);
+                if (lastGameInfPacket != emptyGameInfPacket) {
+                    // Assume game packets are empty from first connection
+                    if (lastGameInfPacket.mUserID != mUserID)
+                        lastGameInfPacket.mUserID = mUserID;
+                    mSocket->send(&lastGameInfPacket);
+                }
 
-                 // No need to send player/costume packets if they're empty
-                 if (lastPlayerInfPacket.mUserID == mUserID)
-                     mSocket->send(&lastPlayerInfPacket);
-                 if (lastCostumeInfPacket.mUserID == mUserID)
-                     mSocket->send(&lastCostumeInfPacket);
+                // No need to send player/costume packets if they're empty
+                if (lastPlayerInfPacket.mUserID == mUserID)
+                    mSocket->send(&lastPlayerInfPacket);
+                if (lastCostumeInfPacket.mUserID == mUserID)
+                    mSocket->send(&lastCostumeInfPacket);
 
                 break;
             case PacketType::COSTUMEINF:
@@ -479,6 +484,7 @@ void Client::sendPlayerInfPacket(const PlayerActorBase *playerBase, bool isYukim
     }
 
 }
+
 /**
  * @brief sends info related to player's cap actor to server
  * 
@@ -553,14 +559,14 @@ void Client::sendGameInfPacket(const PlayerActorHakoniwa* player, GameDataHolder
 
     strcpy(packet->stageName, GameDataFunction::getCurrentStageName(holder));
 
-    if(*packet != sInstance->lastGameInfPacket) {
+    if (*packet != sInstance->lastGameInfPacket && *packet != sInstance->emptyGameInfPacket) {
         sInstance->lastGameInfPacket = *packet;
         sInstance->mSocket->queuePacket(packet);
     } else {
         sInstance->mHeap->free(packet); // free packet if we're not using it
     }
-
 }
+
 /**
  * @brief 
  * Sends only stage info to the server.
@@ -584,9 +590,10 @@ void Client::sendGameInfPacket(GameDataHolderAccessor holder) {
 
     strcpy(packet->stageName, GameDataFunction::getCurrentStageName(holder));
 
-    sInstance->lastGameInfPacket = *packet;
-
-    sInstance->mSocket->queuePacket(packet);
+    if (*packet != sInstance->emptyGameInfPacket) {
+        sInstance->lastGameInfPacket = *packet;
+        sInstance->mSocket->queuePacket(packet);
+    }
 }
 
 /**
@@ -637,6 +644,8 @@ void Client::sendCostumeInfPacket(const char* body, const char* cap) {
         return;
     }
 
+    if (!strcmp(body, "") && !strcmp(cap, "")) { return; }
+
     sead::ScopedCurrentHeapSetter setter(sInstance->mHeap);
     
     CostumeInf *packet = new CostumeInf(body, cap);
@@ -671,6 +680,21 @@ void Client::sendCaptureInfPacket(const PlayerActorHakoniwa* player) {
         strcpy(packet->hackName, "");
         sInstance->mSocket->queuePacket(packet);
         sInstance->isSentCaptureInf = false;
+    }
+}
+
+/**
+ * @brief
+ */
+void Client::resendInitPackets() {
+    // CostumeInfPacket
+    if (lastCostumeInfPacket.mUserID == mUserID) {
+        mSocket->queuePacket(&lastCostumeInfPacket);
+    }
+
+    // GameInfPacket
+    if (lastGameInfPacket != emptyGameInfPacket) {
+        mSocket->queuePacket(&lastGameInfPacket);
     }
 }
 
@@ -858,6 +882,7 @@ void Client::updatePlayerConnect(PlayerConnect* packet) {
         mConnectCount++;
     }
 }
+
 /**
  * @brief 
  * 
