@@ -13,7 +13,9 @@
 #include "thread/seadMessageQueue.h"
 #include "types.h"
 
-SocketClient::SocketClient(const char* name, sead::Heap* heap) : mHeap(heap), SocketBase(name) {
+SocketClient::SocketClient(const char* name, sead::Heap* heap, Client* client) : mHeap(heap), SocketBase(name) {
+
+    this->client = client;
 
     mRecvThread = new al::AsyncFunctorThread("SocketRecvThread", al::FunctorV0M<SocketClient*, SocketThreadFunc>(this, &SocketClient::recvFunc), 0, 0x1000, {0});
     mSendThread = new al::AsyncFunctorThread("SocketSendThread", al::FunctorV0M<SocketClient*, SocketThreadFunc>(this, &SocketClient::sendFunc), 0, 0x1000, {0});
@@ -98,6 +100,11 @@ nn::Result SocketClient::init(const char* ip, u16 port) {
     }
 
     send(&initPacket);
+
+    // on a reconnect, resend some maybe missing packets
+    if (initPacket.conType == ConnectionTypes::RECONNECT) {
+      client->resendInitPackets();
+    }
 
     return result;
 
