@@ -42,8 +42,9 @@ s32 SendTo(s32 socket, const void* data, ulong dataLen, s32 flags, const struct 
 s32 Recv(s32 socket, void* out, ulong outLen, s32 flags);
 s32 RecvFrom(s32 socket, void* out, ulong outLen, s32 flags, struct sockaddr* from, u32* fromLen);
 
-s32 GetSockName(s32 socket, struct sockaddr* name, u32 dataLen);
+s32 GetSockName(s32 socket, struct sockaddr* name, u32* dataLen);
 u16 InetHtons(u16 val);
+u16 InetNtohs(u16 val);
 s32 InetAton(const char* addressStr, in_addr* addressOut);
 
 struct hostent* GetHostByName(const char* name);

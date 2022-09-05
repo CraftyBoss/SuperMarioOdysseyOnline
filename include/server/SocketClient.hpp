@@ -29,6 +29,8 @@ class SocketClient : public SocketBase {
         void printPacket(Packet* packet);
         bool isConnected() {return socket_log_state == SOCKET_LOG_CONNECTED; }
 		u16 getUdpPort();
+		s32 setPeerUdpPort(u16 port);
+
 
         sead::PtrArray<Packet> mPacketQueue;
 

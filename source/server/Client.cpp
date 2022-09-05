@@ -373,10 +373,6 @@ void Client::readFunc() {
 
     mSocket->SEND(&initPacket);  // send initial packet
 
-	UdpInit udp_init = UdpInit();
-	udp_init.port = mSocket->getUdpPort();
-	mSocket->SEND(&udp_init)
-
     nn::os::SleepThread(nn::TimeSpan::FromNanoSeconds(500000000)); // sleep for 0.5 seconds to let connection layout fully show (probably should find a better way to do this)
 
     mConnectionWait->tryEnd();
@@ -478,6 +474,19 @@ void Client::readFunc() {
                     InitPacket* initPacket = (InitPacket*)curPacket;
                     Logger::log("Server Max Player Size: %d\n", initPacket->maxPlayers);
                     maxPuppets = initPacket->maxPlayers - 1;
+                    break;
+                }
+                case PacketType::UDPINIT: {
+                    UdpInit* udpInit = (UdpInit*)curPacket;
+                    Logger::log("Setting udp port %u\n", udpInit->port);
+                    this->mSocket->setPeerUdpPort(udpInit->port);
+
+                    HolePunch punch = HolePunch();
+                    this->mSocket->SEND(&punch);
+
+                    UdpInit udp_init = UdpInit();
+                    udp_init.port = mSocket->getUdpPort();
+                    mSocket->SEND(&udp_init);
                     break;
                 }
                 default:

@@ -27,6 +27,7 @@ enum PacketType : short {
     CHANGESTAGE,
     CMD,
     UDPINIT,
+    HOLEPUNCH,
     End // end of enum for bounds checking
 };
 
@@ -44,8 +45,9 @@ USED static const char *packetNames[] = {
     "Moon Collection",
     "Capture Info",
     "Change Stage",
-    "Server Command"
-    "Udp Initialization"
+    "Server Command",
+    "Udp Initialization",
+    "Hole punch",
 };
 
 enum SenderType {
@@ -87,3 +89,4 @@ struct PACKED Packet {
 #include "packets/ChangeStagePacket.h"
 #include "packets/InitPacket.h"
 #include "packets/UdpPacket.h"
+#include "packets/HolePunchPacket.h"
