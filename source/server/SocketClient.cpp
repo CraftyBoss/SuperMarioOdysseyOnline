@@ -281,7 +281,7 @@ if (index == 1) {
                     int result = nn::socket::Recv(fd, packetBuf + valread,
                                                   fullSize - valread, this->sock_flags);
 
-                    this->socket_errno = nn::socket::GetLastErrno();revents
+                    this->socket_errno = nn::socket::GetLastErrno();
 
                     if (result > 0) {
                         valread += result;
