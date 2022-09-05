@@ -27,7 +27,7 @@ runs:
     shell : bash
     run: |
       cd  ./starlight_patch_100/
-      zip  -rmT9  ${{ inputs.filename }}.zip  ./*
+      zip  -rmT9  "${{ inputs.filename }}.zip"  ./*
   -
     name : Attach to release
     uses : actions/upload-release-asset@v1
@@ -36,5 +36,10 @@ runs:
     with:
       upload_url         : ${{ inputs.upload_url }}
       asset_path         : ./starlight_patch_100/${{ inputs.filename }}.zip
-      asset_name         : ${{ inputs.filename }}.zip
+      asset_name         : "${{ inputs.filename }}.zip"
       asset_content_type : application/zip
+  -
+    name  : Cleanup artifacts
+    shell : bash
+    run: |
+      rm -rf ./starlight_patch_100/
