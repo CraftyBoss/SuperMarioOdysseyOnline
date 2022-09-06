@@ -5,20 +5,14 @@ on:
   push:
     tags:
     - 'v[0-9]+.[0-9]+.[0-9]+'
-    - 'v[0-9]+.[0-9]+.[0-9]+\+*'
-    - 'v[0-9]+.[0-9]+.[0-9]+-*'
 
 
 jobs:
 
   build:
-    strategy:
-      matrix:
-        emu : [ Switch, Emulators ]
     runs-on: ubuntu-latest
     outputs:
-      filename1: ${{ steps.set-output.outputs.filename-Switch }}
-      filename2: ${{ steps.set-output.outputs.filename-Emulators }}
+      filename: ${{ steps.build.outputs.filename }}
     steps:
     -
       name : Checkout
@@ -29,13 +23,6 @@ jobs:
       uses : ./.github/actions/build
       with:
         tag : ${{ github.ref_name }}
-        emu : ${{ matrix.emu }}
-    -
-      name  : Set output
-      id    : set-output
-      shell : bash
-      run   : |
-        echo "::set-output name=filename-${{ matrix.emu }}::${{ steps.build.outputs.filename }}"
 
   release:
     needs: build
@@ -52,16 +39,9 @@ jobs:
         tag          : ${{ github.ref_name }}
         GITHUB_TOKEN : ${{ secrets.GITHUB_TOKEN }}
     -
-      name : Attach build artifacts to release (Switch)
+      name : Attach build artifacts to release
       uses : ./.github/actions/attach
       with:
-        filename     : ${{ needs.build.outputs.filename1 }}
-        upload_url   : ${{ steps.release.outputs.upload_url }}
-        GITHUB_TOKEN : ${{ secrets.GITHUB_TOKEN }}
-    -
-      name : Attach build artifacts to release (Emulators)
-      uses : ./.github/actions/attach
-      with:
-        filename     : ${{ needs.build.outputs.filename2 }}
+        filename     : ${{ needs.build.outputs.filename }}
         upload_url   : ${{ steps.release.outputs.upload_url }}
         GITHUB_TOKEN : ${{ secrets.GITHUB_TOKEN }}

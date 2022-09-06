@@ -5,13 +5,9 @@ on:
   push:
     branches:
     - '**'
-    - '!dev'
     tags:
     - '**'
     - '!v[0-9]+.[0-9]+.[0-9]+'
-    - '!v[0-9]+.[0-9]+.[0-9]+\+*'
-    - '!v[0-9]+.[0-9]+.[0-9]+-*'
-    - '!latest-dev'
   pull_request:
     branches:
     - '**'
@@ -20,9 +16,6 @@ on:
 jobs:
 
   build:
-    strategy:
-      matrix:
-        emu : [ Switch, Emulators ]
     runs-on: ubuntu-latest
     steps:
     -
@@ -31,5 +24,3 @@ jobs:
     -
       name : Build artifacts
       uses : ./.github/actions/build
-      with:
-        emu : ${{ matrix.emu }}
