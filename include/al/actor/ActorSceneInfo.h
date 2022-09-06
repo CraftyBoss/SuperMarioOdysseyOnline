@@ -6,6 +6,7 @@
 #include "al/scene/SceneObjHolder.h"
 #include "al/layout/LayoutInitInfo.h"
 #include "game/GameData/GameDataHolderBase.h"
+#include "al/gfx/GraphicsSystemInfo.h"
 
 namespace al {
 
@@ -19,7 +20,6 @@ namespace al {
     struct ScreenCoverCtrl;
     struct ShadowDirector;
     struct ModelGroup;
-    struct GraphicsSystemInfo;
     struct PlayerHolder;
     struct ModelDrawBufferCounter;
 

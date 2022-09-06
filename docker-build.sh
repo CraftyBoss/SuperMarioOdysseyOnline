@@ -1,10 +1,13 @@
 #!/bin/bash
 
+ISEMU=${1:-0}
+
 export DOCKER_BUILDKIT=1
 docker  build  .  -t smoo-client-build
 docker  run  --rm       \
   -u $(id -u):$(id -g)  \
   -v "/$PWD/":/app/     \
+  -e ISEMU=${ISEMU}     \
   smoo-client-build     \
 ;
 docker  rmi  smoo-client-build

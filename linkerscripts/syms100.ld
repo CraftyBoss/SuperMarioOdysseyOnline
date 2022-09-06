@@ -1,1 +1,8 @@
 _ZN14PlayerFunction20initMarioModelCommonEPN2al9LiveActorERKNS0_13ActorInitInfoEPKcS7_ibPNS0_11AudioKeeperEbb = 0x444028 - 0x2C63000;
+_ZN14PlayerFunction14initMarioAudioEPN2al9LiveActorERKNS0_13ActorInitInfoEPNS0_8ResourceEbPNS0_11AudioKeeperE = 0x445A24 - 0x2C63000;
+_ZN14PlayerFunction17initMarioSubModelEPN2al9LiveActorERKNS0_13ActorInitInfoEbbbb = 0x448B8C - 0x2C63000;
+_ZN14PlayerFunction24initMarioHeadCostumeInfoEPN2al9LiveActorERKNS0_13ActorInitInfoEPKcS7_S7_S7_bbbbb = 0x445128 - 0x2C63000;
+_ZN14PlayerFunction19initMarioDepthModelEPN2al9LiveActorEbb = 0x445DF4 - 0x2C63000;
+
+gameDrawTable = 0x1DDFB38 - 0x2C63000;
+gameUpdateTable = 0x1DDFAD8 - 0x2C63000;

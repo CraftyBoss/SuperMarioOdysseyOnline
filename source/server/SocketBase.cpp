@@ -6,8 +6,11 @@
 SocketBase::SocketBase(const char *name)
 {
     strcpy(this->sockName, name);
-
+#if EMU
     this->sock_flags = 0x80;
+#else
+    this->sock_flags = 0;
+#endif
 }
 
 const char *SocketBase::getStateChar() {

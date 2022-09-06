@@ -21,12 +21,18 @@
 #include "HakoniwaStateSimpleDemo.h"
 #include "HakoniwaStateBootLoadData.h"
 
-namespace al
-{
+namespace al {
     class WipeHolder;
     class ScreenCaptureExecutor;
-    class BootLayout;
-} // namespace al
+    class SeadAudioPlayer;
+    class AudioBusSendFader;
+    class SimpleAudioUser;
+}  // namespace al
+    
+class BootLayout;
+class TimeBalloonSequenceInfo;
+class CollectBgmPlayer;
+class LoadLayoutCtrl;
 
 class HakoniwaSequence : public al::Sequence {
     public:
@@ -40,36 +46,59 @@ class HakoniwaSequence : public al::Sequence {
         void update(void);
         bool isEnableSave(void);
         void drawMain(void);
-        al::Scene *getCurrentScene(void) const; // {return this->curScene}
+        al::Scene* getCurrentScene(void) const;  // {return this->curScene}
 
-        void* qword20;
-        void* qword28;
-        void* qword30;
-        void* qword38;
-        void* qword40;
-        void* qword48;
-        void* qword50;
-        void* qword58;
-        void* qword60;
-        void* qword68;
-        void* qword70;
-        void* qword78;
-        void* qword80;
-        void* qword88;
-        al::AudioDirector *mAudioDirector; // 0x90
-        void *qword98;
-        void *qwordA0;
-        void *qwordA8;
-        al::Scene *curScene; // 0xB0
-        GameDataHolderAccessor mGameDataHolder; // 0xB8
-        al::GamePadSystem *mGamepadSys; // 0xC0
-        HakoniwaStateDemoOpening *mDemoOpening; // 0xC8
-        HakoniwaStateDemoEnding *mDemoEnding; // 0xD0
+        void exeBootLoadData();
+        void exeDemoOpening();
+        void exeLoadWorldResource();
+        void exeLoadWorldResourceWithBoot();
+        void exeLoadStage();
+        void exePlayStage();
+        void exeDemoWorldWarp();
+        void exeDemoEnding();
+        void exeDestroy();
+        void exeMiss();
+        void exeMissCoinSub();
+        void exeMissEnd();
+        void exeDemoLava();
+        void exeFadeToNewGame();
+
+        al::Scene *curScene;                        // 0xB0
+        GameDataHolderAccessor mGameDataHolder;     // 0xB8
+        al::GamePadSystem *mGamepadSys;             // 0xC0
+        HakoniwaStateDemoOpening *mDemoOpening;     // 0xC8
+        HakoniwaStateDemoEnding *mDemoEnding;       // 0xD0
         HakoniwaStateDemoWorldWarp *mDemoWorldWarp; // 0xD8
-        HakoniwaStateSimpleDemo *mSimpleDemo; // 0xE0
-        HakoniwaStateBootLoadData *mBootLoadData; // 0xE8
-        HakoniwaStateDeleteScene *mDeleteScene; // 0xF0
-        al::LayoutKit* mLytKit;                 // 0xF8
-        unsigned char padding_168[0x108];
-        WorldResourceLoader* mResourceLoader;  // 0x208
+        HakoniwaStateSimpleDemo *mSimpleDemo;       // 0xE0
+        HakoniwaStateBootLoadData *mBootLoadData;   // 0xE8
+        HakoniwaStateDeleteScene *mDeleteScene;     // 0xF0
+        al::LayoutKit* mLytKit;                     // 0xF8
+        bool mYBalls;                                   
+        sead::FixedSafeString<0x80> stageName;  
+        int scenarioNum;    
+        al::ScreenCaptureExecutor* mScreenCapExecutor;
+        al::WipeHolder* mWipeHolder;
+        bool mMissEnd;
+        al::SimpleLayoutAppearWaitEnd* mCounterMiss;
+        int mCurCoins;
+        int mFinalCoins;
+        BootLayout* mBootLayout;
+        al::EffectSystem* mEffectSystem;
+        al::AsyncFunctorThread* mInitThread;
+        bool mInitialized;
+        al::SeadAudioPlayer* mSeAudioPlayer;
+        al::SeadAudioPlayer* mBgmAudioPlayer;
+        al::AudioBusSendFader* mBusSendFader;
+        WorldResourceLoader* mResourceLoader;
+        sead::Heap* mPlayerResHeap;
+        sead::FixedSafeString<0x80> mCapName;
+        sead::FixedSafeString<0x80> mCostumeName;
+        al::SimpleAudioUser* mPlayerAudioUser;
+        bool mHackEnd;
+        TimeBalloonSequenceInfo* mBalloonSeqInfo;
+        CollectBgmPlayer* mCollectBgmPlayer;
+        sead::FixedSafeString<0x80> mLanguage;
+        int mFileId;
+        LoadLayoutCtrl* mLoadLayoutCtrl;
+        bool mKidsMode;
 };

@@ -33,6 +33,7 @@ class PuppetActor : public al::LiveActor {
         virtual void movement(void) override;
         virtual void makeActorAlive(void) override;
         virtual void makeActorDead(void) override;
+        virtual void calcAnim(void) override;
         
         virtual void attackSensor(al::HitSensor *, al::HitSensor *) override;
         virtual bool receiveMsg(const al::SensorMsg*, al::HitSensor*, al::HitSensor*) override;
@@ -92,3 +93,8 @@ class PuppetActor : public al::LiveActor {
 
         float mClosingSpeed = 0;
 };
+
+PlayerCostumeInfo* initMarioModelPuppet(al::LiveActor* player, const al::ActorInitInfo& initInfo,
+                                        char const* bodyName, char const* capName, int subActorNum,
+                                        al::AudioKeeper* audioKeeper);
+PlayerHeadCostumeInfo* initMarioHeadCostumeInfo(al::LiveActor* player, const al::ActorInitInfo &initInfo, const char* headModelName, const char* capModelName, const char* headType, const char* headSuffix);

@@ -44,7 +44,7 @@ class StageSceneLayout : public al::NerveStateBase {
         void startShineChipCompleteAnim(void);
         void tryStartDemoGetLifeMaxUpItem(bool);
         void startCloset(void);
-        void startShineCountAnim(bool);
+        void startShineCountAnim(bool isGameClear);
 
         void exeAppear(void);
         void exeWait(void);

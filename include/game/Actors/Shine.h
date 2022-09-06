@@ -51,7 +51,7 @@ class Shine : public al::LiveActor , public IUseDimension {
         QuestInfo *shineQuestInfo; // 0x278
         void *unkPtr1; // 0x280
         ActorDimensionKeeper *mDimensionKeeper; // 0x288
-        int shineId;                            // 0x290
+        int mShineIdx;                            // 0x290
         bool mIsMainShine;
         void *qword298;
         void *qword2A0;
