@@ -32,7 +32,8 @@ include $(DEVKITPRO)/libnx/switch_rules
 #---------------------------------------------------------------------------------
 TARGET		?=	$(notdir $(CURDIR))$(SMOVER)
 BUILD		?=	build$(SMOVER)
-SOURCES		:=  source/sead/time source/sead source/puppets source/server/hns source/server/gamemode source/server source/layouts source/states source/cameras source/nx source
+SOURCES		:=  source/sead/time source/sead source/puppets source/server/hns source/server/gamemode source/server/gamemode/modifiers source/server source/layouts source/states source/cameras source/nx source
+SOURCES     +=  source/al/execute
 DATA		:=	data
 INCLUDES	:=	include include/sead
 

@@ -11,6 +11,10 @@
 
 namespace rs {
 
+    bool updateNormalStateExcludeGraphics(al::Scene*);
+
+    void updateEffectSystemEnv(al::Scene *);
+
     bool isModeE3Rom(void);
 
     bool isModeE3LiveRom(void);

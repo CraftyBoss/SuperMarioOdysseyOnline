@@ -10,6 +10,7 @@
 #include "al/util/MathUtil.h"
 #include "al/util/NerveUtil.h"
 #include "al/util/CameraUtil.h"
+#include "al/util/KitUtil.h"
 
 namespace al
 {

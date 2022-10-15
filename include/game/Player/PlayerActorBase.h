@@ -24,6 +24,7 @@ class PlayerActorBase : public al::LiveActor, public IUsePlayerHack {
         virtual int getPortNo(void);
         virtual sead::Matrix34f *getViewMtx(void) const;
         virtual IUsePlayerCollision* getPlayerCollision(void) const;
+        virtual PlayerHackKeeper* getPlayerHackKeeper() const override;
 
         virtual bool isEnableDemo(void);
         virtual void startDemo(void);
@@ -60,7 +61,6 @@ class PlayerActorBase : public al::LiveActor, public IUsePlayerHack {
         virtual void sendCollisionMsg(void);
 
         virtual bool receivePushMsg(al::SensorMsg const*,al::HitSensor *,al::HitSensor *,float);
-        virtual PlayerHackKeeper* getPlayerHackKeeper() const override;
 
         sead::Matrix34f* mViewMtx;  // 0x110
         int mPortNo; // 0x118

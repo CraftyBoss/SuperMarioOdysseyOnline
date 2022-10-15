@@ -67,6 +67,12 @@ public:
     // checks save file if shine is collected by shine index only (0 through 725)
     static bool isGotShine(GameDataHolderAccessor, int);
 
+    // checks save file if shine is collected using the shines ShineInfo
+    static bool isGotShine(GameDataHolderAccessor, ShineInfo const*);
+
+    // checks save file if shine is collected using the shines stage and obj ID
+    static bool isGotShine(GameDataHolderAccessor, const char *stageName, const char *objID);
+
     // Gets Index for X Kingdom
     static s32 getWorldIndexWaterfall(void);
     static s32 getWorldIndexMoon(void);
@@ -151,5 +157,19 @@ public:
     static bool isUnlockFirstForest(void);
     
     static bool isUnlockFirstSea(void);
-
 };
+
+namespace CustomGameDataFunction {
+    static GameDataFile::HintInfo* getHintInfoByUniqueID(GameDataHolderAccessor accessor, int uid) {
+        return accessor.mData->mGameDataFile->findShine(uid);
+    }
+
+    static const GameDataFile::HintInfo* getHintInfoByIndex(GameDataHolderAccessor accessor, int index) {
+        return &accessor.mData->mGameDataFile->mShineHintList[index];
+    }
+
+    static const GameDataFile::HintInfo* getHintInfoByIndex(al::LiveActor* actor, int index) {
+        GameDataHolderAccessor accessor(actor);
+        return getHintInfoByIndex(accessor, index);
+    }
+}

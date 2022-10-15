@@ -20,6 +20,9 @@ on:
 jobs:
 
   build:
+    strategy:
+      matrix:
+        emu : [ Switch, Emulators ]
     runs-on: ubuntu-latest
     steps:
     -
@@ -28,3 +31,5 @@ jobs:
     -
       name : Build artifacts
       uses : ./.github/actions/build
+      with:
+        emu : ${{ matrix.emu }}
