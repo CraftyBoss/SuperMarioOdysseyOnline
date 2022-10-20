@@ -11,7 +11,7 @@ inputs:
     required    : false
     default     : ''
   emu:
-    description : 'what system the build is for, Switch or Emulators'
+    description : 'what system the build is for: Switch, Ryujinx or yuzu'
     required    : false
     default     : 'Switch'
 
@@ -56,11 +56,22 @@ runs:
       docker  run  --rm             \
         -u `id -u`:`id -g`          \
         -v "/$PWD/":/app/           \
-        -e ISEMU=${{ (inputs.emu == 'Emulators' && '1') || '0' }}  \
+        -e ISEMU=${{ (inputs.emu != 'Switch' && '1') || '0' }}  \
         ${{ (steps.env.outputs.version != '' && format('-e BUILDVER={0}', steps.env.outputs.version)) || '' }}  \
         smoo-build-env      \
       ;
       cp  -r  ./romfs/  ./starlight_patch_100/atmosphere/contents/0100000000010000/.
+  -
+    name  : Yuzu
+    shell : bash
+    if    : ${{ inputs.emu == 'yuzu' }}
+    run: |
+      cd  ./starlight_patch_100/
+      mkdir  ./SMOO/
+      mv  ./atmosphere/contents/0100000000010000/exefs  ./SMOO/exefs
+      mv  ./atmosphere/contents/0100000000010000/romfs  ./SMOO/romfs
+      mv  ./atmosphere/exefs_patches/StarlightBase/3CA12DFAAF9C82DA064D1698DF79CDA1.ips  ./SMOO/romfs/
+      rm  -rf  ./atmosphere/
   -
     name : Upload artifacts
     uses : actions/upload-artifact@v3
