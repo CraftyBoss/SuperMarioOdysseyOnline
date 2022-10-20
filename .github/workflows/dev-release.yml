@@ -35,7 +35,7 @@ jobs:
       id    : env
       shell : bash
       run: |
-        echo "::set-output name=prefix::$(date +'%Y%m%d_%H%M%S_' --utc)"
+        echo "prefix=$(date +'%Y%m%d_%H%M%S_' --utc)" >>$GITHUB_OUTPUT
     -
       name : Build artifacts
       id   : build
@@ -48,7 +48,7 @@ jobs:
       id    : set-output
       shell : bash
       run   : |
-        echo "::set-output name=filename-${{ matrix.emu }}::${{ steps.build.outputs.filename }}"
+        echo "filename-${{ matrix.emu }}=${{ steps.build.outputs.filename }}" >>$GITHUB_OUTPUT
 
   attach:
     needs: build
@@ -63,7 +63,7 @@ jobs:
       shell : bash
       run: |
         url=`curl -sS --fail ${{ github.api_url }}/repos/${{ github.repository }}/releases/tags/${{ env.TAG }} | jq .upload_url -r`
-        echo "::set-output name=upload_url::$url"
+        echo "upload_url=$url" >>$GITHUB_OUTPUT
     -
       name : Attach build artifacts to release (Switch)
       uses : ./.github/actions/attach
