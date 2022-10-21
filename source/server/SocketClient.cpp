@@ -253,8 +253,8 @@ bool SocketClient::recv() {
 
         Packet *packet = reinterpret_cast<Packet*>(packetBuf);
 
-        if(mPacketQueue.size() < maxBufSize - 1) {
-            mPacketQueue.pushBack(packet);
+        if(!mRecvQueue.isFull()) {
+            mRecvQueue.push((s64)packet, sead::MessageQueue::BlockType::NonBlocking);
 			this->has_recv_udp = true;
         } else {
             free(packetBuf);
