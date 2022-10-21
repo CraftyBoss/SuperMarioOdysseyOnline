@@ -37,6 +37,7 @@ class SocketClient : public SocketBase {
     private:
         int maxBufSize = 100;
 
+	    bool has_recv_udp;
 		s32 udp_socket;
 		sockaddr udp_addr;
 

@@ -138,7 +138,7 @@ bool SocketClient::SEND(Packet *packet) {
     int valread = 0;
 
 	int fd = -1;
-    if (packet->mType != PLAYERINF && packet->mType != HACKCAPINF && packet->mType != HOLEPUNCH) {
+    if ((packet->mType != PLAYERINF && packet->mType != HACKCAPINF && packet->mType != HOLEPUNCH) || !this->has_recv_udp) {
 		Logger::log("Sending packet: %s\n", packetNames[packet->mType]);
 		fd = this->socket_log_socket;
 	} else {
@@ -196,7 +196,8 @@ bool SocketClient::RECV() {
 	if (fd == -1) {
 		return true;
 	}
-if (index == 1) {
+
+	if (index == 1) {
         int result = nn::socket::Recv(fd, headerBuf, sizeof(headerBuf), this->sock_flags);
         if (result < headerSize){
             return true;
@@ -224,6 +225,7 @@ if (index == 1) {
 
         if(mPacketQueue.size() < maxBufSize - 1) {
             mPacketQueue.pushBack(packet);
+			this->has_recv_udp = true;
         } else {
             free(packetBuf);
         }
