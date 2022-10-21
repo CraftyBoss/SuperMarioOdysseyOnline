@@ -19,9 +19,13 @@ concurrency:
 jobs:
 
   build:
+    strategy:
+      matrix:
+        emu : [ Switch, Emulators ]
     runs-on: ubuntu-latest
     outputs:
-      filename: ${{ steps.build.outputs.filename }}
+      filename1: ${{ steps.set-output.outputs.filename-Switch }}
+      filename2: ${{ steps.set-output.outputs.filename-Emulators }}
     steps:
     -
       name : Checkout
@@ -38,6 +42,13 @@ jobs:
       uses : ./.github/actions/build
       with:
         prefix : ${{ steps.env.outputs.prefix }}
+        emu    : ${{ matrix.emu }}
+    -
+      name  : Set output
+      id    : set-output
+      shell : bash
+      run   : |
+        echo "::set-output name=filename-${{ matrix.emu }}::${{ steps.build.outputs.filename }}"
 
   attach:
     needs: build
@@ -54,10 +65,17 @@ jobs:
         url=`curl -sS --fail ${{ github.api_url }}/repos/${{ github.repository }}/releases/tags/${{ env.TAG }} | jq .upload_url -r`
         echo "::set-output name=upload_url::$url"
     -
-      name : Attach build artifacts to release
+      name : Attach build artifacts to release (Switch)
       uses : ./.github/actions/attach
       with:
-        filename     : ${{ needs.build.outputs.filename }}
+        filename     : ${{ needs.build.outputs.filename1 }}
+        upload_url   : ${{ steps.release.outputs.upload_url }}
+        GITHUB_TOKEN : ${{ secrets.GITHUB_TOKEN }}
+    -
+      name : Attach build artifacts to release (Emulators)
+      uses : ./.github/actions/attach
+      with:
+        filename     : ${{ needs.build.outputs.filename2 }}
         upload_url   : ${{ steps.release.outputs.upload_url }}
         GITHUB_TOKEN : ${{ secrets.GITHUB_TOKEN }}
 

@@ -31,9 +31,9 @@ class ChangeStageInfo {
 
         sead::FixedSafeString<0x80> changeStageId; // 0x0 (Size: 0x98)
         sead::FixedSafeString<0x80> changeStageName; // 0xA0
-        sead::FixedSafeString<0x80> placementString; // 0x138
+        sead::FixedSafeString<0x80> placementString; // 0x130
         bool isReturn; // 0x1C8
-        int scenarioNo; // 0x1CC or 0x134
+        int scenarioNo; // 0x1CC
         SubScenarioType subType; // 0x1D0
         sead::FixedSafeString<0x80> wipeType; // 0x1D8
         int hintPriority; // 0x270

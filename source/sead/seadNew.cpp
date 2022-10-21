@@ -151,14 +151,14 @@ void operator delete[](void* ptr, sead::Heap*, const std::nothrow_t&) noexcept
 
 // operator delete(void*, sead::Heap*, s32)
 
-void operator delete(void* ptr, sead::Heap*, s32)
+void operator delete(void* ptr, sead::Heap* heap, s32)
 {
-    sead::system::DeleteImpl(ptr);
+    heap->free(ptr);
 }
 
-void operator delete[](void* ptr, sead::Heap*, s32)
+void operator delete[](void* ptr, sead::Heap*heap, s32)
 {
-    sead::system::DeleteImpl(ptr);
+    heap->free(ptr);
 }
 
 void operator delete(void* ptr, sead::Heap*, s32, const std::nothrow_t&) noexcept

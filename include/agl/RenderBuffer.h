@@ -7,6 +7,7 @@
 
 #include "RenderTargetColor.h"
 #include "RenderTargetDepth.h"
+#include "DrawContext.h"
 
 #include "sead/gfx/seadFrameBuffer.h"
 

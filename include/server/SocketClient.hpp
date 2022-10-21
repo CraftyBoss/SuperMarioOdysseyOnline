@@ -1,6 +1,8 @@
 #pragma once
 
 #include "SocketBase.hpp"
+#include "al/async/AsyncFunctorThread.h"
+#include "heap/seadHeap.h"
 #include "nn/result.h"
 #include "sead/math/seadVector.h"
 #include "sead/math/seadQuat.h"
@@ -12,30 +14,58 @@
 
 #include "syssocket/sockdefines.h"
 
+#include "thread/seadMessageQueue.h"
+#include "thread/seadMutex.h"
 #include "types.h"
 
 #include "packets/Packet.h"
 
 class SocketClient : public SocketBase {
     public:
-        SocketClient(const char *name) : SocketBase(name) {
-            mPacketQueue = sead::PtrArray<Packet>();
-            mPacketQueue.tryAllocBuffer(maxBufSize, nullptr);
-        };
+        SocketClient(const char *name, sead::Heap *heap);
         nn::Result init(const char* ip, u16 port) override;
+        bool tryReconnect();
         bool closeSocket() override;
-        bool SEND(Packet *packet);
-        bool RECV();
+
+        bool startThreads();
+        void endThreads();
+
+        bool send(Packet* packet);
+        bool recv();
+
+        bool queuePacket(Packet *packet);
+        void trySendQueue();
+
+        void sendFunc();
+        void recvFunc();
+
+        Packet *tryGetPacket(sead::MessageQueue::BlockType blockType = sead::MessageQueue::BlockType::Blocking);
+
         void printPacket(Packet* packet);
-        bool isConnected() {return socket_log_state == SOCKET_LOG_CONNECTED; }
+        bool isConnected() { return socket_log_state == SOCKET_LOG_CONNECTED; }
+
 		u16 getUdpPort();
 		s32 setPeerUdpPort(u16 port);
 
+        u32 getSendCount() { return mSendQueue.getCount(); }
+        u32 getSendMaxCount() { return mSendQueue.getMaxCount(); }
 
-        sead::PtrArray<Packet> mPacketQueue;
+        u32 getRecvCount() { return mRecvQueue.getCount(); }
+        u32 getRecvMaxCount() { return mRecvQueue.getMaxCount(); }
+
+        void setIsFirstConn(bool value) { mIsFirstConnect = value; }
 
     private:
+        sead::Heap* mHeap = nullptr;
+        
+        al::AsyncFunctorThread* mRecvThread = nullptr;
+        al::AsyncFunctorThread* mSendThread = nullptr;
+        
+        sead::MessageQueue mRecvQueue;
+        sead::MessageQueue mSendQueue;
+
         int maxBufSize = 100;
+        bool mIsFirstConnect = true;
 
 	    bool has_recv_udp;
 		s32 udp_socket;
@@ -49,3 +79,5 @@ class SocketClient : public SocketBase {
          */
         bool stringToIPAddress(const char* str, in_addr* out);
 };
+
+typedef void (SocketClient::*SocketThreadFunc)(void);

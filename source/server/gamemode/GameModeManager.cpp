@@ -1,16 +1,19 @@
 #include "server/gamemode/GameModeManager.hpp"
 #include <cstring>
-#include <heap/seadFrameHeap.h>
+#include <heap/seadExpHeap.h>
+#include <basis/seadNew.h>
+#include <heap/seadHeapMgr.h>
 #include "al/util.hpp"
-#include "basis/seadNew.h"
-#include "heap/seadHeapMgr.h"
+#include "logger.hpp"
 #include "server/gamemode/GameModeBase.hpp"
 #include "server/gamemode/GameModeFactory.hpp"
+#include "server/gamemode/modifiers/ModeModifierBase.hpp"
+#include "server/gamemode/modifiers/ModifierFactory.hpp"
 
 SEAD_SINGLETON_DISPOSER_IMPL(GameModeManager)
 
 GameModeManager::GameModeManager() {
-    mHeap = sead::FrameHeap::create(0x100000, "GameModeHeap", al::getSequenceHeap(), 8,
+    mHeap = sead::ExpHeap::create(0x50000, "GameModeHeap", al::getSequenceHeap(), 8,
                                     sead::Heap::HeapDirection::cHeapDirection_Reverse, false);
     setMode(GameMode::HIDEANDSEEK);
 }
@@ -84,6 +87,7 @@ void GameModeManager::initScene(const GameModeInitInfo& info) {
     }
 
     if (mCurModeBase) {
+        sead::ScopedCurrentHeapSetter heapSetter(GameModeManager::getSceneHeap());
         mCurModeBase->init(*mLastInitInfo);
         if (mCurModeBase->isModeActive())
             mWasSceneTrans = true;

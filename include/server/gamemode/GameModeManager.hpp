@@ -3,8 +3,10 @@
 #include <heap/seadDisposer.h>
 #include <heap/seadHeap.h>
 #include <container/seadSafeArray.h>
+#include "al/util.hpp"
 #include "server/gamemode/GameModeBase.hpp"
 #include "server/gamemode/GameModeInfoBase.hpp"
+#include "server/gamemode/modifiers/ModeModifierBase.hpp"
 
 class GameModeManager {
     SEAD_SINGLETON_DISPOSER(GameModeManager)
@@ -29,6 +31,7 @@ public:
     T* createModeInfo();
 
     sead::Heap* getHeap() { return mHeap; }
+    static sead::Heap* getSceneHeap() { return al::getSceneHeap(); }
     void toggleActive();
     void setActive(bool active) { mActive = active; }
     void setPaused(bool paused);
@@ -47,6 +50,7 @@ private:
     GameModeBase* mCurModeBase = nullptr;
     GameModeInfoBase *mModeInfo = nullptr;
     GameModeInitInfo *mLastInitInfo = nullptr;
+    ModeModifierBase *mCurModifier = nullptr;
 };
 
 template<class T>
