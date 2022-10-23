@@ -383,6 +383,19 @@ void Client::readFunc() {
                 maxPuppets = initPacket->maxPlayers - 1;
                 break;
             }
+			case PacketType::UDPINIT: {
+				UdpInit* initPacket = (UdpInit*)curPacket;
+				Logger::log("Received udp init packet from server");
+				
+				sInstance->mSocket->setPeerUdpPort(initPacket->port);
+				sendUdpHolePunch();
+				sendUdpInit();
+				
+				break;
+			}
+			case PacketType::HOLEPUNCH: 
+				sendUdpHolePunch();
+				break;
             default:
                 Logger::log("Discarding Unknown Packet Type.\n");
                 break;
@@ -939,7 +952,45 @@ void Client::sendToStage(ChangeStagePacket* packet) {
         GameDataFunction::tryChangeNextStage(accessor, &info);
     }
 }
+/**
+ * @brief 
+ * Send a udp holepunch packet to the server
+ */
+void Client::sendUdpHolePunch() {
 
+    if (!sInstance) {
+        Logger::log("Static Instance is Null!\n");
+        return;
+    }
+
+    sead::ScopedCurrentHeapSetter setter(sInstance->mHeap);
+    
+    HolePunch *packet = new HolePunch();
+	
+    packet->mUserID = sInstance->mUserID;
+
+    sInstance->mSocket->queuePacket(packet);
+}
+/**
+ * @brief 
+ * Send a udp init packet to server
+ */
+void Client::sendUdpInit() {
+
+    if (!sInstance) {
+        Logger::log("Static Instance is Null!\n");
+        return;
+    }
+
+    sead::ScopedCurrentHeapSetter setter(sInstance->mHeap);
+    
+    UdpInit *packet = new UdpInit();
+	
+    packet->mUserID = sInstance->mUserID;
+	packet->port = sInstance->mSocket->getLocalUdpPort();
+	
+    sInstance->mSocket->queuePacket(packet);
+}
 /**
  * @brief 
  * 

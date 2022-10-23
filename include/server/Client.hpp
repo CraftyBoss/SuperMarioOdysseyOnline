@@ -197,6 +197,8 @@ class Client {
         void updateTagInfo(TagInf *packet);
         void updateCaptureInfo(CaptureInf* packet);
         void sendToStage(ChangeStagePacket* packet);
+        void sendUdpHolePunch();
+        void sendUdpInit();
         void disconnectPlayer(PlayerDC *packet);
 
         PuppetInfo* findPuppetInfo(const nn::account::Uid& id, bool isFindAvailable);

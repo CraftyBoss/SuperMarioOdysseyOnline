@@ -44,7 +44,7 @@ class SocketClient : public SocketBase {
         void printPacket(Packet* packet);
         bool isConnected() { return socket_log_state == SOCKET_LOG_CONNECTED; }
 
-		u16 getUdpPort();
+		u16 getLocalUdpPort();
 		s32 setPeerUdpPort(u16 port);
 
         u32 getSendCount() { return mSendQueue.getCount(); }

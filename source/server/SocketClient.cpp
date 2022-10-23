@@ -91,10 +91,7 @@ nn::Result SocketClient::init(const char* ip, u16 port) {
     udpAddress.port = nn::socket::InetHtons(41553);
     udpAddress.family = 2;
     this->udp_addr = udpAddress;
-
-    // udpAddress.address = hostAddress;
-    // udpAddress.port = nn::socket::InetHtons(57734);
-    // udpAddress.family = 2;
+	this->has_recv_udp = false;
 
     if((result = nn::socket::Connect(this->udp_socket, &udpAddress, sizeof(udpAddress))).isFailure()) {
         Logger::log("Udp Socket Connection Failed!\n");
@@ -128,7 +125,7 @@ nn::Result SocketClient::init(const char* ip, u16 port) {
 
 }
 
-u16 SocketClient::getUdpPort() {
+u16 SocketClient::getLocalUdpPort() {
     sockaddr udpAddress = { 0 };
     u32 size = sizeof(udpAddress);
 
@@ -235,30 +232,32 @@ bool SocketClient::recv() {
 
         Packet* header = reinterpret_cast<Packet*>(headerBuf);
         int fullSize = header->mPacketSize + sizeof(Packet);
-
+		// Verify packet size is appropriate
         if (result < fullSize || result > MAXPACKSIZE || fullSize > MAXPACKSIZE){
             return true;
         }
-
-        char* packetBuf = (char*)malloc(fullSize);
-
+		
+		// Verify type of packet
         if (!(header->mType > PacketType::UNKNOWN && header->mType < PacketType::End)) {
             Logger::log("Failed to acquire valid packet type! Packet Type: %d Full Packet Size %d valread size: %d", header->mType, fullSize, result);
-            free(packetBuf);
             return true;
         }
 
-        memcpy(packetBuf, headerBuf, fullSize);
+		this->has_recv_udp = true;
+		
+        char* packetBuf = (char*)mHeap->alloc(fullSize);
+        if (packetBuf){
+			memcpy(packetBuf, headerBuf, fullSize);
 
 
-        Packet *packet = reinterpret_cast<Packet*>(packetBuf);
+			Packet *packet = reinterpret_cast<Packet*>(packetBuf);
 
-        if(!mRecvQueue.isFull()) {
-            mRecvQueue.push((s64)packet, sead::MessageQueue::BlockType::NonBlocking);
-			this->has_recv_udp = true;
-        } else {
-            free(packetBuf);
-        }
+			if(!mRecvQueue.isFull()) {
+				mRecvQueue.push((s64)packet, sead::MessageQueue::BlockType::NonBlocking);
+			} else {
+				mHeap->free(packetBuf);
+			}
+		}
         return true;
     }
 
