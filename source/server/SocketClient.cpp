@@ -199,7 +199,7 @@ bool SocketClient::recv() {
 
                 if (!(header->mType > PacketType::UNKNOWN && header->mType < PacketType::End)) {
                     Logger::log("Failed to acquire valid packet type! Packet Type: %d Full Packet Size %d valread size: %d", header->mType, fullSize, valread);
-                    free(packetBuf);
+                    mHeap->free(packetBuf);
                     return true;
                 }
 
