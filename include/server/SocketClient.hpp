@@ -46,6 +46,7 @@ class SocketClient : public SocketBase {
 
 		u16 getLocalUdpPort();
 		s32 setPeerUdpPort(u16 port);
+        const char* getUdpStateChar();
 
         u32 getSendCount() { return mSendQueue.getCount(); }
         u32 getSendMaxCount() { return mSendQueue.getMaxCount(); }

@@ -88,7 +88,7 @@ nn::Result SocketClient::init(const char* ip, u16 port) {
 	}
 
     udpAddress.address = hostAddress;
-    udpAddress.port = nn::socket::InetHtons(41553);
+    udpAddress.port = nn::socket::InetHtons(0);
     udpAddress.family = 2;
     this->udp_addr = udpAddress;
 	this->has_recv_udp = false;
@@ -155,6 +155,17 @@ s32 SocketClient::setPeerUdpPort(u16 port) {
 
 }
 
+const char* SocketClient::getUdpStateChar() {
+	if (this->udp_addr.port == 0) {
+		return "Waiting for handshake";
+	}
+	
+	if (!this->has_recv_udp) {
+		return "Waiting for holepunch";
+	}
+	
+	return "Utilizing UDP";
+}
 bool SocketClient::send(Packet *packet) {
 
     if (this->socket_log_state != SOCKET_LOG_CONNECTED)
