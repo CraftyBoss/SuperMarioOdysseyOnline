@@ -381,6 +381,7 @@ bool SocketClient::closeSocket() {
 
     Logger::log("Closing Socket.\n");
 
+	has_recv_udp = false;
     bool result = false;
 
     if (!(result = SocketBase::closeSocket())) {
