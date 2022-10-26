@@ -199,7 +199,7 @@ bool SocketClient::recv() {
     }
     
     int headerSize = sizeof(Packet);
-    char headerBuf[MAXPACKSIZE * 2] = {};
+    char headerBuf[MAXPACKSIZE + 1] = {0};
     int valread = 0;
 
     const int fd_count = 2;
