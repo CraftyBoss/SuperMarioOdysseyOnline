@@ -385,7 +385,7 @@ void Client::readFunc() {
             }
 			case PacketType::UDPINIT: {
 				UdpInit* initPacket = (UdpInit*)curPacket;
-				Logger::log("Received udp init packet from server");
+				Logger::log("Received udp init packet from server\n");
 				
 				sInstance->mSocket->setPeerUdpPort(initPacket->port);
 				sendUdpHolePunch();
