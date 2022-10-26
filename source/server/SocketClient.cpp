@@ -30,7 +30,7 @@ nn::Result SocketClient::init(const char* ip, u16 port) {
     
     in_addr  hostAddress   = { 0 };
     sockaddr serverAddress = { 0 };
-    sockaddr udpAddress = { 0 };
+    sockaddr udpAddress    = { 0 };
 
     Logger::log("SocketClient::init: %s:%d sock %s\n", ip, port, getStateChar());
 
@@ -87,7 +87,6 @@ nn::Result SocketClient::init(const char* ip, u16 port) {
         return -1;
     }
 
-    // TODO Find a way around the 41553 constant port
     udpAddress.address = hostAddress;
     udpAddress.port = 0;
     udpAddress.family = 2;
