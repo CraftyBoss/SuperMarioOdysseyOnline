@@ -87,8 +87,9 @@ nn::Result SocketClient::init(const char* ip, u16 port) {
         return -1;
 	}
 
+	// TODO Find a way around the 41553 constant port
     udpAddress.address = hostAddress;
-    udpAddress.port = nn::socket::InetHtons(0);
+    udpAddress.port = nn::socket::InetHtons(41553);
     udpAddress.family = 2;
     this->udp_addr = udpAddress;
 	this->has_recv_udp = false;
@@ -156,7 +157,7 @@ s32 SocketClient::setPeerUdpPort(u16 port) {
 }
 
 const char* SocketClient::getUdpStateChar() {
-	if (this->udp_addr.port == 0) {
+	if (this->udp_addr.port == 41553) {
 		return "Waiting for handshake";
 	}
 	
