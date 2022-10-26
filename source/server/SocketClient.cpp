@@ -80,19 +80,19 @@ nn::Result SocketClient::init(const char* ip, u16 port) {
         return result;
     }
 
-	if ((this->udp_socket = nn::socket::Socket(2, 2, 17)) < 0) {
+    if ((this->udp_socket = nn::socket::Socket(2, 2, 17)) < 0) {
         Logger::log("Udp Socket failed to create");
         this->socket_errno = nn::socket::GetLastErrno();
         this->socket_log_state = SOCKET_LOG_UNAVAILABLE;
         return -1;
-	}
+    }
 
-	// TODO Find a way around the 41553 constant port
+    // TODO Find a way around the 41553 constant port
     udpAddress.address = hostAddress;
     udpAddress.port = nn::socket::InetHtons(41553);
     udpAddress.family = 2;
     this->udp_addr = udpAddress;
-	this->has_recv_udp = false;
+    this->has_recv_udp = false;
 
     if((result = nn::socket::Connect(this->udp_socket, &udpAddress, sizeof(udpAddress))).isFailure()) {
         Logger::log("Udp Socket Connection Failed!\n");
@@ -157,15 +157,15 @@ s32 SocketClient::setPeerUdpPort(u16 port) {
 }
 
 const char* SocketClient::getUdpStateChar() {
-	if (this->udp_addr.port == 41553) {
-		return "Waiting for handshake";
-	}
-	
-	if (!this->has_recv_udp) {
-		return "Waiting for holepunch";
-	}
-	
-	return "Utilizing UDP";
+    if (this->udp_addr.port == 41553) {
+        return "Waiting for handshake";
+    }
+
+    if (!this->has_recv_udp) {
+        return "Waiting for holepunch";
+    }
+
+    return "Utilizing UDP";
 }
 bool SocketClient::send(Packet *packet) {
 
@@ -176,17 +176,17 @@ bool SocketClient::send(Packet *packet) {
 
     int valread = 0;
 
-	int fd = -1;
+    int fd = -1;
     if ((packet->mType != PLAYERINF && packet->mType != HACKCAPINF && packet->mType != HOLEPUNCH) || !this->has_recv_udp) {
-		Logger::log("Sending packet: %s\n", packetNames[packet->mType]);
-		fd = this->socket_log_socket;
-	} else {
+        Logger::log("Sending packet: %s\n", packetNames[packet->mType]);
+        fd = this->socket_log_socket;
+    } else {
 
-		fd = this->udp_socket;
-	}
+        fd = this->udp_socket;
+    }
 
 
-	if ((valread = nn::socket::Send(fd, buffer, packet->mPacketSize + sizeof(Packet), 0) > 0)) {
+    if ((valread = nn::socket::Send(fd, buffer, packet->mPacketSize + sizeof(Packet), 0) > 0)) {
         return true;
     } else {
         Logger::log("Failed to Fully Send Packet! Result: %d Type: %s Packet Size: %d\n", valread, packetNames[packet->mType], packet->mPacketSize);
@@ -209,34 +209,34 @@ bool SocketClient::recv() {
     char headerBuf[MAXPACKSIZE * 2] = {};
     int valread = 0;
 
-	const int fd_count = 2;
-	struct pollfd pfds[fd_count] = {{0}, {0}};
-	pfds[0].fd = this->socket_log_socket;
-	pfds[0].events = 1;
-	pfds[0].revents = 0;
-	pfds[1].fd = this->udp_socket;
-	pfds[1].events = 1;
-	pfds[1].revents = 0;
+    const int fd_count = 2;
+    struct pollfd pfds[fd_count] = {{0}, {0}};
+    pfds[0].fd = this->socket_log_socket;
+    pfds[0].events = 1;
+    pfds[0].revents = 0;
+    pfds[1].fd = this->udp_socket;
+    pfds[1].events = 1;
+    pfds[1].revents = 0;
 
 
-	if (nn::socket::Poll(pfds, fd_count, 0) <= 0) {
-		return true;
-	}
+    if (nn::socket::Poll(pfds, fd_count, 0) <= 0) {
+        return true;
+    }
 
-	s32 fd = -1;
-	s32 index = -1;
-	for (int i = 0; i < fd_count; i++){
-		if (pfds[i].revents & 1) {
-			fd = pfds[i].fd;
-			index = i;
-		}
-	}
+    s32 fd = -1;
+    s32 index = -1;
+    for (int i = 0; i < fd_count; i++){
+        if (pfds[i].revents & 1) {
+            fd = pfds[i].fd;
+            index = i;
+        }
+    }
 
-	if (fd == -1) {
-		return true;
-	}
+    if (fd == -1) {
+        return true;
+    }
 
-	if (index == 1) {
+    if (index == 1) {
         int result = nn::socket::Recv(fd, headerBuf, sizeof(headerBuf), this->sock_flags);
         if (result < headerSize){
             return true;
@@ -244,40 +244,40 @@ bool SocketClient::recv() {
 
         Packet* header = reinterpret_cast<Packet*>(headerBuf);
         int fullSize = header->mPacketSize + sizeof(Packet);
-		// Verify packet size is appropriate
+        // Verify packet size is appropriate
         if (result < fullSize || result > MAXPACKSIZE || fullSize > MAXPACKSIZE){
             return true;
         }
-		
-		// Verify type of packet
+
+        // Verify type of packet
         if (!(header->mType > PacketType::UNKNOWN && header->mType < PacketType::End)) {
             Logger::log("Failed to acquire valid packet type! Packet Type: %d Full Packet Size %d valread size: %d", header->mType, fullSize, result);
             return true;
         }
 
-		this->has_recv_udp = true;
-		
+        this->has_recv_udp = true;
+
         char* packetBuf = (char*)mHeap->alloc(fullSize);
         if (packetBuf){
-			memcpy(packetBuf, headerBuf, fullSize);
+            memcpy(packetBuf, headerBuf, fullSize);
 
 
-			Packet *packet = reinterpret_cast<Packet*>(packetBuf);
+            Packet *packet = reinterpret_cast<Packet*>(packetBuf);
 
-			if(!mRecvQueue.isFull()) {
-				mRecvQueue.push((s64)packet, sead::MessageQueue::BlockType::NonBlocking);
-			} else {
-				mHeap->free(packetBuf);
-			}
-		}
+            if(!mRecvQueue.isFull()) {
+                mRecvQueue.push((s64)packet, sead::MessageQueue::BlockType::NonBlocking);
+            } else {
+                mHeap->free(packetBuf);
+            }
+        }
         return true;
     }
 
     // read only the size of a header
     while(valread < headerSize) {
         int result = 0;
-		result = nn::socket::Recv(fd, headerBuf + valread,
-										headerSize - valread, this->sock_flags);
+        result = nn::socket::Recv(fd, headerBuf + valread,
+                                        headerSize - valread, this->sock_flags);
 
         this->socket_errno = nn::socket::GetLastErrno();
         
@@ -393,7 +393,7 @@ bool SocketClient::closeSocket() {
 
     Logger::log("Closing Socket.\n");
 
-	has_recv_udp = false;
+    has_recv_udp = false;
     bool result = false;
 
     if (!(result = SocketBase::closeSocket())) {
