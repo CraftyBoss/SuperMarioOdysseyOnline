@@ -89,17 +89,10 @@ nn::Result SocketClient::init(const char* ip, u16 port) {
 
     // TODO Find a way around the 41553 constant port
     udpAddress.address = hostAddress;
-    udpAddress.port = nn::socket::InetHtons(41553);
+    udpAddress.port = 0;
     udpAddress.family = 2;
     this->udp_addr = udpAddress;
     this->has_recv_udp = false;
-
-    if((result = nn::socket::Connect(this->udp_socket, &udpAddress, sizeof(udpAddress))).isFailure()) {
-        Logger::log("Udp Socket Connection Failed!\n");
-        this->socket_errno = nn::socket::GetLastErrno();
-        this->socket_log_state = SOCKET_LOG_UNAVAILABLE;
-        return result;
-    }
 
     this->socket_log_state = SOCKET_LOG_CONNECTED;
 
@@ -157,7 +150,7 @@ s32 SocketClient::setPeerUdpPort(u16 port) {
 }
 
 const char* SocketClient::getUdpStateChar() {
-    if (this->udp_addr.port == 41553) {
+    if (this->udp_addr.port == 0) {
         return "Waiting for handshake";
     }
 
@@ -394,6 +387,7 @@ bool SocketClient::closeSocket() {
     Logger::log("Closing Socket.\n");
 
     has_recv_udp = false;
+	udp_addr.port = 0;
     bool result = false;
 
     if (!(result = SocketBase::closeSocket())) {
