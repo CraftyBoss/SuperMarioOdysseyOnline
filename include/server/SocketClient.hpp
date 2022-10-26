@@ -64,6 +64,7 @@ class SocketClient : public SocketBase {
         
         sead::MessageQueue mRecvQueue;
         sead::MessageQueue mSendQueue;
+        char* recvBuf = nullptr;
 
         int maxBufSize = 100;
         bool mIsFirstConnect = true;

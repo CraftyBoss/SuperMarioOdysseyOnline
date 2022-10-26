@@ -21,6 +21,7 @@ SocketClient::SocketClient(const char* name, sead::Heap* heap) : mHeap(heap), So
     
     mRecvQueue.allocate(maxBufSize, mHeap);
     mSendQueue.allocate(maxBufSize, mHeap);
+	recvBuf = (char*)mHeap->alloc(MAXPACKSIZE+1);
 };
 
 nn::Result SocketClient::init(const char* ip, u16 port) {
@@ -198,7 +199,6 @@ bool SocketClient::recv() {
     }
     
     int headerSize = sizeof(Packet);
-    char headerBuf[MAXPACKSIZE + 1] = {0};
     int valread = 0;
 
     const int fd_count = 2;
@@ -229,12 +229,12 @@ bool SocketClient::recv() {
     }
 
     if (index == 1) {
-        int result = nn::socket::Recv(fd, headerBuf, sizeof(headerBuf), this->sock_flags);
+        int result = nn::socket::Recv(fd, recvBuf, sizeof(MAXPACKSIZE), this->sock_flags);
         if (result < headerSize){
             return true;
         }
 
-        Packet* header = reinterpret_cast<Packet*>(headerBuf);
+        Packet* header = reinterpret_cast<Packet*>(recvBuf);
         int fullSize = header->mPacketSize + sizeof(Packet);
         // Verify packet size is appropriate
         if (result < fullSize || result > MAXPACKSIZE || fullSize > MAXPACKSIZE){
@@ -251,7 +251,7 @@ bool SocketClient::recv() {
 
         char* packetBuf = (char*)mHeap->alloc(fullSize);
         if (packetBuf){
-            memcpy(packetBuf, headerBuf, fullSize);
+            memcpy(packetBuf, recvBuf, fullSize);
 
 
             Packet *packet = reinterpret_cast<Packet*>(packetBuf);
@@ -268,7 +268,7 @@ bool SocketClient::recv() {
     // read only the size of a header
     while(valread < headerSize) {
         int result = 0;
-        result = nn::socket::Recv(fd, headerBuf + valread,
+        result = nn::socket::Recv(fd, recvBuf + valread,
                                         headerSize - valread, this->sock_flags);
 
         this->socket_errno = nn::socket::GetLastErrno();
@@ -286,7 +286,7 @@ bool SocketClient::recv() {
     }
 
     if(valread > 0) {
-        Packet* header = reinterpret_cast<Packet*>(headerBuf);
+        Packet* header = reinterpret_cast<Packet*>(recvBuf);
 
         int fullSize = header->mPacketSize + sizeof(Packet);
 
@@ -307,7 +307,7 @@ bool SocketClient::recv() {
 
             if (packetBuf) {
                 
-                memcpy(packetBuf, headerBuf, sizeof(Packet));
+                memcpy(packetBuf, recvBuf, sizeof(Packet));
 
                 while (valread < fullSize) {
 
