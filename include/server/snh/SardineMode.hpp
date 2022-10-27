@@ -14,7 +14,9 @@ struct SardineInfo : GameModeInfoBase {
     bool mIsIt = false;
     bool mIsUseGravity = false;
     bool mIsUseGravityCam = false;
+
     bool mIsTether = true;
+    bool mIsTetherSnap = true;
 
     GameTime mHidingTime;
 };
