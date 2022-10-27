@@ -45,14 +45,14 @@ emu:
 	mv $(shell basename $(CURDIR))$(SMOVER).nso starlight_patch_$(SMOVER)/yuzu/subsdk1
 # builds and sends project to FTP server hosted on provided IP
 send: all
-	python3.8 scripts/sendPatch.py $(IP) $(PROJNAME) 
+	python3 scripts/sendPatch.py $(IP) $(PROJNAME)
 
 log: all
-	python3.8 scripts/tcpServer.py $(SERVERIP)
+	python3 scripts/tcpServer.py $(SERVERIP)
 
 sendlog: all
-	python3.8 scripts/sendPatch.py $(IP) $(PROJNAME) $(USER) $(PASS)
-	python3.8 scripts/tcpServer.py $(SERVERIP)
+	python3 scripts/sendPatch.py $(IP) $(PROJNAME) $(USER) $(PASS)
+	python3 scripts/tcpServer.py $(SERVERIP)
 
 clean:
 	$(MAKE) clean -f MakefileNSO
