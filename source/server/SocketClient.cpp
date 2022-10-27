@@ -170,8 +170,14 @@ bool SocketClient::send(Packet *packet) {
     int valread = 0;
 
     int fd = -1;
-    if ((packet->mType != PLAYERINF && packet->mType != HACKCAPINF && packet->mType != HOLEPUNCH) || !this->mHasRecvUdp) {
-        Logger::log("Sending packet: %s\n", packetNames[packet->mType]);
+    if ((packet->mType != PLAYERINF && packet->mType != HACKCAPINF && packet->mType != HOLEPUNCH)
+        || (!this->mHasRecvUdp && packet->mType != HOLEPUNCH)
+        || this->mUdpAddress.port == 0) {
+
+        if (packet->mType != PLAYERINF && packet->mType != HACKCAPINF) {
+            Logger::log("Sending packet: %s\n", packetNames[packet->mType]);
+        }
+
         fd = this->socket_log_socket;
     } else {
 
