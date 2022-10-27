@@ -122,7 +122,13 @@ void Client::restartConnection() {
 
     playerDC->mUserID = sInstance->mUserID;
 
-    sInstance->mSocket->queuePacket(playerDC);
+
+    sInstance->mSocket->setQueueOpen(false);
+    sInstance->mSocket->clearMessageQueues();
+
+    sInstance->mSocket->send(playerDC);
+
+    sInstance->mHeap->free(playerDC);
 
     if (sInstance->mSocket->closeSocket()) {
         Logger::log("Sucessfully Closed Socket.\n");

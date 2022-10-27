@@ -54,6 +54,10 @@ class SocketClient : public SocketBase {
         u32 getRecvCount() { return mRecvQueue.getCount(); }
         u32 getRecvMaxCount() { return mRecvQueue.getMaxCount(); }
 
+        void clearMessageQueues();
+        void setQueueOpen(bool value) { mPacketQueueOpen = value; }
+
+
         void setIsFirstConn(bool value) { mIsFirstConnect = value; }
 
     private:
@@ -68,6 +72,8 @@ class SocketClient : public SocketBase {
 
         int mMaxBufSize = 100;
         bool mIsFirstConnect = true;
+        bool mPacketQueueOpen = true;
+
 
         bool mHasRecvUdp;
         s32 mUdpSocket;
