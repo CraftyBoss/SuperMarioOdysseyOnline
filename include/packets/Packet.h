@@ -10,7 +10,7 @@
 #define PACKBUFSIZE      0x30
 #define COSTUMEBUFSIZE   0x20
 
-#define MAXPACKSIZE      0x50
+#define MAXPACKSIZE      0x100
 
 enum PacketType : short {
     UNKNOWN,
