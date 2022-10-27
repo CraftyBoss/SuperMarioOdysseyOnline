@@ -13,6 +13,8 @@ class SocketBase {
 
         virtual nn::Result init(const char * ip, u16 port) = 0;
         virtual bool closeSocket();
+        virtual bool tryReconnect(); 
+        virtual struct Packet *tryGetPacket();
 
         const char *getStateChar();
         u8 getLogState();
@@ -37,6 +39,3 @@ class SocketBase {
 
         int sock_flags;
 };
-
-
-

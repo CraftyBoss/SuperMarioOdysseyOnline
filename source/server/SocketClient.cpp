@@ -176,7 +176,7 @@ bool SocketClient::recv() {
                 Logger::enableName();
             }
 
-            char* packetBuf = (char*)mHeap->alloc(fullSize);
+            char* packetBuf = (char*)malloc(fullSize);
 
             if (packetBuf) {
                 
@@ -192,7 +192,7 @@ bool SocketClient::recv() {
                     if (result > 0) {
                         valread += result;
                     } else {
-                        mHeap->free(packetBuf);
+                        free(packetBuf);
                         Logger::log("Packet Read Failed! Value: %d\nPacket Size: %d\nPacket Type: %s\n", result, header->mPacketSize, packetNames[header->mType]);
                         return this->tryReconnect();
                     }
@@ -203,7 +203,7 @@ bool SocketClient::recv() {
                 if (!mRecvQueue.isFull()) {
                     mRecvQueue.push((s64)packet, sead::MessageQueue::BlockType::NonBlocking);
                 } else {
-                    mHeap->free(packetBuf);
+                    free(packetBuf);
                 }
             }
         } else {
@@ -336,14 +336,16 @@ void SocketClient::recvFunc() {
 
 bool SocketClient::queuePacket(Packet* packet) {
     if (socket_log_state == SOCKET_LOG_CONNECTED) {
-        mSendQueue.push((s64)packet,
-                        sead::MessageQueue::BlockType::NonBlocking);  // as this is non-blocking, it
-                                                                      // will always return true.
-        return true;
-    } else {
-        mHeap->free(packet);
-        return false;
+        if (!mSendQueue.isFull()) {
+            mSendQueue.push(
+                (s64)packet,
+                sead::MessageQueue::BlockType::NonBlocking);  // as this is non-blocking, it
+                                                              // will always return true.
+            return true;
+        }
     }
+    mHeap->free(packet);
+    return false;
 }
 
 void SocketClient::trySendQueue() {
@@ -355,6 +357,6 @@ void SocketClient::trySendQueue() {
     mHeap->free(curPacket);
 }
 
-Packet* SocketClient::tryGetPacket(sead::MessageQueue::BlockType blockType) {
-    return socket_log_state == SOCKET_LOG_CONNECTED ? (Packet*)mRecvQueue.pop(blockType) : nullptr;
+Packet* SocketClient::tryGetPacket() {
+    return socket_log_state == SOCKET_LOG_CONNECTED ? (Packet*)mRecvQueue.pop(sead::MessageQueue::BlockType::Blocking) : nullptr;
 }

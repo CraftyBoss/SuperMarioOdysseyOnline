@@ -99,13 +99,14 @@ B59E28 B seadPrintHook // sead::system::print
 
 // Pause Menu Changes
 
-4EAEC4 B overrideNerveHook // makes any button on pause menu run a specific nerve
+// 4EAEC4 B overrideNerveHook // makes any button on pause menu run a specific nerve
 4EA104 MOV W2, #5 // update state count to account for new custom state
 4EA1F0 BL initNerveStateHook // inits options nerve state and server config state
 4EA174 MOV X0, X20 // moves StageSceneStatePauseMenu to first arg
 4EA17C NOP // prevents first new of StageSceneStateOption
 4EA1A8 BL initStateHook // inits StageSceneStateOption and StageSceneStateServerConfig
 4EA1C0 NOP // prevents mStateOption ptr from being overriden
+4EAFA4 B overrideHelpFadeNerve
 
 // Gravity hooks
 
