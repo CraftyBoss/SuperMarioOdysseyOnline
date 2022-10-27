@@ -70,7 +70,7 @@ class SocketClient : public SocketBase {
         sead::MessageQueue mSendQueue;
         char* recvBuf = nullptr;
 
-        int mMaxBufSize = 100;
+        int maxBufSize = 100;
         bool mIsFirstConnect = true;
         bool mPacketQueueOpen = true;
 

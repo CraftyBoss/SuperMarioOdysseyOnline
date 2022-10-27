@@ -81,7 +81,7 @@ nn::Result SocketClient::init(const char* ip, u16 port) {
         return result;
     }
 
-    if ((this->ket = nn::socket::Socket(2, 2, 17)) < 0) {
+    if ((this->mUdpSocket = nn::socket::Socket(2, 2, 17)) < 0) {
         Logger::log("Udp Socket failed to create");
         this->socket_errno = nn::socket::GetLastErrno();
         this->socket_log_state = SOCKET_LOG_UNAVAILABLE;
@@ -125,7 +125,7 @@ u16 SocketClient::getLocalUdpPort() {
     u32 size = sizeof(udpAddress);
 
     nn::Result result;
-    if((result = nn::socket::GetSockName(this->ket, &udpAddress, &size)).isFailure()) {
+    if((result = nn::socket::GetSockName(this->mUdpSocket, &udpAddress, &size)).isFailure()) {
         this->socket_errno = nn::socket::GetLastErrno();
         return 0;
     }
@@ -176,7 +176,7 @@ bool SocketClient::send(Packet *packet) {
         fd = this->socket_log_socket;
     } else {
 
-        fd = this->ket;
+        fd = this->mUdpSocket;
     }
 
 
@@ -207,7 +207,7 @@ bool SocketClient::recv() {
     pfds[0].fd = this->socket_log_socket;
     pfds[0].events = 1;
     pfds[0].revents = 0;
-    pfds[1].fd = this->ket;
+    pfds[1].fd = this->mUdpSocket;
     pfds[1].events = 1;
     pfds[1].revents = 0;
 
@@ -341,7 +341,7 @@ bool SocketClient::recv() {
                 }
             }
         } else {
-            Logger::log("Failed to acquire valid data! Packet Type: %d Full Packet Size %d valread size: %d", header->mType, fullSize, valread);
+            Logger::log("Failed to acquire valid data! Packet Type: %d Full Packet Size %d valread size: %d\n", header->mType, fullSize, valread);
         }
         
         return true;
