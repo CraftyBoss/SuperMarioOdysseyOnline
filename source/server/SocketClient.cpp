@@ -235,7 +235,7 @@ bool SocketClient::recv() {
     }
 
     if (index == 1) {
-        int result = nn::socket::Recv(fd, recvBuf, sizeof(MAXPACKSIZE), this->sock_flags);
+        int result = nn::socket::Recv(fd, recvBuf, MAXPACKSIZE, this->sock_flags);
         if (result < headerSize){
             return true;
         }
