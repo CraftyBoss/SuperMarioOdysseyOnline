@@ -257,7 +257,7 @@ bool SocketClient::recv() {
 
         char* packetBuf = (char*)mHeap->alloc(fullSize);
         if (!packetBuf) {
-            return true
+            return true;
         }
 
         memcpy(packetBuf, recvBuf, fullSize);
