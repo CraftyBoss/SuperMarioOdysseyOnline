@@ -81,7 +81,7 @@ nn::Result SocketClient::init(const char* ip, u16 port) {
         return result;
     }
 
-    if ((this->udp_socket = nn::socket::Socket(2, 2, 17)) < 0) {
+    if ((this->ket = nn::socket::Socket(2, 2, 17)) < 0) {
         Logger::log("Udp Socket failed to create");
         this->socket_errno = nn::socket::GetLastErrno();
         this->socket_log_state = SOCKET_LOG_UNAVAILABLE;
@@ -91,8 +91,8 @@ nn::Result SocketClient::init(const char* ip, u16 port) {
     udpAddress.address = hostAddress;
     udpAddress.port = 0;
     udpAddress.family = 2;
-    this->udp_addr = udpAddress;
-    this->has_recv_udp = false;
+    this->mUdpAddress = udpAddress;
+    this->mHasRecvUdp = false;
 
     this->socket_log_state = SOCKET_LOG_CONNECTED;
 
@@ -124,7 +124,7 @@ u16 SocketClient::getLocalUdpPort() {
     u32 size = sizeof(udpAddress);
 
     nn::Result result;
-    if((result = nn::socket::GetSockName(this->udp_socket, &udpAddress, &size)).isFailure()) {
+    if((result = nn::socket::GetSockName(this->ket, &udpAddress, &size)).isFailure()) {
         this->socket_errno = nn::socket::GetLastErrno();
         return 0;
     }
@@ -135,10 +135,10 @@ u16 SocketClient::getLocalUdpPort() {
 
 s32 SocketClient::setPeerUdpPort(u16 port) {
     u16 net_port = nn::socket::InetHtons(port);
-    this->udp_addr.port = net_port;
+    this->mUdpAddress.port = net_port;
 
     nn::Result result;
-    if((result = nn::socket::Connect(this->udp_socket, &this->udp_addr, sizeof(this->udp_addr))).isFailure()) {
+    if((result = nn::socket::Connect(this->ket, &this->mUdpAddress, sizeof(this->mUdpAddress))).isFailure()) {
         Logger::log("Udp Socket Connection Failed!\n");
         this->socket_errno = nn::socket::GetLastErrno();
         this->socket_log_state = SOCKET_LOG_UNAVAILABLE;
@@ -150,11 +150,11 @@ s32 SocketClient::setPeerUdpPort(u16 port) {
 }
 
 const char* SocketClient::getUdpStateChar() {
-    if (this->udp_addr.port == 0) {
+    if (this->mUdpAddress.port == 0) {
         return "Waiting for handshake";
     }
 
-    if (!this->has_recv_udp) {
+    if (!this->mHasRecvUdp) {
         return "Waiting for holepunch";
     }
 
@@ -170,12 +170,12 @@ bool SocketClient::send(Packet *packet) {
     int valread = 0;
 
     int fd = -1;
-    if ((packet->mType != PLAYERINF && packet->mType != HACKCAPINF && packet->mType != HOLEPUNCH) || !this->has_recv_udp) {
+    if ((packet->mType != PLAYERINF && packet->mType != HACKCAPINF && packet->mType != HOLEPUNCH) || !this->mHasRecvUdp) {
         Logger::log("Sending packet: %s\n", packetNames[packet->mType]);
         fd = this->socket_log_socket;
     } else {
 
-        fd = this->udp_socket;
+        fd = this->ket;
     }
 
 
@@ -206,7 +206,7 @@ bool SocketClient::recv() {
     pfds[0].fd = this->socket_log_socket;
     pfds[0].events = 1;
     pfds[0].revents = 0;
-    pfds[1].fd = this->udp_socket;
+    pfds[1].fd = this->ket;
     pfds[1].events = 1;
     pfds[1].revents = 0;
 
@@ -247,7 +247,7 @@ bool SocketClient::recv() {
             return true;
         }
 
-        this->has_recv_udp = true;
+        this->mHasRecvUdp = true;
 
         char* packetBuf = (char*)mHeap->alloc(fullSize);
         if (packetBuf){
@@ -385,8 +385,8 @@ bool SocketClient::closeSocket() {
 
     Logger::log("Closing Socket.\n");
 
-    has_recv_udp = false;
-	udp_addr.port = 0;
+    mHasRecvUdp = false;
+    mUdpAddress.port = 0;
     bool result = false;
 
     if (!(result = SocketBase::closeSocket())) {

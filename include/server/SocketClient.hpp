@@ -44,8 +44,8 @@ class SocketClient : public SocketBase {
         void printPacket(Packet* packet);
         bool isConnected() { return socket_log_state == SOCKET_LOG_CONNECTED; }
 
-		u16 getLocalUdpPort();
-		s32 setPeerUdpPort(u16 port);
+        u16 getLocalUdpPort();
+        s32 setPeerUdpPort(u16 port);
         const char* getUdpStateChar();
 
         u32 getSendCount() { return mSendQueue.getCount(); }
@@ -66,12 +66,11 @@ class SocketClient : public SocketBase {
         sead::MessageQueue mSendQueue;
         char* recvBuf = nullptr;
 
-        int maxBufSize = 100;
-        bool mIsFirstConnect = true;
+        int mMaxBufSize = 100;
 
-	    bool has_recv_udp;
-		s32 udp_socket;
-		sockaddr udp_addr;
+        bool mHasRecvUdp;
+        s32 mUdpSocket;
+        sockaddr mUdpAddress;
 
 
         /**
