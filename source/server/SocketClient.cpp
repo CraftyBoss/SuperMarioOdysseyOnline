@@ -243,7 +243,7 @@ bool SocketClient::recv() {
 
         // Verify type of packet
         if (!(header->mType > PacketType::UNKNOWN && header->mType < PacketType::End)) {
-            Logger::log("Failed to acquire valid packet type! Packet Type: %d Full Packet Size %d valread size: %d", header->mType, fullSize, result);
+            Logger::log("Failed to acquire valid packet type! Packet Type: %d Full Packet Size %d valread size: %d\n", header->mType, fullSize, result);
             return true;
         }
 
@@ -326,7 +326,7 @@ bool SocketClient::recv() {
                 }
 
                 if (!(header->mType > PacketType::UNKNOWN && header->mType < PacketType::End)) {
-                    Logger::log("Failed to acquire valid packet type! Packet Type: %d Full Packet Size %d valread size: %d", header->mType, fullSize, valread);
+                    Logger::log("Failed to acquire valid packet type! Packet Type: %d Full Packet Size %d valread size: %d\n", header->mType, fullSize, valread);
                     mHeap->free(packetBuf);
                     return true;
                 }
