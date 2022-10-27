@@ -139,10 +139,9 @@ s32 SocketClient::setPeerUdpPort(u16 port) {
     this->mUdpAddress.port = net_port;
 
     nn::Result result;
-    if((result = nn::socket::Connect(this->ket, &this->mUdpAddress, sizeof(this->mUdpAddress))).isFailure()) {
-        Logger::log("Udp Socket Connection Failed!\n");
+    if((result = nn::socket::Connect(this->mUdpSocket, &this->mUdpAddress, sizeof(this->mUdpAddress))).isFailure()) {
+        Logger::log("Udp socket connection failed to connect to port %d!\n", port);
         this->socket_errno = nn::socket::GetLastErrno();
-        this->socket_log_state = SOCKET_LOG_UNAVAILABLE;
         return -1;
     }
 
