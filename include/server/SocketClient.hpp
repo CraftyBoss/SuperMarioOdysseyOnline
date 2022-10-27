@@ -67,6 +67,7 @@ class SocketClient : public SocketBase {
         char* recvBuf = nullptr;
 
         int mMaxBufSize = 100;
+        bool mIsFirstConnect = true;
 
         bool mHasRecvUdp;
         s32 mUdpSocket;
