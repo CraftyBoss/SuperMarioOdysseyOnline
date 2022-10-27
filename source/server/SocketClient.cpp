@@ -250,18 +250,21 @@ bool SocketClient::recv() {
         this->mHasRecvUdp = true;
 
         char* packetBuf = (char*)mHeap->alloc(fullSize);
-        if (packetBuf){
-            memcpy(packetBuf, recvBuf, fullSize);
-
-
-            Packet *packet = reinterpret_cast<Packet*>(packetBuf);
-
-            if(!mRecvQueue.isFull()) {
-                mRecvQueue.push((s64)packet, sead::MessageQueue::BlockType::NonBlocking);
-            } else {
-                mHeap->free(packetBuf);
-            }
+        if (!packetBuf) {
+            return true
         }
+
+        memcpy(packetBuf, recvBuf, fullSize);
+
+
+        Packet *packet = reinterpret_cast<Packet*>(packetBuf);
+
+        if(!mRecvQueue.isFull()) {
+            mRecvQueue.push((s64)packet, sead::MessageQueue::BlockType::NonBlocking);
+        } else {
+            mHeap->free(packetBuf);
+        }
+
         return true;
     }
 
