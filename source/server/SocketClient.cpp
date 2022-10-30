@@ -284,7 +284,6 @@ bool SocketClient::recvTcp() {
     }
 
     Packet* header = reinterpret_cast<Packet*>(recvBuf);
-
     int fullSize = header->mPacketSize + sizeof(Packet);
 
     if (!(fullSize <= MAXPACKSIZE && fullSize > 0 && valread == sizeof(Packet))) {
@@ -348,24 +347,30 @@ bool SocketClient::recvTcp() {
 
 bool SocketClient::recvUdp() {
     int headerSize = sizeof(Packet);
-    int valread = 0;
     s32 fd = this->mUdpSocket;
 
-    int result = nn::socket::Recv(fd, recvBuf, MAXPACKSIZE, this->sock_flags);
-    if (result < headerSize){
+    int valread = nn::socket::Recv(fd, recvBuf, MAXPACKSIZE, this->sock_flags);
+
+    if (valread == 0) {
+        Logger::log("Udp connection valread was zero. Disconnecting.\n");
+        this->closeSocket();
+        return false;
+    }
+
+    if (valread < headerSize){
         return true;
     }
 
     Packet* header = reinterpret_cast<Packet*>(recvBuf);
     int fullSize = header->mPacketSize + sizeof(Packet);
     // Verify packet size is appropriate
-    if (result < fullSize || result > MAXPACKSIZE || fullSize > MAXPACKSIZE){
+    if (valread < fullSize || valread > MAXPACKSIZE || fullSize > MAXPACKSIZE){
         return true;
     }
 
     // Verify type of packet
     if (!(header->mType > PacketType::UNKNOWN && header->mType < PacketType::End)) {
-        Logger::log("Failed to acquire valid packet type! Packet Type: %d Full Packet Size %d valread size: %d\n", header->mType, fullSize, result);
+        Logger::log("Failed to acquire valid packet type! Packet Type: %d Full Packet Size %d valread size: %d\n", header->mType, fullSize, valread);
         return true;
     }
 
