@@ -15,6 +15,11 @@
 #include "types.h"
 
 SocketClient::SocketClient(const char* name, sead::Heap* heap) : mHeap(heap), SocketBase(name) {
+#if EMU
+    this->pollTime = 0;
+#else
+    this->pollTime = -1;
+#endif
 
     mRecvThread = new al::AsyncFunctorThread("SocketRecvThread", al::FunctorV0M<SocketClient*, SocketThreadFunc>(this, &SocketClient::recvFunc), 0, 0x1000, {0});
     mSendThread = new al::AsyncFunctorThread("SocketSendThread", al::FunctorV0M<SocketClient*, SocketThreadFunc>(this, &SocketClient::sendFunc), 0, 0x1000, {0});
@@ -219,7 +224,7 @@ bool SocketClient::recv() {
     pfds[1].revents = 0;
 
 
-    int result = nn::socket::Poll(pfds, fd_count, 0);
+    int result = nn::socket::Poll(pfds, fd_count, this->pollTime);
 
     if (result == 0) {
         return true;

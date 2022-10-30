@@ -74,6 +74,7 @@ class SocketClient : public SocketBase {
         int maxBufSize = 100;
         bool mIsFirstConnect = true;
         bool mPacketQueueOpen = true;
+        int pollTime = 0;
 
 
         bool mHasRecvUdp;
