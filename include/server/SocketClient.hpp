@@ -80,6 +80,8 @@ class SocketClient : public SocketBase {
         s32 mUdpSocket;
         sockaddr mUdpAddress;
 
+        bool recvTcp();
+        bool recvUdp();
 
         /**
          * @param str a string containing an IPv4 address or a hostname that can be resolved via DNS
