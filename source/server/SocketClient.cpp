@@ -276,72 +276,74 @@ bool SocketClient::recvTcp() {
         }
     }
 
-    if(valread > 0) {
-        Packet* header = reinterpret_cast<Packet*>(recvBuf);
-
-        int fullSize = header->mPacketSize + sizeof(Packet);
-
-        if (fullSize <= MAXPACKSIZE && fullSize > 0 && valread == sizeof(Packet)) {
-
-            if (header->mType != PLAYERINF && header->mType != HACKCAPINF) {
-                Logger::log("Received packet (from %02X%02X):", header->mUserID.data[0],
-                            header->mUserID.data[1]);
-                Logger::disableName();
-                Logger::log(" Size: %d", header->mPacketSize);
-                Logger::log(" Type: %d", header->mType);
-                if(packetNames[header->mType])
-                    Logger::log(" Type String: %s\n", packetNames[header->mType]);
-                Logger::enableName();
-            }
-
-            char* packetBuf = (char*)mHeap->alloc(fullSize);
-
-            if (packetBuf) {
-
-                memcpy(packetBuf, recvBuf, sizeof(Packet));
-
-                while (valread < fullSize) {
-
-                    int result = nn::socket::Recv(fd, packetBuf + valread,
-                                                  fullSize - valread, this->sock_flags);
-
-                    this->socket_errno = nn::socket::GetLastErrno();
-
-                    if (result > 0) {
-                        valread += result;
-                    } else {
-                        mHeap->free(packetBuf);
-                        Logger::log("Packet Read Failed! Value: %d\nPacket Size: %d\nPacket Type: %s\n", result, header->mPacketSize, packetNames[header->mType]);
-                        this->closeSocket();
-                        return false;
-                    }
-                }
-
-                if (!(header->mType > PacketType::UNKNOWN && header->mType < PacketType::End)) {
-                    Logger::log("Failed to acquire valid packet type! Packet Type: %d Full Packet Size %d valread size: %d\n", header->mType, fullSize, valread);
-                    mHeap->free(packetBuf);
-                    return true;
-                }
-
-                Packet *packet = reinterpret_cast<Packet*>(packetBuf);
-
-                if (!mRecvQueue.isFull() && mPacketQueueOpen) {
-                    mRecvQueue.push((s64)packet, sead::MessageQueue::BlockType::NonBlocking);
-                } else {
-                    mHeap->free(packetBuf);
-                }
-            }
-        } else {
-            Logger::log("Failed to acquire valid data! Packet Type: %d Full Packet Size %d valread size: %d\n", header->mType, fullSize, valread);
-        }
-
-        return true;
-    } else {  // if we error'd, close the socket
+    if(valread <= 0) { // if we error'd, close the socket
         Logger::log("valread was zero! Disconnecting.\n");
         this->socket_errno = nn::socket::GetLastErrno();
         this->closeSocket();
         return false;
     }
+
+    Packet* header = reinterpret_cast<Packet*>(recvBuf);
+
+    int fullSize = header->mPacketSize + sizeof(Packet);
+
+    if (!(fullSize <= MAXPACKSIZE && fullSize > 0 && valread == sizeof(Packet))) {
+        Logger::log("Failed to acquire valid data! Packet Type: %d Full Packet Size %d valread size: %d\n", header->mType, fullSize, valread);
+        return true;
+    }
+
+    if (header->mType != PLAYERINF && header->mType != HACKCAPINF) {
+        Logger::log("Received packet (from %02X%02X):", header->mUserID.data[0],
+                    header->mUserID.data[1]);
+        Logger::disableName();
+        Logger::log(" Size: %d", header->mPacketSize);
+        Logger::log(" Type: %d", header->mType);
+        if(packetNames[header->mType])
+            Logger::log(" Type String: %s\n", packetNames[header->mType]);
+        Logger::enableName();
+    }
+
+    char* packetBuf = (char*)mHeap->alloc(fullSize);
+
+    if (!packetBuf) {
+        return true;
+    }
+
+
+    memcpy(packetBuf, recvBuf, sizeof(Packet));
+
+    while (valread < fullSize) {
+
+        int result = nn::socket::Recv(fd, packetBuf + valread,
+                                      fullSize - valread, this->sock_flags);
+
+        this->socket_errno = nn::socket::GetLastErrno();
+
+        if (result > 0) {
+            valread += result;
+        } else {
+            mHeap->free(packetBuf);
+            Logger::log("Packet Read Failed! Value: %d\nPacket Size: %d\nPacket Type: %s\n", result, header->mPacketSize, packetNames[header->mType]);
+            this->closeSocket();
+            return false;
+        }
+    }
+
+    if (!(header->mType > PacketType::UNKNOWN && header->mType < PacketType::End)) {
+        Logger::log("Failed to acquire valid packet type! Packet Type: %d Full Packet Size %d valread size: %d\n", header->mType, fullSize, valread);
+        mHeap->free(packetBuf);
+        return true;
+    }
+
+    Packet *packet = reinterpret_cast<Packet*>(packetBuf);
+
+    if (!mRecvQueue.isFull() && mPacketQueueOpen) {
+        mRecvQueue.push((s64)packet, sead::MessageQueue::BlockType::NonBlocking);
+    } else {
+        mHeap->free(packetBuf);
+    }
+
+    return true;
 }
 
 bool SocketClient::recvUdp() {
