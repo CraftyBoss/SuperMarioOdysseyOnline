@@ -29,12 +29,13 @@ class SocketClient : public SocketBase {
 
         bool startThreads();
         void endThreads();
+        void waitForThreads();
 
         bool send(Packet* packet);
         bool recv();
 
         bool queuePacket(Packet *packet);
-        void trySendQueue();
+        bool trySendQueue();
 
         void sendFunc();
         void recvFunc();

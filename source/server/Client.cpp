@@ -109,6 +109,7 @@ bool Client::startThread() {
  */
 void Client::restartConnection() {
 
+    Logger::log("Restarting connection.\n");
     if (!sInstance) {
         Logger::log("Static Instance is null!\n");
         return;
@@ -134,8 +135,12 @@ void Client::restartConnection() {
         Logger::log("Sucessfully Closed Socket.\n");
     }
 
+	Logger::log("Waiting for send/recv threads to finish.\n");
+	sInstance->mSocket->waitForThreads();
+
     sInstance->mConnectCount = 0;
 
+	Logger::log("Reinitializing connection\n");
     sInstance->mIsConnectionActive = sInstance->mSocket->init(sInstance->mServerIP.cstr(), sInstance->mServerPort).isSuccess();
 
     if(sInstance->mSocket->getLogState() == SOCKET_LOG_CONNECTED) {
@@ -409,8 +414,9 @@ void Client::readFunc() {
 
             mHeap->free(curPacket);
 
-        }else { // if false, socket has errored or disconnected, so close the socket and end this thread.
-            Logger::log("Client Socket Encountered an Error! Errno: 0x%x\n", mSocket->socket_errno);
+        }else { // if false, socket has errored or disconnected, so restart the connection
+            Logger::log("Client Socket Encountered an Error, restarting connection! Errno: 0x%x\n", mSocket->socket_errno);
+			this->restartConnection();
         }
 
     }
