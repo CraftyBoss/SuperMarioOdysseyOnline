@@ -104,7 +104,7 @@ nn::Result SocketClient::init(const char* ip, u16 port) {
 
     Logger::log("Socket fd: %d\n", socket_log_socket);
 
-    startThreads();  // start recv and send threads after sucessful connection
+    startThreads();  // start recv and send threads after succesful connection
 
     // send init packet to server once we connect (an issue with the server prevents this from working properly, waiting for a fix to implement)
     
@@ -470,7 +470,7 @@ bool SocketClient::stringToIPAddress(const char* str, in_addr* out) {
 /**
  * @brief starts client read thread
  * 
- * @return true if read thread was sucessfully started
+ * @return true if read thread was successfully started
  * @return false if read thread was unable to start, or thread was already started.
  */
 bool SocketClient::startThreads() {
@@ -481,7 +481,7 @@ bool SocketClient::startThreads() {
     if(this->mRecvThread->isDone() && this->mSendThread->isDone()) {
         this->mRecvThread->start();
         this->mSendThread->start();
-        Logger::log("Socket threads sucessfully started.\n");
+        Logger::log("Socket threads succesfully started.\n");
         return true;
     }else {
         Logger::log("Socket threads failed to start.\n");

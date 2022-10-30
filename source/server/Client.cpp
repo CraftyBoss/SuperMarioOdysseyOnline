@@ -90,13 +90,13 @@ void Client::init(al::LayoutInitInfo const &initInfo, GameDataHolderAccessor hol
 /**
  * @brief starts client read thread
  * 
- * @return true if read thread was sucessfully started
+ * @return true if read thread was succesfully started
  * @return false if read thread was unable to start, or thread was already started.
  */
 bool Client::startThread() {
     if(mReadThread->isDone() ) {
         mReadThread->start();
-        Logger::log("Read Thread Sucessfully Started.\n");
+        Logger::log("Read Thread Successfully Started.\n");
         return true;
     }else {
         Logger::log("Read Thread has already started! Or other unknown reason.\n");
@@ -132,7 +132,7 @@ void Client::restartConnection() {
     sInstance->mHeap->free(playerDC);
 
     if (sInstance->mSocket->closeSocket()) {
-        Logger::log("Sucessfully Closed Socket.\n");
+        Logger::log("Succesfully Closed Socket.\n");
     }
 
 	Logger::log("Waiting for send/recv threads to finish.\n");
@@ -145,7 +145,7 @@ void Client::restartConnection() {
 
     if(sInstance->mSocket->getLogState() == SOCKET_LOG_CONNECTED) {
 
-        Logger::log("Reconnect Sucessful!\n");
+        Logger::log("Reconnect Succesful!\n");
 
     } else {
         Logger::log("Reconnect Unsuccessful.\n");
@@ -187,7 +187,7 @@ bool Client::startConnection() {
 
     if (mIsConnectionActive) {
 
-        Logger::log("Sucessful Connection. Waiting to recieve init packet.\n");
+        Logger::log("Succesful Connection. Waiting to receive init packet.\n");
 
         bool waitingForInitPacket = true;
         // wait for client init packet
@@ -211,7 +211,7 @@ bool Client::startConnection() {
                 mHeap->free(curPacket);
 
             } else {
-                Logger::log("Recieve failed! Stopping Connection.\n");
+                Logger::log("Receive failed! Stopping Connection.\n");
                 mIsConnectionActive = false;
                 waitingForInitPacket = false;
             }
@@ -336,7 +336,7 @@ void Client::readFunc() {
 
     while(mIsConnectionActive) {
 
-        Packet *curPacket = mSocket->tryGetPacket();  // will block until a packet has been recieved, or socket disconnected
+        Packet *curPacket = mSocket->tryGetPacket();  // will block until a packet has been received, or socket disconnected
 
         if (curPacket) {
 

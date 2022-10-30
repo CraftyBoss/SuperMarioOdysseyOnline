@@ -219,7 +219,7 @@ class Client {
 
         // --- Server Syncing Members --- 
         
-        // array of shine IDs for checking if multiple shines have been collected in quick sucession, all moons within the players stage that match the ID will be deleted
+        // array of shine IDs for checking if multiple shines have been collected in quick succession, all moons within the players stage that match the ID will be deleted
         sead::SafeArray<int, 128> curCollectedShines;
         int collectedShineCount = 0;
 
