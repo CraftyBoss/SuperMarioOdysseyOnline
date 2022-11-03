@@ -126,3 +126,9 @@ B59E28 B seadPrintHook // sead::system::print
 
 // 891394 BL drawInitHook
 // 91328 BL updateInitHook
+
+//Unlocks costume doors
+262850 MOV W0, #0
+2609b4 MOV W0, #0
+25ff74 MOV X0, #1
+25ffac MOV X0, #0
