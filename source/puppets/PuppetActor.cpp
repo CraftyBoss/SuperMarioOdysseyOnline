@@ -20,6 +20,7 @@
 #include "server/gamemode/GameModeManager.hpp"
 #include "server/gamemode/GameModeBase.hpp"
 #include "server/hns/HideAndSeekMode.hpp"
+#include "server/snh/SardineMode.hpp"
 
 static const char *subActorNames[] = {
     "顔", // Face
@@ -200,7 +201,9 @@ void PuppetActor::control() {
             if (GameModeManager::instance()->isModeAndActive(GameMode::HIDEANDSEEK)) {
                 mNameTag->mIsAlive =
                     GameModeManager::instance()->getMode<HideAndSeekMode>()->isPlayerIt() && mInfo->isIt;
-                
+            } else if (GameModeManager::instance()->isModeAndActive(GameMode::SARDINE)) {
+                mNameTag->mIsAlive =
+                    GameModeManager::instance()->getMode<SardineMode>()->isPlayerIt() && mInfo->isIt;
             } else {
                 if(!mNameTag->mIsAlive)
                     mNameTag->appear();

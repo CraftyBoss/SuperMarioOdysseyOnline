@@ -6,14 +6,6 @@ inputs:
     description : 'version tag'
     required    : false
     default     : ''
-  prefix:
-    description : 'filename prefix'
-    required    : false
-    default     : ''
-  emu:
-    description : 'what system the build is for, Switch or Emulators'
-    required    : false
-    default     : 'Switch'
 
 
 outputs:
@@ -32,7 +24,7 @@ runs:
     run: |
       VERS=${{ inputs.tag }}
       echo "::set-output name=version::${VERS:1}"
-      echo "::set-output name=filename::${{ inputs.prefix }}SMO_Online${{ (inputs.tag != '' && format('_{0}', inputs.tag)) || '' }}_for_${{ inputs.emu }}"
+      echo "::set-output name=filename::SMO_Online${{ (inputs.tag != '' && format('_{0}', inputs.tag)) || '' }}"
   -
     name : Set up Docker Buildx
     uses : docker/setup-buildx-action@v2
@@ -53,10 +45,9 @@ runs:
     name  : Build mod
     shell : bash
     run: |
-      docker  run  --rm             \
-        -u `id -u`:`id -g`          \
-        -v "/$PWD/":/app/           \
-        -e ISEMU=${{ (inputs.emu == 'Emulators' && '1') || '0' }}  \
+      docker  run  --rm     \
+        -u `id -u`:`id -g`  \
+        -v "/$PWD/":/app/   \
         ${{ (steps.env.outputs.version != '' && format('-e BUILDVER={0}', steps.env.outputs.version)) || '' }}  \
         smoo-build-env      \
       ;

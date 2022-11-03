@@ -88,12 +88,22 @@ void HideAndSeekIcon::exeWait() {
 
         sead::BufferedSafeStringBase<char> playerList =
             sead::BufferedSafeStringBase<char>(playerNameBuf, 0x200);
-    
-        for (size_t i = 0; i < playerCount; i++) {
+        
+        // Add your own name to the list at the top
+        playerList.appendWithFormat("%s %s\n", mInfo->mIsPlayerIt ? "&" : "%%", Client::instance()->getClientName());
+
+        // Add all it players to list
+        for(int i = 0; i < playerCount; i++){
             PuppetInfo* curPuppet = Client::getPuppetInfo(i);
-            if (curPuppet && curPuppet->isConnected && (curPuppet->isIt == mInfo->mIsPlayerIt)) {
-                playerList.appendWithFormat("%s\n", curPuppet->puppetName);
-            }
+            if (curPuppet && curPuppet->isConnected && curPuppet->isIt)
+                playerList.appendWithFormat("%s %s\n", curPuppet->isIt ? "&" : "%%", curPuppet->puppetName);
+        }
+
+        // Add not it players to list
+        for(int i = 0; i < playerCount; i++){
+            PuppetInfo* curPuppet = Client::getPuppetInfo(i);
+            if (curPuppet && curPuppet->isConnected && !curPuppet->isIt)
+                playerList.appendWithFormat("%s %s\n", curPuppet->isIt ? "&" : "%%", curPuppet->puppetName);
         }
         
         al::setPaneStringFormat(this, "TxtPlayerList", playerList.cstr());
