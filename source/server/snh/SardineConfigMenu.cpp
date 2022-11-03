@@ -20,10 +20,10 @@ const sead::WFixedSafeString<0x200>* SardineConfigMenu::getStringData()
 
     gamemodeConfigOptions->mBuffer[0].copy(u"Sardine Gravity On");
     gamemodeConfigOptions->mBuffer[1].copy(u"Sardine Gravity Off");
-    gamemodeConfigOptions->mBuffer[2].copy(u"Enable Sardine Tether (Default)");
-    gamemodeConfigOptions->mBuffer[3].copy(u"Disable Sardine Tether");
-    gamemodeConfigOptions->mBuffer[4].copy(u"Enable Tether Snapping (Default)");
-    gamemodeConfigOptions->mBuffer[5].copy(u"Disable Tether Snapping");
+    gamemodeConfigOptions->mBuffer[2].copy(u"Enable Sardine Tether");
+    gamemodeConfigOptions->mBuffer[3].copy(u"Disable Sardine Tether (Default)");
+    gamemodeConfigOptions->mBuffer[4].copy(u"Enable Tether Snapping");
+    gamemodeConfigOptions->mBuffer[5].copy(u"Disable Tether Snapping (Default)");
 
     return gamemodeConfigOptions->mBuffer;
 }

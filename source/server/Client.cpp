@@ -198,7 +198,7 @@ bool Client::startConnection() {
                     waitingForInitPacket = false;
                 }
 
-                mHeap->free(curPacket);
+                free(curPacket);
 
             } else {
                 Logger::log("Recieve failed! Stopping Connection.\n");
@@ -387,7 +387,7 @@ void Client::readFunc() {
                 break;
             }
 
-            mHeap->free(curPacket);
+            free(curPacket);
 
         }else { // if false, socket has errored or disconnected, so close the socket and end this thread.
             Logger::log("Client Socket Encountered an Error! Errno: 0x%x\n", mSocket->socket_errno);

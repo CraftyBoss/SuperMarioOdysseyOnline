@@ -173,8 +173,8 @@ void SardineMode::update()
 
     mModeTimer->updateTimer();
 
-    // Tether snapping
-    if ((PlayerFunction::isPlayerDeadStatus(playerBase) || highPuppetDistance > pullDistanceMax) && mInfo->mIsIt && mInfo->mIsTetherSnap) {
+    // Tin detaching
+    if ((PlayerFunction::isPlayerDeadStatus(playerBase) || (highPuppetDistance > pullDistanceMax && mInfo->mIsTetherSnap && mInfo->mIsTether)) && mInfo->mIsIt) {
         mInfo->mIsIt = false;
         mModeTimer->disableTimer();
         mModeLayout->showSolo();
