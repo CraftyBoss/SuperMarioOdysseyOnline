@@ -87,20 +87,28 @@ void SardineIcon::exeWait()
 
     if (playerCount > 0) {
 
-        char playerNameBuf[0x100] = { 0 }; // max of 16 player names if player name size is 0x10
+        char playerNameBuf[0x100] = {0}; // max of 16 player names if player name size is 0x10
 
-        sead::BufferedSafeStringBase<char> playerList = sead::BufferedSafeStringBase<char>(playerNameBuf, 0x200);
+        sead::BufferedSafeStringBase<char> playerList =
+            sead::BufferedSafeStringBase<char>(playerNameBuf, 0x200);
+        
+        // Add your own name to the list at the top
+        playerList.appendWithFormat("%s %s\n", mInfo->mIsIt ? "@" : "©", Client::instance()->getClientName());
 
-        if (mInfo->mIsIt)
-            playerList.appendWithFormat("%s\n", Client::instance()->getClientName());
-
-        for (size_t i = 0; i < playerCount; i++) {
+        // Add all it players to list
+        for(int i = 0; i < playerCount; i++){
             PuppetInfo* curPuppet = Client::getPuppetInfo(i);
-            if (curPuppet && curPuppet->isConnected && curPuppet->isIt) {
-                playerList.appendWithFormat("%s\n", curPuppet->puppetName);
-            }
+            if (curPuppet && curPuppet->isConnected && curPuppet->isIt)
+                playerList.appendWithFormat("%s %s\n", curPuppet->isIt ? "@" : "©", curPuppet->puppetName);
         }
 
+        // Add not it players to list
+        for(int i = 0; i < playerCount; i++){
+            PuppetInfo* curPuppet = Client::getPuppetInfo(i);
+            if (curPuppet && curPuppet->isConnected && !curPuppet->isIt)
+                playerList.appendWithFormat("%s %s\n", curPuppet->isIt ? "@" : "©", curPuppet->puppetName);
+        }
+        
         al::setPaneStringFormat(this, "TxtPlayerList", playerList.cstr());
     }
 }
