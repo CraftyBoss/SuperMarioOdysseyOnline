@@ -1,10 +1,14 @@
 #include "server/Client.hpp"
+#include <cstdlib>
+#include <string>
 #include "al/layout/SimpleLayoutAppearWaitEnd.h"
+#include "al/util.hpp"
 #include "al/util/LiveActorUtil.h"
 #include "game/SaveData/SaveDataAccessFunction.h"
 #include "heap/seadHeapMgr.h"
 #include "logger.hpp"
 #include "packets/Packet.h"
+#include "prim/seadSafeString.h"
 #include "server/hns/HideAndSeekMode.hpp"
 
 SEAD_SINGLETON_DISPOSER_IMPL(Client)
@@ -55,7 +59,14 @@ Client::Client() {
     Logger::setLogName(playerName.name);  // set Debug logger name to player name
 
     mUsername = playerName.name;
-    
+	
+	#if EMU
+		if (al::isEqualString(mUsername, "yuzu"))
+		{
+			mUsername = std::to_string(rand()).c_str();
+		}
+    #endif
+
     mUserID.print();
 
     Logger::log("Player Name: %s\n", playerName.name);
@@ -74,6 +85,11 @@ void Client::init(al::LayoutInitInfo const &initInfo, GameDataHolderAccessor hol
     mConnectionWait = new (mHeap) al::WindowConfirmWait("ServerWaitConnect", "WindowConfirmWait", initInfo);
     
     mConnectStatus = new (mHeap) al::SimpleLayoutAppearWaitEnd("", "SaveMessage", initInfo, 0, false);
+
+	// #if EMU
+
+	// #endif
+
 
     mConnectionWait->setTxtMessage(u"Connecting to Server.");
     mConnectionWait->setTxtMessageConfirm(u"Failed to Connect!");
