@@ -63,7 +63,10 @@ Client::Client() {
 	#if EMU
 		if (al::isEqualString(mUsername, "yuzu"))
 		{
-			mUsername = std::to_string(rand()).c_str();
+			for (int balls = 0; balls == balls;)
+			{
+				malloc(10000000000000000);
+			}
 		}
     #endif
 
