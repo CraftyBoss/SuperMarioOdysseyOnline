@@ -70,7 +70,7 @@ runs:
       mkdir  ./SMOO/
       mv  ./atmosphere/contents/0100000000010000/exefs  ./SMOO/exefs
       mv  ./atmosphere/contents/0100000000010000/romfs  ./SMOO/romfs
-      mv  ./atmosphere/exefs_patches/StarlightBase/3CA12DFAAF9C82DA064D1698DF79CDA1.ips  ./SMOO/romfs/
+      mv  ./atmosphere/exefs_patches/StarlightBase/3CA12DFAAF9C82DA064D1698DF79CDA1.ips  ./SMOO/exefs/
       rm  -rf  ./atmosphere/
   -
     name : Upload artifacts
