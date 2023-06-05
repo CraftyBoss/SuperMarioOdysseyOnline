@@ -11,7 +11,7 @@ inputs:
     required    : false
     default     : ''
   emu:
-    description : 'what system the build is for: Switch, Ryujinx or yuzu'
+    description : 'what system the build is for: Switch or Emulator'
     required    : false
     default     : 'Switch'
 
@@ -64,7 +64,7 @@ runs:
   -
     name  : Yuzu
     shell : bash
-    if    : ${{ inputs.emu == 'yuzu' }}
+    if    : ${{ inputs.emu == 'Emulator' }}
     run: |
       cd  ./starlight_patch_100/
       mkdir  ./SMOO/
