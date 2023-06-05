@@ -50,7 +50,7 @@ runs:
       cache-from : type=gha,scope=smoo-build-env
       cache-to   : type=gha,scope=smoo-build-env,mode=max
   -
-    name  : Build mod
+    name  : Switch
     shell : bash
     run: |
       docker  run  --rm             \
@@ -62,7 +62,7 @@ runs:
       ;
       cp  -r  ./romfs/  ./starlight_patch_100/atmosphere/contents/0100000000010000/.
   -
-    name  : Yuzu
+    name  : Emulator
     shell : bash
     if    : ${{ inputs.emu == 'Emulator' }}
     run: |
