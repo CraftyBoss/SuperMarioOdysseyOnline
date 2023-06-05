@@ -14,12 +14,11 @@ jobs:
   build:
     strategy:
       matrix:
-        emu : [ Switch, Ryujinx, yuzu ]
+        emu : [ Switch, Emulator ]
     runs-on: ubuntu-latest
     outputs:
       filename1: ${{ steps.set-output.outputs.filename-Switch }}
-      filename2: ${{ steps.set-output.outputs.filename-Ryujinx }}
-      filename3: ${{ steps.set-output.outputs.filename-yuzu }}
+      filename2: ${{ steps.set-output.outputs.filename-Emulator }}
     steps:
     -
       name : Checkout
@@ -60,16 +59,9 @@ jobs:
         upload_url   : ${{ steps.release.outputs.upload_url }}
         GITHUB_TOKEN : ${{ secrets.GITHUB_TOKEN }}
     -
-      name : Attach build artifacts to release (Ryujinx)
+      name : Attach build artifacts to release (Emulator)
       uses : ./.github/actions/attach
       with:
         filename     : ${{ needs.build.outputs.filename2 }}
-        upload_url   : ${{ steps.release.outputs.upload_url }}
-        GITHUB_TOKEN : ${{ secrets.GITHUB_TOKEN }}
-    -
-      name : Attach build artifacts to release (yuzu)
-      uses : ./.github/actions/attach
-      with:
-        filename     : ${{ needs.build.outputs.filename3 }}
         upload_url   : ${{ steps.release.outputs.upload_url }}
         GITHUB_TOKEN : ${{ secrets.GITHUB_TOKEN }}
