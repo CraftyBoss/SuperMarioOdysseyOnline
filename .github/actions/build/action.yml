@@ -11,7 +11,7 @@ inputs:
     required    : false
     default     : ''
   emu:
-    description : 'what system the build is for: Switch or Emulator'
+    description : 'what system the build is for: Switch or Emulators'
     required    : false
     default     : 'Switch'
 
@@ -50,7 +50,7 @@ runs:
       cache-from : type=gha,scope=smoo-build-env
       cache-to   : type=gha,scope=smoo-build-env,mode=max
   -
-    name  : Switch
+    name  : Build mod
     shell : bash
     run: |
       docker  run  --rm             \
@@ -62,9 +62,9 @@ runs:
       ;
       cp  -r  ./romfs/  ./starlight_patch_100/atmosphere/contents/0100000000010000/.
   -
-    name  : Emulator
+    name  : Emulators
     shell : bash
-    if    : ${{ inputs.emu == 'Emulator' }}
+    if    : ${{ inputs.emu == 'Emulators' }}
     run: |
       cd  ./starlight_patch_100/
       mkdir  ./SMOO/

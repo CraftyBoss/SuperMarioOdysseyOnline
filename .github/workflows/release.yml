@@ -14,7 +14,7 @@ jobs:
   build:
     strategy:
       matrix:
-        emu : [ Switch, Emulator ]
+        emu : [ Switch, Emulators ]
     runs-on: ubuntu-latest
     outputs:
       filename1: ${{ steps.set-output.outputs.filename-Switch }}
@@ -59,7 +59,7 @@ jobs:
         upload_url   : ${{ steps.release.outputs.upload_url }}
         GITHUB_TOKEN : ${{ secrets.GITHUB_TOKEN }}
     -
-      name : Attach build artifacts to release (Emulator)
+      name : Attach build artifacts to release (Emulators)
       uses : ./.github/actions/attach
       with:
         filename     : ${{ needs.build.outputs.filename2 }}
