@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       filename1: ${{ steps.set-output.outputs.filename-Switch }}
-      filename2: ${{ steps.set-output.outputs.filename-Emulator }}
+      filename2: ${{ steps.set-output.outputs.filename-Emulators }}
     steps:
     -
       name : Checkout
