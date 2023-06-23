@@ -622,7 +622,7 @@ void Client::sendTagInfPacket() {
 
     packet->mUserID = sInstance->mUserID;
 
-    packet->isIt = hsMode->isPlayerIt();
+    packet->isIt = hsMode->isPlayerIt() && hsMode->isModeActive();
 
     packet->minutes = curInfo->mHidingTime.mMinutes;
     packet->seconds = curInfo->mHidingTime.mSeconds;
