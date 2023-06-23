@@ -361,6 +361,8 @@ void Client::readFunc() {
                     mSocket->send(&lastPlayerInfPacket);
                 if (lastCostumeInfPacket.mUserID == mUserID)
                     mSocket->send(&lastCostumeInfPacket);
+                if (lastTagInfPacket.mUserID == mUserID)
+                    mSocket->send(&lastTagInfPacket);
 
                 break;
             case PacketType::COSTUMEINF:
@@ -629,6 +631,8 @@ void Client::sendTagInfPacket() {
     packet->updateType = static_cast<TagUpdateType>(TagUpdateType::STATE | TagUpdateType::TIME);
 
     sInstance->mSocket->queuePacket(packet);
+
+    sInstance->lastTagInfPacket = *packet;
 }
 
 /**
@@ -695,6 +699,11 @@ void Client::resendInitPackets() {
     // GameInfPacket
     if (lastGameInfPacket != emptyGameInfPacket) {
         mSocket->queuePacket(&lastGameInfPacket);
+    }
+
+    // TagInfPacket
+    if (lastTagInfPacket.mUserID == mUserID) {
+        mSocket->queuePacket(&lastTagInfPacket);
     }
 }
 
