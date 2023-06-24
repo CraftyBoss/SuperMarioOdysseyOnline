@@ -363,6 +363,8 @@ void Client::readFunc() {
                     mSocket->send(&lastCostumeInfPacket);
                 if (lastTagInfPacket.mUserID == mUserID)
                     mSocket->send(&lastTagInfPacket);
+                if (lastCaptureInfPacket.mUserID == mUserID)
+                    mSocket->send(&lastCaptureInfPacket);
 
                 break;
             case PacketType::COSTUMEINF:
@@ -677,12 +679,14 @@ void Client::sendCaptureInfPacket(const PlayerActorHakoniwa* player) {
         packet->mUserID = sInstance->mUserID;
         strcpy(packet->hackName, tryConvertName(player->mHackKeeper->getCurrentHackName()));
         sInstance->mSocket->queuePacket(packet);
+        sInstance->lastCaptureInfPacket = *packet;
         sInstance->isSentCaptureInf = true;
     } else if (!sInstance->isClientCaptured && sInstance->isSentCaptureInf) {
         CaptureInf *packet = new CaptureInf();
         packet->mUserID = sInstance->mUserID;
         strcpy(packet->hackName, "");
         sInstance->mSocket->queuePacket(packet);
+        sInstance->lastCaptureInfPacket = *packet;
         sInstance->isSentCaptureInf = false;
     }
 }
@@ -704,6 +708,11 @@ void Client::resendInitPackets() {
     // TagInfPacket
     if (lastTagInfPacket.mUserID == mUserID) {
         mSocket->queuePacket(&lastTagInfPacket);
+    }
+
+    // CaptureInfPacket
+    if (lastCaptureInfPacket.mUserID == mUserID) {
+        mSocket->queuePacket(&lastCaptureInfPacket);
     }
 }
 

@@ -230,6 +230,7 @@ class Client {
         GameInf emptyGameInfPacket = GameInf();
         CostumeInf lastCostumeInfPacket = CostumeInf();
         TagInf lastTagInfPacket = TagInf();
+        CaptureInf lastCaptureInfPacket = CaptureInf();
 
         Keyboard* mKeyboard = nullptr; // keyboard for setting server IP
 
