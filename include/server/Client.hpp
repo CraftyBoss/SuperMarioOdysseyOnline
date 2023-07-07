@@ -16,7 +16,6 @@
 #include "al/LiveActor/LiveActor.h"
 #include "al/layout/LayoutInitInfo.h"
 #include "al/layout/SimpleLayoutAppearWaitEnd.h"
-#include "al/layout/WindowConfirmWait.h"
 #include "al/util.hpp"
 #include "al/layout/LayoutActor.h"
 #include "al/gamepad/util.h"
@@ -88,7 +87,6 @@ class Client {
 
         bool startThread();
         void readFunc();
-        static void restartConnection();
 
         static bool isSocketActive() { return sInstance ? sInstance->mSocket->isConnected() : false; };
         bool isPlayerConnected(int index) { return mPuppetInfoArr[index]->isConnected; }
@@ -175,12 +173,6 @@ class Client {
         static bool openKeyboardIP();
         static bool openKeyboardPort();
 
-        static void showConnect();
-
-        static void showConnectError(const char16_t* msg);
-
-        static void hideConnect();
-
         void resetCollectedShines();
 
         void removeShine(int shineId);
@@ -240,8 +232,6 @@ class Client {
         bool mIsFirstConnect = true;
 
         // --- Game Layouts ---
-
-        al::WindowConfirmWait* mConnectionWait;
 
         al::SimpleLayoutAppearWaitEnd *mConnectStatus;
 

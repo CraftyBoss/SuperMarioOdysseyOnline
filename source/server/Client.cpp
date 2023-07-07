@@ -71,12 +71,7 @@ Client::Client() {
  */
 void Client::init(al::LayoutInitInfo const &initInfo, GameDataHolderAccessor holder) {
 
-    mConnectionWait = new (mHeap) al::WindowConfirmWait("ServerWaitConnect", "WindowConfirmWait", initInfo);
-    
     mConnectStatus = new (mHeap) al::SimpleLayoutAppearWaitEnd("", "SaveMessage", initInfo, 0, false);
-
-    mConnectionWait->setTxtMessage(u"Connecting to Server.");
-    mConnectionWait->setTxtMessageConfirm(u"Failed to Connect!");
 
     al::setPaneString(mConnectStatus, "TxtSave", u"Connecting to Server.", 0);
     al::setPaneString(mConnectStatus, "TxtSaveSh", u"Connecting to Server.", 0);
@@ -102,44 +97,6 @@ bool Client::startThread() {
     }else {
         Logger::log("Read Thread has already started! Or other unknown reason.\n");
         return false;
-    }
-}
-
-/**
- * @brief restarts currently active connection to server
- * 
- */
-void Client::restartConnection() {
-
-    if (!sInstance) {
-        Logger::log("Static Instance is null!\n");
-        return;
-    }
-
-    sead::ScopedCurrentHeapSetter setter(sInstance->mHeap);
-
-    Logger::log("Sending Disconnect.\n");
-
-    PlayerDC *playerDC = new PlayerDC();
-
-    playerDC->mUserID = sInstance->mUserID;
-
-    sInstance->mSocket->queuePacket(playerDC);
-
-    if (sInstance->mSocket->closeSocket()) {
-        Logger::log("Sucessfully Closed Socket.\n");
-    }
-
-    sInstance->mConnectCount = 0;
-
-    sInstance->mIsConnectionActive = sInstance->mSocket->init(sInstance->mServerIP.cstr(), sInstance->mServerPort).isSuccess();
-
-    if(sInstance->mSocket->getLogState() == SOCKET_LOG_CONNECTED) {
-
-        Logger::log("Reconnect Sucessful!\n");
-
-    } else {
-        Logger::log("Reconnect Unsuccessful.\n");
     }
 }
 
@@ -1392,38 +1349,4 @@ Shine* Client::findStageShine(int shineID) {
         }
     }
     return nullptr;
-}
-
-void Client::showConnectError(const char16_t* msg) {
-    if (!sInstance)
-        return;
-
-    sInstance->mConnectionWait->setTxtMessageConfirm(msg);
-
-    al::hidePane(sInstance->mConnectionWait, "Page01");  // hide A button prompt
-
-    if (!sInstance->mConnectionWait->mIsAlive) {
-        sInstance->mConnectionWait->appear();
-
-        sInstance->mConnectionWait->playLoop();
-    }
-
-    al::startAction(sInstance->mConnectionWait, "Confirm", "State");
-}
-
-void Client::showConnect() {
-    if (!sInstance)
-        return;
-    
-    sInstance->mConnectionWait->appear();
-
-    sInstance->mConnectionWait->playLoop();
-    
-}
-
-void Client::hideConnect() {
-    if (!sInstance)
-        return;
-
-    sInstance->mConnectionWait->tryEnd();
 }
