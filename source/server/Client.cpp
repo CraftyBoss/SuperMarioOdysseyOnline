@@ -72,9 +72,12 @@ Client::Client() {
 void Client::init(al::LayoutInitInfo const &initInfo, GameDataHolderAccessor holder) {
 
     mConnectStatus = new (mHeap) al::SimpleLayoutAppearWaitEnd("", "SaveMessage", initInfo, 0, false);
-
     al::setPaneString(mConnectStatus, "TxtSave", u"Connecting to Server.", 0);
     al::setPaneString(mConnectStatus, "TxtSaveSh", u"Connecting to Server.", 0);
+
+    mUIMessage = new (mHeap) al::WindowConfirmWait("ServerWaitConnect", "WindowConfirmWait", initInfo);
+    mUIMessage->setTxtMessage(u"a");
+    mUIMessage->setTxtMessageConfirm(u"b");
 
     mHolder = holder;
 
@@ -248,6 +251,33 @@ bool Client::openKeyboardPort() {
     sInstance->mSocket->setIsFirstConn(isFirstConnect);
 
     return isFirstConnect;
+}
+
+
+void Client::showUIMessage(const char16_t* msg) {
+    if (!sInstance) {
+        return;
+    }
+
+    sInstance->mUIMessage->setTxtMessageConfirm(msg);
+
+    al::hidePane(sInstance->mUIMessage, "Page01");  // hide A button prompt
+
+    if (!sInstance->mUIMessage->mIsAlive) {
+        sInstance->mUIMessage->appear();
+
+        sInstance->mUIMessage->playLoop();
+    }
+
+    al::startAction(sInstance->mUIMessage, "Confirm", "State");
+}
+
+void Client::hideUIMessage() {
+    if (!sInstance) {
+        return;
+    }
+
+    sInstance->mUIMessage->tryEnd();
 }
 
 /**

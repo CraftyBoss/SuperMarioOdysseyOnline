@@ -16,6 +16,7 @@
 #include "al/LiveActor/LiveActor.h"
 #include "al/layout/LayoutInitInfo.h"
 #include "al/layout/SimpleLayoutAppearWaitEnd.h"
+#include "al/layout/WindowConfirmWait.h"
 #include "al/util.hpp"
 #include "al/layout/LayoutActor.h"
 #include "al/gamepad/util.h"
@@ -173,6 +174,9 @@ class Client {
         static bool openKeyboardIP();
         static bool openKeyboardPort();
 
+        static void showUIMessage(const char16_t* msg);
+        static void hideUIMessage();
+
         void resetCollectedShines();
 
         void removeShine(int shineId);
@@ -232,7 +236,7 @@ class Client {
         bool mIsFirstConnect = true;
 
         // --- Game Layouts ---
-
+        al::WindowConfirmWait* mUIMessage;
         al::SimpleLayoutAppearWaitEnd *mConnectStatus;
 
         // --- Game Info ---
