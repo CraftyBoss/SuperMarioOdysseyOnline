@@ -5,20 +5,27 @@
 #include "server/hns/HideAndSeekMode.hpp"
 #include "server/Client.hpp"
 
-HideAndSeekConfigMenu::HideAndSeekConfigMenu() : GameModeConfigMenu() {}
+HideAndSeekConfigMenu::HideAndSeekConfigMenu() : GameModeConfigMenu() {
+    gravityOn = new sead::SafeArray<sead::WFixedSafeString<0x200>, mItemCount>();
+    gravityOn->mBuffer[0].copy(u"Toggle H&S Gravity (ON)");
+
+    gravityOff = new sead::SafeArray<sead::WFixedSafeString<0x200>, mItemCount>();
+    gravityOff->mBuffer[0].copy(u"Toggle H&S Gravity (OFF)");
+}
 
 void HideAndSeekConfigMenu::initMenu(const al::LayoutInitInfo &initInfo) {
     
 }
 
-const sead::WFixedSafeString<0x200> *HideAndSeekConfigMenu::getStringData() {
-    sead::SafeArray<sead::WFixedSafeString<0x200>, mItemCount>* gamemodeConfigOptions =
-        new sead::SafeArray<sead::WFixedSafeString<0x200>, mItemCount>();
-
-    gamemodeConfigOptions->mBuffer[0].copy(u"Toggle H&S Gravity On");
-    gamemodeConfigOptions->mBuffer[1].copy(u"Toggle H&S Gravity Off");
-
-    return gamemodeConfigOptions->mBuffer;
+const sead::WFixedSafeString<0x200>* HideAndSeekConfigMenu::getStringData() {
+    HideAndSeekInfo *curMode = GameModeManager::instance()->getInfo<HideAndSeekInfo>();
+    return (
+        GameModeManager::instance()->isMode(GameMode::HIDEANDSEEK)
+        && curMode != nullptr
+        && curMode->mIsUseGravity
+        ? gravityOn->mBuffer
+        : gravityOff->mBuffer
+    );
 }
 
 bool HideAndSeekConfigMenu::updateMenu(int selectIndex) {
@@ -35,13 +42,7 @@ bool HideAndSeekConfigMenu::updateMenu(int selectIndex) {
     switch (selectIndex) {
         case 0: {
             if (GameModeManager::instance()->isMode(GameMode::HIDEANDSEEK)) {
-                curMode->mIsUseGravity = true;
-            }
-            return true;
-        }
-        case 1: {
-            if (GameModeManager::instance()->isMode(GameMode::HIDEANDSEEK)) {
-                curMode->mIsUseGravity = false;
+                curMode->mIsUseGravity = !curMode->mIsUseGravity;
             }
             return true;
         }

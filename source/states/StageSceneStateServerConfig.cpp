@@ -100,11 +100,6 @@ StageSceneStateServerConfig::StageSceneStateServerConfig(const char *name, al::S
         entry.mList = new CommonVerticalList(entry.mLayout, initInfo, true);
 
         al::setPaneString(entry.mLayout, "TxtOption", u"Gamemode Configuration", 0);
-
-        entry.mList->initDataNoResetSelected(entry.mMenu->getMenuSize());
-
-
-        entry.mList->addStringData(entry.mMenu->getStringData(), "TxtContent");
     }
 
 
@@ -231,8 +226,13 @@ void StageSceneStateServerConfig::exeOpenKeyboardPort() {
 void StageSceneStateServerConfig::exeGamemodeConfig() {
     if (al::isFirstStep(this)) {
         mGamemodeConfigMenu = &mGamemodeConfigMenus[GameModeManager::instance()->getGameMode()];
+
+        mGamemodeConfigMenu->mList->initDataNoResetSelected(mGamemodeConfigMenu->mMenu->getMenuSize());
+        mGamemodeConfigMenu->mList->addStringData(mGamemodeConfigMenu->mMenu->getStringData(), "TxtContent");
+
         mCurrentList = mGamemodeConfigMenu->mList;
         mCurrentMenu = mGamemodeConfigMenu->mLayout;
+
         subMenuStart();
     }
 
