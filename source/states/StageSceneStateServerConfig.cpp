@@ -41,14 +41,13 @@ StageSceneStateServerConfig::StageSceneStateServerConfig(const char *name, al::S
 
     mMainOptionsList->unkInt1 = 1;
 
-    mMainOptionsList->initDataNoResetSelected(5);
+    mMainOptionsList->initDataNoResetSelected(4);
 
-    sead::SafeArray<sead::WFixedSafeString<0x200>, 5>* mainMenuOptions =
-        new sead::SafeArray<sead::WFixedSafeString<0x200>, 5>();
+    sead::SafeArray<sead::WFixedSafeString<0x200>, 4>* mainMenuOptions =
+        new sead::SafeArray<sead::WFixedSafeString<0x200>, 4>();
 
     mainMenuOptions->mBuffer[ServerConfigOption::GAMEMODECONFIG].copy(u"Gamemode Config");
     mainMenuOptions->mBuffer[ServerConfigOption::GAMEMODESWITCH].copy(u"Change Gamemode");
-    mainMenuOptions->mBuffer[ServerConfigOption::RECONNECT].copy(u"Reconnect to Server");
     mainMenuOptions->mBuffer[ServerConfigOption::SETIP].copy(u"Change Server IP");
     mainMenuOptions->mBuffer[ServerConfigOption::SETPORT].copy(u"Change Server Port");
 
@@ -101,11 +100,6 @@ StageSceneStateServerConfig::StageSceneStateServerConfig(const char *name, al::S
         entry.mList = new CommonVerticalList(entry.mLayout, initInfo, true);
 
         al::setPaneString(entry.mLayout, "TxtOption", u"Gamemode Configuration", 0);
-
-        entry.mList->initDataNoResetSelected(entry.mMenu->getMenuSize());
-
-
-        entry.mList->addStringData(entry.mMenu->getStringData(), "TxtContent");
     }
 
 
@@ -115,6 +109,15 @@ StageSceneStateServerConfig::StageSceneStateServerConfig(const char *name, al::S
 
 void StageSceneStateServerConfig::init() {
     initNerve(&nrvStageSceneStateServerConfigMainMenu, 0);
+
+    #ifdef EMU
+    char ryujinx[0x10] = { 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+    nn::account::Uid user;
+    nn::account::GetLastOpenedUser(&user);
+    if (memcmp(user.data, ryujinx, 0x10) == 0) {
+        Client::showUIMessage(u"Error: Ryujinx default profile detected.\nYou have to create a new user profile!");
+    }
+    #endif
 }
 
 void StageSceneStateServerConfig::appear(void) {
@@ -176,10 +179,6 @@ void StageSceneStateServerConfig::exeMainMenu() {
             al::setNerve(this, &nrvStageSceneStateServerConfigGamemodeSelect);
             break;
         }
-        case ServerConfigOption::RECONNECT: {
-            al::setNerve(this, &nrvStageSceneStateServerConfigRestartServer);
-            break;
-        }
         case ServerConfigOption::SETIP: {
             al::setNerve(this, &nrvStageSceneStateServerConfigOpenKeyboardIP);
             break;
@@ -233,32 +232,16 @@ void StageSceneStateServerConfig::exeOpenKeyboardPort() {
     }
 }
 
-void StageSceneStateServerConfig::exeRestartServer() {
-    if (al::isFirstStep(this)) {
-        mCurrentList->deactivate();
-
-        Client::showConnect();
-
-        Client::restartConnection();
-    }
-
-    if (Client::isSocketActive()) {
-
-        Client::hideConnect();
-
-        al::startHitReaction(mCurrentMenu, "リセット", 0);
-        
-        al::setNerve(this, &nrvStageSceneStateServerConfigMainMenu);
-    } else {
-        al::setNerve(this, &nrvStageSceneStateServerConfigConnectError);
-    }
-}
-
 void StageSceneStateServerConfig::exeGamemodeConfig() {
     if (al::isFirstStep(this)) {
         mGamemodeConfigMenu = &mGamemodeConfigMenus[GameModeManager::instance()->getGameMode()];
+
+        mGamemodeConfigMenu->mList->initDataNoResetSelected(mGamemodeConfigMenu->mMenu->getMenuSize());
+        mGamemodeConfigMenu->mList->addStringData(mGamemodeConfigMenu->mMenu->getStringData(), "TxtContent");
+
         mCurrentList = mGamemodeConfigMenu->mList;
         mCurrentMenu = mGamemodeConfigMenu->mLayout;
+
         subMenuStart();
     }
 
@@ -287,18 +270,6 @@ void StageSceneStateServerConfig::exeGamemodeSelect() {
         Logger::log("Setting Server Mode to: %d\n", mCurrentList->mCurSelected);
         GameModeManager::instance()->setMode(static_cast<GameMode>(mCurrentList->mCurSelected));
         endSubMenu();
-    }
-}
-
-void StageSceneStateServerConfig::exeConnectError() {
-    if (al::isFirstStep(this)) {
-        Client::showConnectError(u"Failed to Reconnect!");
-    }
-
-    if (al::isGreaterEqualStep(this, 60)) { // close after 1 second
-        Client::hideConnect();
-        al::startHitReaction(mCurrentMenu, "リセット", 0);
-        al::setNerve(this, &nrvStageSceneStateServerConfigMainMenu);
     }
 }
 
@@ -373,9 +344,7 @@ namespace {
 NERVE_IMPL(StageSceneStateServerConfig, MainMenu)
 NERVE_IMPL(StageSceneStateServerConfig, OpenKeyboardIP)
 NERVE_IMPL(StageSceneStateServerConfig, OpenKeyboardPort)
-NERVE_IMPL(StageSceneStateServerConfig, RestartServer)
 NERVE_IMPL(StageSceneStateServerConfig, GamemodeConfig)
 NERVE_IMPL(StageSceneStateServerConfig, GamemodeSelect)
 NERVE_IMPL(StageSceneStateServerConfig, SaveData)
-NERVE_IMPL(StageSceneStateServerConfig, ConnectError)
 }
