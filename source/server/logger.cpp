@@ -111,7 +111,7 @@ void Logger::log(const char* fmt, ...) {
 }
 
 bool Logger::pingSocket() {
-    return socket_log("ping") > 0; // if value is greater than zero, than the socket recieved our message, otherwise the connection was lost.
+    return socket_log("ping") > 0; // if value is greater than zero, than the socket received our message, otherwise the connection was lost.
 }
 
 void tryInitSocket() {

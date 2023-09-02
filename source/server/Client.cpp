@@ -89,13 +89,13 @@ void Client::init(al::LayoutInitInfo const &initInfo, GameDataHolderAccessor hol
 /**
  * @brief starts client read thread
  * 
- * @return true if read thread was sucessfully started
+ * @return true if read thread was succesfully started
  * @return false if read thread was unable to start, or thread was already started.
  */
 bool Client::startThread() {
     if(mReadThread->isDone() ) {
         mReadThread->start();
-        Logger::log("Read Thread Sucessfully Started.\n");
+        Logger::log("Read Thread Successfully Started.\n");
         return true;
     }else {
         Logger::log("Read Thread has already started! Or other unknown reason.\n");
@@ -139,7 +139,7 @@ bool Client::startConnection() {
 
     if (mIsConnectionActive) {
 
-        Logger::log("Sucessful Connection. Waiting to recieve init packet.\n");
+        Logger::log("Succesful Connection. Waiting to receive init packet.\n");
 
         bool waitingForInitPacket = true;
         // wait for client init packet
@@ -163,11 +163,13 @@ bool Client::startConnection() {
                 mHeap->free(curPacket);
 
             } else {
-                Logger::log("Recieve failed! Stopping Connection.\n");
+                Logger::log("Receive failed! Stopping Connection.\n");
                 mIsConnectionActive = false;
                 waitingForInitPacket = false;
             }
         }
+
+
     }
 
     return mIsConnectionActive;
@@ -313,7 +315,7 @@ void Client::readFunc() {
 
     while(mIsConnectionActive) {
 
-        Packet *curPacket = mSocket->tryGetPacket();  // will block until a packet has been recieved, or socket disconnected
+        Packet *curPacket = mSocket->tryGetPacket();  // will block until a packet has been received, or socket disconnected
 
         if (curPacket) {
 
@@ -377,6 +379,19 @@ void Client::readFunc() {
                 maxPuppets = initPacket->maxPlayers - 1;
                 break;
             }
+			case PacketType::UDPINIT: {
+				UdpInit* initPacket = (UdpInit*)curPacket;
+				Logger::log("Received udp init packet from server\n");
+				
+				sInstance->mSocket->setPeerUdpPort(initPacket->port);
+				sendUdpHolePunch();
+				sendUdpInit();
+				
+				break;
+			}
+			case PacketType::HOLEPUNCH: 
+				sendUdpHolePunch();
+				break;
             default:
                 Logger::log("Discarding Unknown Packet Type.\n");
                 break;
@@ -384,8 +399,8 @@ void Client::readFunc() {
 
             mHeap->free(curPacket);
 
-        }else { // if false, socket has errored or disconnected, so close the socket and end this thread.
-            Logger::log("Client Socket Encountered an Error! Errno: 0x%x\n", mSocket->socket_errno);
+        }else { // if false, socket has errored or disconnected, so restart the connection
+            Logger::log("Client Socket Encountered an Error, restarting connection! Errno: 0x%x\n", mSocket->socket_errno);
         }
 
     }
@@ -967,7 +982,45 @@ void Client::sendToStage(ChangeStagePacket* packet) {
         GameDataFunction::tryChangeNextStage(accessor, &info);
     }
 }
+/**
+ * @brief 
+ * Send a udp holepunch packet to the server
+ */
+void Client::sendUdpHolePunch() {
 
+    if (!sInstance) {
+        Logger::log("Static Instance is Null!\n");
+        return;
+    }
+
+    sead::ScopedCurrentHeapSetter setter(sInstance->mHeap);
+    
+    HolePunch *packet = new HolePunch();
+	
+    packet->mUserID = sInstance->mUserID;
+
+    sInstance->mSocket->queuePacket(packet);
+}
+/**
+ * @brief 
+ * Send a udp init packet to server
+ */
+void Client::sendUdpInit() {
+
+    if (!sInstance) {
+        Logger::log("Static Instance is Null!\n");
+        return;
+    }
+
+    sead::ScopedCurrentHeapSetter setter(sInstance->mHeap);
+    
+    UdpInit *packet = new UdpInit();
+	
+    packet->mUserID = sInstance->mUserID;
+	packet->port = sInstance->mSocket->getLocalUdpPort();
+	
+    sInstance->mSocket->queuePacket(packet);
+}
 /**
  * @brief 
  * 

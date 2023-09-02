@@ -35,36 +35,37 @@ if '.' not in consoleIP:
     print(sys.argv[0], "ERROR: Please specify with `IP=[Your console's IP]`")
     sys.exit(-1)
 
-isNeedOtherSwitch = True
-
-altSwitchIP = sys.argv[2]
-if '.' not in altSwitchIP:
-    isNeedOtherSwitch = False
+isNeedOtherSwitch = False
 
 consolePort = 5000
 
-if len(sys.argv) < 4:
+if len(sys.argv) < 3:
     projName = 'StarlightBase'
 else:
-    projName = sys.argv[3]
+    projName = sys.argv[2]
+
+if len(sys.argv) < 5:
+    user = 'crafty'
+    passwd = 'boss'
+else:
+    user = sys.argv[3]
+    passwd = sys.argv[4]
 
 curDir = os.curdir
 
 ftp = FTP()
 
-otherftp = FTP()
-
 print(f'Connecting to {consoleIP}... ', end='')
 ftp.connect(consoleIP, consolePort)
 print('logging into server...', end='')
-ftp.login('crafty','boss')
+ftp.login(user,passwd)
 print('Connected!')
 
 if isNeedOtherSwitch:
     print(f'Connecting to {altSwitchIP}... ', end='')
     otherftp.connect(altSwitchIP, consolePort)
     print('logging into server...', end='')
-    otherftp.login('crafty','boss')
+    otherftp.login(user,passwd)
     print('Connected!')
 
 patchDirectories = []

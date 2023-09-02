@@ -37,7 +37,7 @@ namespace al {
             al::GameDrawInfo *mDrawInfo;                   // 0x38 from Application::sInstance + 0x30
             ProjectNfpDirector *mProjNfpDirector;          // 0x48 
             al::HtmlViewer *mHtmlViewer;                   // 0x50 
-            ApplicationMessageReceiver *mMessageReciever;  // 0x58 
+            ApplicationMessageReceiver *mMessageReceiver;  // 0x58
             al::WaveVibrationHolder *mWaveVibrationHolder; // 0x60 
             void *gap2;
     };
