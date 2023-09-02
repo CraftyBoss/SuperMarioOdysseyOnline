@@ -80,6 +80,8 @@ nn::Result SocketClient::init(const char* ip, u16 port) {
         return result;
     }
 
+    this->mPacketQueueOpen = true;
+
     this->socket_log_state = SOCKET_LOG_CONNECTED;
 
     Logger::log("Socket fd: %d\n", socket_log_socket);
@@ -184,8 +186,7 @@ bool SocketClient::recv() {
 
         int fullSize = header->mPacketSize + sizeof(Packet);
 
-        if (header->mType > PacketType::UNKNOWN && header->mType < PacketType::End &&
-            fullSize <= MAXPACKSIZE && fullSize > 0 && valread == sizeof(Packet)) {
+        if (fullSize <= MAXPACKSIZE && fullSize > 0 && valread == sizeof(Packet)) {
 
             if (header->mType != PLAYERINF && header->mType != HACKCAPINF) {
                 Logger::log("Received packet (from %02X%02X):", header->mUserID.data[0],
@@ -220,16 +221,22 @@ bool SocketClient::recv() {
                     }
                 }
 
-                Packet* packet = reinterpret_cast<Packet*>(packetBuf);
+                if (!(header->mType > PacketType::UNKNOWN && header->mType < PacketType::End)) {
+                    Logger::log("Failed to acquire valid packet type! Packet Type: %d Full Packet Size %d valread size: %d", header->mType, fullSize, valread);
+                    mHeap->free(packetBuf);
+                    return true;
+                }
 
-                if (!mRecvQueue.isFull()) {
+                Packet *packet = reinterpret_cast<Packet*>(packetBuf);
+
+                if (!mRecvQueue.isFull() && mPacketQueueOpen) {
                     mRecvQueue.push((s64)packet, sead::MessageQueue::BlockType::NonBlocking);
                 } else {
                     mHeap->free(packetBuf);
                 }
             }
         } else {
-            Logger::log("Failed to aquire valid data! Packet Type: %d Full Packet Size %d valread size: %d", header->mType, fullSize, valread);
+            Logger::log("Failed to acquire valid data! Packet Type: %d Full Packet Size %d valread size: %d", header->mType, fullSize, valread);
         }
         
         return true;
@@ -273,6 +280,8 @@ bool SocketClient::tryReconnect() {
 bool SocketClient::closeSocket() {
 
     Logger::log("Closing Socket.\n");
+
+    mPacketQueueOpen = false;
 
     bool result = false;
 
@@ -357,7 +366,7 @@ void SocketClient::recvFunc() {
 }
 
 bool SocketClient::queuePacket(Packet* packet) {
-    if (socket_log_state == SOCKET_LOG_CONNECTED) {
+    if (socket_log_state == SOCKET_LOG_CONNECTED && mPacketQueueOpen) {
         mSendQueue.push((s64)packet,
                         sead::MessageQueue::BlockType::NonBlocking);  // as this is non-blocking, it
                                                                       // will always return true.
@@ -379,4 +388,21 @@ void SocketClient::trySendQueue() {
 
 Packet* SocketClient::tryGetPacket(sead::MessageQueue::BlockType blockType) {
     return socket_log_state == SOCKET_LOG_CONNECTED ? (Packet*)mRecvQueue.pop(blockType) : nullptr;
+}
+
+void SocketClient::clearMessageQueues() {
+    bool prevQueueOpenness = this->mPacketQueueOpen;
+    this->mPacketQueueOpen = false;
+
+    while (mSendQueue.getCount() > 0) {
+        Packet* curPacket = (Packet*)mSendQueue.pop(sead::MessageQueue::BlockType::Blocking);
+        mHeap->free(curPacket);
+    }
+
+    while (mRecvQueue.getCount() > 0) {
+        Packet* curPacket = (Packet*)mRecvQueue.pop(sead::MessageQueue::BlockType::Blocking);
+        mHeap->free(curPacket);
+    }
+
+    this->mPacketQueueOpen = prevQueueOpenness;
 }

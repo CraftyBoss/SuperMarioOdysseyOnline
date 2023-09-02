@@ -52,6 +52,10 @@ class SocketClient : public SocketBase {
         u32 getRecvCount() { return mRecvQueue.getCount(); }
         u32 getRecvMaxCount() { return mRecvQueue.getMaxCount(); }
 
+        void clearMessageQueues();
+        void setQueueOpen(bool value) { mPacketQueueOpen = value; }
+
+
         void setIsFirstConn(bool value) { mIsFirstConnect = value; }
 
     private:
@@ -66,6 +70,8 @@ class SocketClient : public SocketBase {
 
         int maxBufSize = 100;
         bool mIsFirstConnect = true;
+        bool mPacketQueueOpen = true;
+
 
         /**
          * @param str a string containing an IPv4 address or a hostname that can be resolved via DNS
