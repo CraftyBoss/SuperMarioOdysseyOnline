@@ -14,7 +14,9 @@
 #include "thread/seadMessageQueue.h"
 #include "types.h"
 
-SocketClient::SocketClient(const char* name, sead::Heap* heap) : mHeap(heap), SocketBase(name) {
+SocketClient::SocketClient(const char* name, sead::Heap* heap, Client* client) : mHeap(heap), SocketBase(name) {
+
+    this->client = client;
 #if EMU
     this->pollTime = 0;
 #else
@@ -120,6 +122,26 @@ nn::Result SocketClient::init(const char* ip, u16 port) {
     }
 
     send(&initPacket);
+
+    // on a reconnect, resend some maybe missing packets
+    if (initPacket.conType == ConnectionTypes::RECONNECT) {
+      client->resendInitPackets();
+    } else {
+        // empty TagInf
+        TagInf tagInf;
+        tagInf.mUserID = initPacket.mUserID;
+        tagInf.isIt = false;
+        tagInf.minutes = 0;
+        tagInf.seconds = 0;
+        tagInf.updateType = static_cast<TagUpdateType>(TagUpdateType::STATE | TagUpdateType::TIME);
+        send(&tagInf);
+
+        // empty CaptureInf
+        CaptureInf capInf;
+        capInf.mUserID = initPacket.mUserID;
+        strcpy(capInf.hackName, "");
+        send(&capInf);
+    }
 
     return result;
 

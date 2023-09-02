@@ -29,7 +29,6 @@ class StageSceneStateServerConfig : public al::HostStateBase<al::Scene>, public 
         enum ServerConfigOption {
             GAMEMODECONFIG,
             GAMEMODESWITCH,
-            RECONNECT,
             SETIP,
             SETPORT
         };
@@ -42,11 +41,9 @@ class StageSceneStateServerConfig : public al::HostStateBase<al::Scene>, public 
         void exeMainMenu();
         void exeOpenKeyboardIP();
         void exeOpenKeyboardPort();
-        void exeRestartServer();
         void exeGamemodeConfig();
         void exeGamemodeSelect();
         void exeSaveData();
-        void exeConnectError();
 
         void endSubMenu();
 
@@ -63,7 +60,7 @@ class StageSceneStateServerConfig : public al::HostStateBase<al::Scene>, public 
         
         SimpleLayoutMenu* mCurrentMenu = nullptr;
         CommonVerticalList* mCurrentList = nullptr;
-        // Root Page, contains buttons for gamemode config, server reconnecting, and server ip address changing
+        // Root Page, contains buttons for gamemode config, and server ip address changing
         SimpleLayoutMenu* mMainOptions = nullptr;
         CommonVerticalList *mMainOptionsList = nullptr;
         // Sub-Page of Mode config, used to select a gamemode for the client to use
@@ -86,9 +83,7 @@ namespace {
     NERVE_HEADER(StageSceneStateServerConfig, MainMenu)
     NERVE_HEADER(StageSceneStateServerConfig, OpenKeyboardIP)
     NERVE_HEADER(StageSceneStateServerConfig, OpenKeyboardPort)
-    NERVE_HEADER(StageSceneStateServerConfig, RestartServer)
     NERVE_HEADER(StageSceneStateServerConfig, GamemodeConfig)
     NERVE_HEADER(StageSceneStateServerConfig, GamemodeSelect)
     NERVE_HEADER(StageSceneStateServerConfig, SaveData)
-    NERVE_HEADER(StageSceneStateServerConfig, ConnectError)
 }

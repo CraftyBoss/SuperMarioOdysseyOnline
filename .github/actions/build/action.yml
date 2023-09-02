@@ -11,7 +11,7 @@ inputs:
     required    : false
     default     : ''
   emu:
-    description : 'what system the build is for, Switch or Emulators'
+    description : 'what system the build is for: Switch, Ryujinx or yuzu'
     required    : false
     default     : 'Switch'
 
@@ -31,8 +31,8 @@ runs:
     shell : bash
     run: |
       VERS=${{ inputs.tag }}
-      echo "::set-output name=version::${VERS:1}"
-      echo "::set-output name=filename::${{ inputs.prefix }}SMO_Online${{ (inputs.tag != '' && format('_{0}', inputs.tag)) || '' }}_for_${{ inputs.emu }}"
+      echo "version=${VERS:1}" >>$GITHUB_OUTPUT
+      echo "filename=${{ inputs.prefix }}SMO_Online${{ (inputs.tag != '' && format('_{0}', inputs.tag)) || '' }}_for_${{ inputs.emu }}" >>$GITHUB_OUTPUT
   -
     name : Set up Docker Buildx
     uses : docker/setup-buildx-action@v2
@@ -56,11 +56,22 @@ runs:
       docker  run  --rm             \
         -u `id -u`:`id -g`          \
         -v "/$PWD/":/app/           \
-        -e ISEMU=${{ (inputs.emu == 'Emulators' && '1') || '0' }}  \
+        -e ISEMU=${{ (inputs.emu != 'Switch' && '1') || '0' }}  \
         ${{ (steps.env.outputs.version != '' && format('-e BUILDVER={0}', steps.env.outputs.version)) || '' }}  \
         smoo-build-env      \
       ;
       cp  -r  ./romfs/  ./starlight_patch_100/atmosphere/contents/0100000000010000/.
+  -
+    name  : Yuzu
+    shell : bash
+    if    : ${{ inputs.emu == 'yuzu' }}
+    run: |
+      cd  ./starlight_patch_100/
+      mkdir  ./SMOO/
+      mv  ./atmosphere/contents/0100000000010000/exefs  ./SMOO/exefs
+      mv  ./atmosphere/contents/0100000000010000/romfs  ./SMOO/romfs
+      mv  ./atmosphere/exefs_patches/StarlightBase/3CA12DFAAF9C82DA064D1698DF79CDA1.ips  ./SMOO/exefs/
+      rm  -rf  ./atmosphere/
   -
     name : Upload artifacts
     uses : actions/upload-artifact@v3
