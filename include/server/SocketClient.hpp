@@ -20,9 +20,11 @@
 
 #include "packets/Packet.h"
 
+class Client;
+
 class SocketClient : public SocketBase {
     public:
-        SocketClient(const char *name, sead::Heap *heap);
+        SocketClient(const char* name, sead::Heap* heap, Client* client);
         nn::Result init(const char* ip, u16 port) override;
         bool tryReconnect();
         bool closeSocket() override;
@@ -58,6 +60,7 @@ class SocketClient : public SocketBase {
 
     private:
         sead::Heap* mHeap = nullptr;
+        Client* client = nullptr;
         
         al::AsyncFunctorThread* mRecvThread = nullptr;
         al::AsyncFunctorThread* mSendThread = nullptr;

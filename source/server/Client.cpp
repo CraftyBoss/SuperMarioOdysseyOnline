@@ -27,7 +27,7 @@ Client::Client() {
 
     mKeyboard = new Keyboard(nn::swkbd::GetRequiredStringBufferSize());
 
-    mSocket = new SocketClient("SocketClient", mHeap);
+    mSocket = new SocketClient("SocketClient", mHeap, this);
     
     mPuppetHolder = new PuppetHolder(maxPuppets);
 
@@ -71,15 +71,13 @@ Client::Client() {
  */
 void Client::init(al::LayoutInitInfo const &initInfo, GameDataHolderAccessor holder) {
 
-    mConnectionWait = new (mHeap) al::WindowConfirmWait("ServerWaitConnect", "WindowConfirmWait", initInfo);
-    
     mConnectStatus = new (mHeap) al::SimpleLayoutAppearWaitEnd("", "SaveMessage", initInfo, 0, false);
-
-    mConnectionWait->setTxtMessage(u"Connecting to Server.");
-    mConnectionWait->setTxtMessageConfirm(u"Failed to Connect!");
-
     al::setPaneString(mConnectStatus, "TxtSave", u"Connecting to Server.", 0);
     al::setPaneString(mConnectStatus, "TxtSaveSh", u"Connecting to Server.", 0);
+
+    mUIMessage = new (mHeap) al::WindowConfirmWait("ServerWaitConnect", "WindowConfirmWait", initInfo);
+    mUIMessage->setTxtMessage(u"a");
+    mUIMessage->setTxtMessageConfirm(u"b");
 
     mHolder = holder;
 
@@ -87,6 +85,7 @@ void Client::init(al::LayoutInitInfo const &initInfo, GameDataHolderAccessor hol
 
     Logger::log("Heap Free Size: %f/%f\n", mHeap->getFreeSize() * 0.001f, mHeap->getSize() * 0.001f);
 }
+
 /**
  * @brief starts client read thread
  * 
@@ -103,49 +102,7 @@ bool Client::startThread() {
         return false;
     }
 }
-/**
- * @brief restarts currently active connection to server
- * 
- */
-void Client::restartConnection() {
 
-    if (!sInstance) {
-        Logger::log("Static Instance is null!\n");
-        return;
-    }
-
-    sead::ScopedCurrentHeapSetter setter(sInstance->mHeap);
-
-    Logger::log("Sending Disconnect.\n");
-
-    PlayerDC *playerDC = new PlayerDC();
-
-    playerDC->mUserID = sInstance->mUserID;
-
-
-    sInstance->mSocket->setQueueOpen(false);
-    sInstance->mSocket->clearMessageQueues();
-
-    sInstance->mSocket->send(playerDC);
-
-    sInstance->mHeap->free(playerDC);
-
-    if (sInstance->mSocket->closeSocket()) {
-        Logger::log("Sucessfully Closed Socket.\n");
-    }
-
-    sInstance->mConnectCount = 0;
-
-    sInstance->mIsConnectionActive = sInstance->mSocket->init(sInstance->mServerIP.cstr(), sInstance->mServerPort).isSuccess();
-
-    if(sInstance->mSocket->getLogState() == SOCKET_LOG_CONNECTED) {
-
-        Logger::log("Reconnect Sucessful!\n");
-
-    } else {
-        Logger::log("Reconnect Unsuccessful.\n");
-    }
-}
 /**
  * @brief starts a connection using client's TCP socket class, pulling up the software keyboard for user inputted IP if save file does not have one saved.
  * 
@@ -296,6 +253,33 @@ bool Client::openKeyboardPort() {
     return isFirstConnect;
 }
 
+
+void Client::showUIMessage(const char16_t* msg) {
+    if (!sInstance) {
+        return;
+    }
+
+    sInstance->mUIMessage->setTxtMessageConfirm(msg);
+
+    al::hidePane(sInstance->mUIMessage, "Page01");  // hide A button prompt
+
+    if (!sInstance->mUIMessage->mIsAlive) {
+        sInstance->mUIMessage->appear();
+
+        sInstance->mUIMessage->playLoop();
+    }
+
+    al::startAction(sInstance->mUIMessage, "Confirm", "State");
+}
+
+void Client::hideUIMessage() {
+    if (!sInstance) {
+        return;
+    }
+
+    sInstance->mUIMessage->tryEnd();
+}
+
 /**
  * @brief main thread function for read thread, responsible for processing packets from server
  * 
@@ -352,16 +336,22 @@ void Client::readFunc() {
 
                 // Send relevant info packets when another client is connected
 
-                // Assume game packets are empty from first connection
-                 if (lastGameInfPacket.mUserID != mUserID)
-                     lastGameInfPacket.mUserID = mUserID;
-                 mSocket->send(&lastGameInfPacket);
+                if (lastGameInfPacket != emptyGameInfPacket) {
+                    // Assume game packets are empty from first connection
+                    if (lastGameInfPacket.mUserID != mUserID)
+                        lastGameInfPacket.mUserID = mUserID;
+                    mSocket->send(&lastGameInfPacket);
+                }
 
-                 // No need to send player/costume packets if they're empty
-                 if (lastPlayerInfPacket.mUserID == mUserID)
-                     mSocket->send(&lastPlayerInfPacket);
-                 if (lastCostumeInfPacket.mUserID == mUserID)
-                     mSocket->send(&lastCostumeInfPacket);
+                // No need to send player/costume packets if they're empty
+                if (lastPlayerInfPacket.mUserID == mUserID)
+                    mSocket->send(&lastPlayerInfPacket);
+                if (lastCostumeInfPacket.mUserID == mUserID)
+                    mSocket->send(&lastCostumeInfPacket);
+                if (lastTagInfPacket.mUserID == mUserID)
+                    mSocket->send(&lastTagInfPacket);
+                if (lastCaptureInfPacket.mUserID == mUserID)
+                    mSocket->send(&lastCaptureInfPacket);
 
                 break;
             case PacketType::COSTUMEINF:
@@ -485,6 +475,7 @@ void Client::sendPlayerInfPacket(const PlayerActorBase *playerBase, bool isYukim
     }
 
 }
+
 /**
  * @brief sends info related to player's cap actor to server
  * 
@@ -559,14 +550,14 @@ void Client::sendGameInfPacket(const PlayerActorHakoniwa* player, GameDataHolder
 
     strcpy(packet->stageName, GameDataFunction::getCurrentStageName(holder));
 
-    if(*packet != sInstance->lastGameInfPacket) {
+    if (*packet != sInstance->lastGameInfPacket && *packet != sInstance->emptyGameInfPacket) {
         sInstance->lastGameInfPacket = *packet;
         sInstance->mSocket->queuePacket(packet);
     } else {
         sInstance->mHeap->free(packet); // free packet if we're not using it
     }
-
 }
+
 /**
  * @brief 
  * Sends only stage info to the server.
@@ -590,9 +581,10 @@ void Client::sendGameInfPacket(GameDataHolderAccessor holder) {
 
     strcpy(packet->stageName, GameDataFunction::getCurrentStageName(holder));
 
-    sInstance->lastGameInfPacket = *packet;
-
-    sInstance->mSocket->queuePacket(packet);
+    if (*packet != sInstance->emptyGameInfPacket) {
+        sInstance->lastGameInfPacket = *packet;
+        sInstance->mSocket->queuePacket(packet);
+    }
 }
 
 /**
@@ -621,13 +613,15 @@ void Client::sendTagInfPacket() {
 
     packet->mUserID = sInstance->mUserID;
 
-    packet->isIt = hsMode->isPlayerIt();
+    packet->isIt = hsMode->isPlayerIt() && hsMode->isModeActive();
 
     packet->minutes = curInfo->mHidingTime.mMinutes;
     packet->seconds = curInfo->mHidingTime.mSeconds;
     packet->updateType = static_cast<TagUpdateType>(TagUpdateType::STATE | TagUpdateType::TIME);
 
     sInstance->mSocket->queuePacket(packet);
+
+    sInstance->lastTagInfPacket = *packet;
 }
 
 /**
@@ -642,6 +636,8 @@ void Client::sendCostumeInfPacket(const char* body, const char* cap) {
         Logger::log("Static Instance is Null!\n");
         return;
     }
+
+    if (!strcmp(body, "") && !strcmp(cap, "")) { return; }
 
     sead::ScopedCurrentHeapSetter setter(sInstance->mHeap);
     
@@ -670,13 +666,40 @@ void Client::sendCaptureInfPacket(const PlayerActorHakoniwa* player) {
         packet->mUserID = sInstance->mUserID;
         strcpy(packet->hackName, tryConvertName(player->mHackKeeper->getCurrentHackName()));
         sInstance->mSocket->queuePacket(packet);
+        sInstance->lastCaptureInfPacket = *packet;
         sInstance->isSentCaptureInf = true;
     } else if (!sInstance->isClientCaptured && sInstance->isSentCaptureInf) {
         CaptureInf *packet = new CaptureInf();
         packet->mUserID = sInstance->mUserID;
         strcpy(packet->hackName, "");
         sInstance->mSocket->queuePacket(packet);
+        sInstance->lastCaptureInfPacket = *packet;
         sInstance->isSentCaptureInf = false;
+    }
+}
+
+/**
+ * @brief
+ */
+void Client::resendInitPackets() {
+    // CostumeInfPacket
+    if (lastCostumeInfPacket.mUserID == mUserID) {
+        mSocket->queuePacket(&lastCostumeInfPacket);
+    }
+
+    // GameInfPacket
+    if (lastGameInfPacket != emptyGameInfPacket) {
+        mSocket->queuePacket(&lastGameInfPacket);
+    }
+
+    // TagInfPacket
+    if (lastTagInfPacket.mUserID == mUserID) {
+        mSocket->queuePacket(&lastTagInfPacket);
+    }
+
+    // CaptureInfPacket
+    if (lastCaptureInfPacket.mUserID == mUserID) {
+        mSocket->queuePacket(&lastCaptureInfPacket);
     }
 }
 
@@ -864,6 +887,7 @@ void Client::updatePlayerConnect(PlayerConnect* packet) {
         mConnectCount++;
     }
 }
+
 /**
  * @brief 
  * 
@@ -1373,38 +1397,4 @@ Shine* Client::findStageShine(int shineID) {
         }
     }
     return nullptr;
-}
-
-void Client::showConnectError(const char16_t* msg) {
-    if (!sInstance)
-        return;
-
-    sInstance->mConnectionWait->setTxtMessageConfirm(msg);
-
-    al::hidePane(sInstance->mConnectionWait, "Page01");  // hide A button prompt
-
-    if (!sInstance->mConnectionWait->mIsAlive) {
-        sInstance->mConnectionWait->appear();
-
-        sInstance->mConnectionWait->playLoop();
-    }
-
-    al::startAction(sInstance->mConnectionWait, "Confirm", "State");
-}
-
-void Client::showConnect() {
-    if (!sInstance)
-        return;
-    
-    sInstance->mConnectionWait->appear();
-
-    sInstance->mConnectionWait->playLoop();
-    
-}
-
-void Client::hideConnect() {
-    if (!sInstance)
-        return;
-
-    sInstance->mConnectionWait->tryEnd();
 }

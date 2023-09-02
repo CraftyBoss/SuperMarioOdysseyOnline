@@ -84,6 +84,8 @@ void HideAndSeekMode::begin() {
         playGuideLyt->end();
 
     GameModeBase::begin();
+
+    Client::sendTagInfPacket();
 }
 
 void HideAndSeekMode::end() {
@@ -109,6 +111,8 @@ void HideAndSeekMode::end() {
         playGuideLyt->appear();
 
     GameModeBase::end();
+
+    Client::sendTagInfPacket();
 }
 
 void HideAndSeekMode::update() {
