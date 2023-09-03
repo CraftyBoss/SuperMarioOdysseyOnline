@@ -17,8 +17,10 @@ Welcome to the official repository for the Super Mario Odyssey Online mod! Have 
 
 * 1.0
 
-## Installation Tutorial
+## Installation
+The following instructions are not through and complete as the website, as such please visit the [Super Mario Odyssey website](https://smoo.it). The old instructions are listed below for documentation sake. If you're having any trouble or issues, please make sure you've checked through the website.
 
+## Installation Tutorial [DEPRECATED]
 Before installing, Ensure that your switch is hacked. If not, follow [This Guide](https://switch.homebrew.guide/) to get your switch setup for modding. Make sure you set up a way to block Nintendo's servers as you will need to have your switch connected to the internet for this mod to work!
 
 1. Download the latest mod build from either [Gamebanana](https://gamebanana.com/mods/384214) or from the [Releases](https://github.com/CraftyBoss/SuperMarioOdysseyOnline/releases) tab. (Alternatively, build from source)
