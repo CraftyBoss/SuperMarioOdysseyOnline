@@ -22,7 +22,7 @@ jobs:
   build:
     strategy:
       matrix:
-        emu : [ Switch, Ryujinx, yuzu ]
+        emu : [ Switch, Emulators ]
     runs-on: ubuntu-latest
     steps:
     -
