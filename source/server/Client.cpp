@@ -457,7 +457,7 @@ void Client::readFunc() {
                     break;
                 }
                 nn::os::SleepThread(nn::TimeSpan::FromSeconds(1));
-                Logger::log("Attempted connection count: %d", tries);
+                Logger::log("Attempted reconnected %d times\n", tries);
             }
         }
 
