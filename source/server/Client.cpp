@@ -89,7 +89,7 @@ void Client::init(al::LayoutInitInfo const &initInfo, GameDataHolderAccessor hol
 /**
  * @brief starts client read thread
  * 
- * @return true if read thread was succesfully started
+ * @return true if read thread was successfully started
  * @return false if read thread was unable to start, or thread was already started.
  */
 bool Client::startThread() {
@@ -100,6 +100,56 @@ bool Client::startThread() {
     }else {
         Logger::log("Read Thread has already started! Or other unknown reason.\n");
         return false;
+    }
+}
+
+/**
+ * @brief restarts currently active connection to server
+ *
+ */
+void Client::restartConnection() {
+
+    Logger::log("Restarting connection.\n");
+    if (!sInstance) {
+        Logger::log("Static Instance is null!\n");
+        return;
+    }
+
+    sead::ScopedCurrentHeapSetter setter(sInstance->mHeap);
+
+    Logger::log("Sending Disconnect.\n");
+
+    PlayerDC *playerDC = new PlayerDC();
+
+    playerDC->mUserID = sInstance->mUserID;
+
+
+    sInstance->mSocket->setQueueOpen(false);
+    sInstance->mSocket->clearMessageQueues();
+
+    sInstance->mSocket->send(playerDC);
+
+    sInstance->mHeap->free(playerDC);
+
+    if (sInstance->mSocket->closeSocket()) {
+        Logger::log("Successfully Closed Socket.\n");
+    }
+
+    Logger::log("Waiting for send/recv threads to finish.\n");
+    sInstance->mSocket->waitForThreads();
+
+    sInstance->mConnectCount = 0;
+
+    Logger::log("Reinitializing connection\n");
+    sInstance->mIsConnectionActive = sInstance->mSocket->init(sInstance->mServerIP.cstr(), sInstance->mServerPort).isSuccess();
+
+    if(sInstance->mSocket->getLogState() == SOCKET_LOG_CONNECTED) {
+
+        Logger::log("Reconnect Successful!\n");
+
+
+    } else {
+        Logger::log("Reconnect Unsuccessful.\n");
     }
 }
 
@@ -139,7 +189,7 @@ bool Client::startConnection() {
 
     if (mIsConnectionActive) {
 
-        Logger::log("Succesful Connection. Waiting to receive init packet.\n");
+        Logger::log("Successful Connection. Waiting to receive init packet.\n");
 
         bool waitingForInitPacket = true;
         // wait for client init packet
@@ -379,19 +429,19 @@ void Client::readFunc() {
                 maxPuppets = initPacket->maxPlayers - 1;
                 break;
             }
-			case PacketType::UDPINIT: {
-				UdpInit* initPacket = (UdpInit*)curPacket;
-				Logger::log("Received udp init packet from server\n");
-				
-				sInstance->mSocket->setPeerUdpPort(initPacket->port);
-				sendUdpHolePunch();
-				sendUdpInit();
-				
-				break;
-			}
-			case PacketType::HOLEPUNCH: 
-				sendUdpHolePunch();
-				break;
+            case PacketType::UDPINIT: {
+                UdpInit* initPacket = (UdpInit*)curPacket;
+                Logger::log("Received udp init packet from server\n");
+
+                sInstance->mSocket->setPeerUdpPort(initPacket->port);
+                sendUdpHolePunch();
+                sendUdpInit();
+
+                break;
+            }
+            case PacketType::HOLEPUNCH:
+                sendUdpHolePunch();
+                break;
             default:
                 Logger::log("Discarding Unknown Packet Type.\n");
                 break;
@@ -401,6 +451,14 @@ void Client::readFunc() {
 
         }else { // if false, socket has errored or disconnected, so restart the connection
             Logger::log("Client Socket Encountered an Error, restarting connection! Errno: 0x%x\n", mSocket->socket_errno);
+            for (int tries = 0; tries < MAXCONNECTATTEMPTS; tries++){
+                this->restartConnection();
+                if (mIsConnectionActive) {
+                    break;
+                }
+                nn::os::SleepThread(nn::TimeSpan::FromSeconds(1));
+                Logger::log("Attempted connection count: %d", tries);
+            }
         }
 
     }
@@ -996,7 +1054,7 @@ void Client::sendUdpHolePunch() {
     sead::ScopedCurrentHeapSetter setter(sInstance->mHeap);
     
     HolePunch *packet = new HolePunch();
-	
+
     packet->mUserID = sInstance->mUserID;
 
     sInstance->mSocket->queuePacket(packet);
@@ -1015,10 +1073,10 @@ void Client::sendUdpInit() {
     sead::ScopedCurrentHeapSetter setter(sInstance->mHeap);
     
     UdpInit *packet = new UdpInit();
-	
+
     packet->mUserID = sInstance->mUserID;
-	packet->port = sInstance->mSocket->getLocalUdpPort();
-	
+    packet->port = sInstance->mSocket->getLocalUdpPort();
+
     sInstance->mSocket->queuePacket(packet);
 }
 /**

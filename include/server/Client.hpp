@@ -70,6 +70,7 @@
 #include <stdlib.h>
 
 #define MAXPUPINDEX 32
+#define MAXCONNECTATTEMPTS 5
 
 struct UIDIndexNode {
     nn::account::Uid uid;
@@ -197,6 +198,7 @@ class Client {
         void sendUdpHolePunch();
         void sendUdpInit();
         void disconnectPlayer(PlayerDC *packet);
+        void restartConnection();
 
         PuppetInfo* findPuppetInfo(const nn::account::Uid& id, bool isFindAvailable);
 
