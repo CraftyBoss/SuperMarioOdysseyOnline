@@ -13,7 +13,7 @@ Welcome to the official repository for the Super Mario Odyssey Online mod! Have 
 	
 
 ## Installation and Usage
-For the typical installation along with how to setup and use muliplayer/hide and seek, please visit the [Super Mario Odyssey website](https://smoo.it).
+For the typical installation along with how to setup and use muliplayer/hide and seek, please visit the [Super Mario Odyssey Online website](https://smoo.it).
 
 <details>
 
@@ -47,7 +47,7 @@ For the typical installation along with how to setup and use muliplayer/hide and
 
 ## Troubleshooting
 
-The [Super Mario Odyssey website](https://smoo.it) has a FAQ section that should solve many issues.
+The [Super Mario Odyssey Online website](https://smoo.it) has a FAQ section that should solve many issues.
 However, for any further questions or help not covered by the site, please visit the [CraftyBoss Community Discord Server](discord.gg/jYCueK2BqD) and ask in the `help`/`help-2` channel. 
 
 ---
