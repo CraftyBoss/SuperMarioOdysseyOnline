@@ -217,8 +217,7 @@ bool SocketClient::send(Packet *packet) {
     } else {
         Logger::log("Failed to Fully Send Packet! Result: %d Type: %s Packet Size: %d\n", valread, packetNames[packet->mType], packet->mPacketSize);
         this->socket_errno = nn::socket::GetLastErrno();
-        this->closeSocket();
-        return false;
+        return this->tryReconnect();
     }
     return true;
 }
@@ -228,8 +227,7 @@ bool SocketClient::recv() {
     if (this->socket_log_state != SOCKET_LOG_CONNECTED) {
         Logger::log("Unable To Receive! Socket Not Connected.\n");
         this->socket_errno = nn::socket::GetLastErrno();
-        this->closeSocket();
-        return false;
+        return this->tryReconnect();
     }
     
     const int fd_count = 2;
@@ -253,8 +251,7 @@ bool SocketClient::recv() {
     } else if (result < 0) {
         Logger::log("Error occurred when polling for packets\n");
         this->socket_errno = nn::socket::GetLastErrno();
-        this->closeSocket();
-        return false;
+        return this->tryReconnect();
     }
 
     s32 index = -1;
@@ -297,8 +294,7 @@ bool SocketClient::recvTcp() {
                 return true;
             } else {
                 Logger::log("Header Read Failed! Value: %d Total Read: %d\n", result, valread);
-                this->closeSocket();
-                return false;
+                return this->tryReconnect();
             }
         }
     }
@@ -306,8 +302,7 @@ bool SocketClient::recvTcp() {
     if(valread <= 0) { // if we error'd, close the socket
         Logger::log("valread was zero! Disconnecting.\n");
         this->socket_errno = nn::socket::GetLastErrno();
-        this->closeSocket();
-        return false;
+        return this->tryReconnect();
     }
 
     Packet* header = reinterpret_cast<Packet*>(recvBuf);
@@ -350,8 +345,7 @@ bool SocketClient::recvTcp() {
         } else {
             mHeap->free(packetBuf);
             Logger::log("Packet Read Failed! Value: %d\nPacket Size: %d\nPacket Type: %s\n", result, header->mPacketSize, packetNames[header->mType]);
-            this->closeSocket();
-            return false;
+            return this->tryReconnect();
         }
     }
 
@@ -380,8 +374,7 @@ bool SocketClient::recvUdp() {
 
     if (valread == 0) {
         Logger::log("Udp connection valread was zero. Disconnecting.\n");
-        this->closeSocket();
-        return false;
+        return this->tryReconnect();
     }
 
     if (valread < headerSize){
