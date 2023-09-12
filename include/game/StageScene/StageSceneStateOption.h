@@ -126,3 +126,5 @@ class StageSceneStateOption : public al::HostStateBase<al::Scene>, public al::IU
         al::MessageSystem *mMsgSystem;
         InputSeparator *mInputSeperator;
 };
+
+static_assert(sizeof(StageSceneStateOption) == 0x198, "StageSceneStateOption Size");

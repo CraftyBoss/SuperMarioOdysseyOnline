@@ -6,5 +6,6 @@
 */
 
 class IUsePlayerHack {
-
+public:
+    virtual struct PlayerHackKeeper *getPlayerHackKeeper() const = 0;
 };

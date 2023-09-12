@@ -33,6 +33,15 @@ class PuppetActor : public al::LiveActor {
         virtual void movement(void) override;
         virtual void makeActorAlive(void) override;
         virtual void makeActorDead(void) override;
+        
+        virtual void attackSensor(al::HitSensor *, al::HitSensor *) override;
+        virtual bool receiveMsg(const al::SensorMsg*, al::HitSensor*, al::HitSensor*) override;
+
+        virtual const char* getName() const override {
+            if (mInfo)
+                return mInfo->puppetName;
+            return mActorName;
+        }
 
         void initOnline(PuppetInfo *pupInfo);
 
@@ -47,8 +56,6 @@ class PuppetActor : public al::LiveActor {
 
         PuppetInfo* getInfo() { return mInfo; }
 
-        const char *getPuppetName() { return mInfo->puppetName; }
-
         bool addCapture(PuppetHackActor *capture, const char *hackType);
 
         al::LiveActor* getCurrentModel();
@@ -59,27 +66,29 @@ class PuppetActor : public al::LiveActor {
 
         void debugTeleportCapture(const sead::Vector3f& pos, int index);
 
-        bool mIsDebug = false;
+        void emitJoinEffect();
 
-        float mClosingSpeed = 0;
+        bool mIsDebug = false;
         
-        NameTag *mNameTag = nullptr; // temp public 
     private:
         void changeModel(const char* newModel);
 
         bool setCapture(const char* captureName);
 
         void syncPose();
-        
+
         PlayerCostumeInfo *mCostumeInfo = nullptr;
         PuppetInfo *mInfo = nullptr;
         PuppetCapActor *mPuppetCap = nullptr;
         PlayerModelHolder *mModelHolder = nullptr;
         HackModelHolder* mCaptures = nullptr;
+        NameTag *mNameTag = nullptr;
 
         CaptureTypes::Type mCurCapture = CaptureTypes::Type::Unknown;
 
         bool mIs2DModel = false;
 
         bool mIsCaptureModel = false;
+
+        float mClosingSpeed = 0;
 };

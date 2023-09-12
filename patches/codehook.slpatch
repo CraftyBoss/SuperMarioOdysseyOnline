@@ -29,6 +29,7 @@ B59E28 B seadPrintHook // sead::system::print
 
 1B3F0C NOP // disables call to open HTML viewer during first time odyssey flight
 1F2A2C MOV W0, #1 // patches checkpoint system to always allow warping
+216FAC MOV W0, #0 // disables AppearSwitchTimer's camera switch
 
 // Puppet Actor Setup
 4B5E30 B ProjectActorFactory // patches actor factory ctor with custom matching factory
@@ -110,4 +111,5 @@ B59E28 B seadPrintHook // sead::system::print
 4C9080 BL createTicketHook // hook to the init of a stage to create custom gravity camera ticket
 
 5C00B0 BL borderPullBackHook // hooks over isFirstStep in WorldEndBorderKeeper::exePullBack so we can kill the player if they reach the border of the map
-    
+
+// 4E46BC NOP // removes call to setEnableData for one of the commonverticallists in the options menu, which makes all entries in the menu look the same

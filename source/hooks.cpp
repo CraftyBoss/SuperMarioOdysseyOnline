@@ -26,10 +26,10 @@
 #include "math/seadVector.h"
 #include "rs/util/InputUtil.h"
 #include "sead/prim/seadSafeString.h"
-#include "server/HideAndSeekMode.hpp"
+#include "server/hns/HideAndSeekMode.hpp"
 
 bool comboBtnHook(int port) {
-    if (Client::isModeActive()) { // only switch to combo if any gamemode is active
+    if (GameModeManager::instance()->isActive()) { // only switch to combo if any gamemode is active
         return !al::isPadHoldL(port) && al::isPadTriggerDown(port);
     } else {
         return al::isPadTriggerDown(port);
@@ -39,11 +39,18 @@ bool comboBtnHook(int port) {
 void saveWriteHook(al::ByamlWriter* saveByml) {
 
     const char *serverIP = Client::getCurrentIP();
+    const int serverPort = Client::getCurrentPort();
 
     if (serverIP) {
         saveByml->addString("ServerIP", serverIP);
     } else {
-        saveByml->addString("ServerIP", "0.0.0.0");
+        saveByml->addString("ServerIP", "127.0.0.1");
+    }
+
+    if (serverPort) {
+        saveByml->addInt("ServerPort", serverPort);
+    } else {
+        saveByml->addInt("ServerPort", 0);
     }
 
     saveByml->pop();
@@ -52,9 +59,14 @@ void saveWriteHook(al::ByamlWriter* saveByml) {
 bool saveReadHook(int* padRumbleInt, al::ByamlIter const& saveByml, char const* padRumbleKey) {
 
     const char *serverIP = "";
+    int serverPort = 0;
 
     if (al::tryGetByamlString(&serverIP, saveByml, "ServerIP")) {
         Client::setLastUsedIP(serverIP);
+    }
+
+    if (al::tryGetByamlS32(&serverPort, saveByml, "ServerPort")) {
+        Client::setLastUsedPort(serverPort);
     }
     
     return al::tryGetByamlS32(padRumbleInt, saveByml, padRumbleKey);
@@ -98,19 +110,19 @@ void initNerveStateHook(StageSceneStatePauseMenu* stateParent, StageSceneStateOp
 
 // skips starting both coin counters
 void startCounterHook(CoinCounter* thisPtr) {
-    if (!Client::isModeActive()) {
+    if (!GameModeManager::instance()->isActive()) {
         thisPtr->tryStart();
     }
 }
 
 // Simple hook that can be used to override isModeE3 checks to enable/disable certain behaviors
 bool modeE3Hook() {
-    return Client::isModeActive();
+    return GameModeManager::instance()->isActive();
 }
 
 // Skips ending the play guide layout if a mode is active, since the mode would have already ended it
 void playGuideEndHook(al::SimpleLayoutAppearWaitEnd* thisPtr) {
-    if (!Client::isModeActive()) {
+    if (!GameModeManager::instance()->isActive()) {
         thisPtr->end();
     }
 }
@@ -123,14 +135,14 @@ void initHackCapHook(al::LiveActor *cappy) {
 
 al::PlayerHolder* createTicketHook(StageScene* curScene) {
     // only creates custom gravity camera ticket if hide and seek mode is active
-    if (Client::isSelectedMode(GameMode::HIDEANDSEEK)) {
+    if (GameModeManager::instance()->isMode(GameMode::HIDEANDSEEK)) {
         al::CameraDirector* director = curScene->getCameraDirector();
         if (director) {
             if (director->mFactory) {
                 al::CameraTicket* gravityCamera = director->createCameraFromFactory(
                     "CameraPoserCustom", nullptr, 0, 5, sead::Matrix34f::ident);
 
-                HideAndSeekMode* mode = Client::getMode<HideAndSeekMode>();
+                HideAndSeekMode* mode = GameModeManager::instance()->getMode<HideAndSeekMode>();
 
                 mode->setCameraTicket(gravityCamera);
             }
@@ -145,9 +157,9 @@ bool borderPullBackHook(WorldEndBorderKeeper* thisPtr) {
     bool isFirstStep = al::isFirstStep(thisPtr);
 
     if (isFirstStep) {
-        if (Client::isSelectedMode(GameMode::HIDEANDSEEK) && Client::isModeActive()) {
+        if (GameModeManager::instance()->isModeAndActive(GameMode::HIDEANDSEEK)) {
 
-            HideAndSeekMode* mode = Client::getMode<HideAndSeekMode>();
+            HideAndSeekMode* mode = GameModeManager::instance()->getMode<HideAndSeekMode>();
 
             if (mode->isUseGravity()) {
                 killMainPlayer(thisPtr->mActor);

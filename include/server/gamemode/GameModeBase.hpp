@@ -21,7 +21,6 @@ enum GameMode : s8 {
 
 // struct containing info about the games state for use in gamemodes
 struct GameModeInitInfo {
-
     GameModeInitInfo(al::ActorInitInfo* info, al::Scene *scene){
         mLayoutInitInfo = info->mLayoutInitInfo;
         mPlayerHolder = info->mActorSceneInfo.mPlayerHolder;
@@ -47,6 +46,7 @@ struct GameModeInitInfo {
 class GameModeBase : public al::IUseName, public al::IUseSceneObjHolder {
 public:
     GameModeBase(const char* name) { mName = name; }
+    virtual ~GameModeBase() = default;
     const char* getName() const override { return mName.cstr(); }
     al::SceneObjHolder* getSceneObjHolder() const override { return mSceneObjHolder; }
 
@@ -56,7 +56,7 @@ public:
 
     virtual void init(GameModeInitInfo const &info);
 
-    virtual void begin() { mIsActive = true;}
+    virtual void begin() { mIsActive = true; }
     virtual void update();
     virtual void end() { mIsActive = false; }
     

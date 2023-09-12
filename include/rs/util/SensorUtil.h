@@ -5,6 +5,8 @@
 #include "al/sensor/SensorHitGroup.h"
 
 #include "al/LiveActor/LiveActor.h" // for SensorMsg
+#include "game/Interfaces/IUsePlayerHack.h"
+#include "game/Player/PlayerHackKeeper.h"
 
 #include <sead/math/seadVector.h>
 
@@ -880,7 +882,7 @@ bool sendMsgGolemStampPress(al::HitSensor*, al::HitSensor*);
 // bool sendMsgSwitchOnWithSaveRequest(al::LiveActor*, SaveObjInfo*);
 bool sendMsgWanwanReboundAttackToCollided(al::LiveActor const*, al::HitSensor*);
 bool sendMsgWanwanBlockAttackToCollided(al::LiveActor const*, al::HitSensor*);
-bool sendMsgDigPointSmell(al::HitSensor*, al::HitSensor*, DigPoint*);
+bool sendMsgDigPointSmell(al::HitSensor*, al::HitSensor*, struct DigPoint*);
 bool sendMsgMofumofuBodyChainExplode(al::HitSensor*, al::HitSensor*, int);
 bool sendMsgMoonBasementRockThroughCollision(al::HitSensor*, al::HitSensor*, bool);
 bool sendMsgFishingWait(al::HitSensor*, al::HitSensor*, al::HitSensor*);
@@ -1006,7 +1008,7 @@ bool sendMsgBossMagmaDeadDemoStart(al::HitSensor*, al::HitSensor*);
 bool sendMsgBossMagmaDeadDemoEnd(al::HitSensor*, al::HitSensor*, sead::Vector3<float> const&);
 bool sendMsgBossMagmaResetPos(al::HitSensor*, al::HitSensor*, sead::Vector3<float> const&);
 bool sendMsgBossMagmaQueryToBubble(al::HitSensor*, al::HitSensor*);
-bool sendMsgCheckFishingTarget(al::HitSensor*, al::HitSensor*, FishingFish const*);
+bool sendMsgCheckFishingTarget(al::HitSensor*, al::HitSensor*, struct FishingFish const*);
 bool sendMsgPushToPlayerAndKillVelocityToTarget(al::LiveActor*, al::HitSensor*, al::HitSensor*);
 bool sendMsgPushToPlayerAndKillVelocityToTargetH(al::LiveActor*, al::HitSensor*, al::HitSensor*);
 bool sendMsgInitCapTarget(al::HitSensor*, al::HitSensor*, CapTargetInfo const**);

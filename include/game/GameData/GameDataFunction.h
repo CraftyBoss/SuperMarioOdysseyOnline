@@ -138,4 +138,18 @@ public:
     // subtracts the supplied int value from the current coin count
     static void subCoin(GameDataHolderWriter, int value);
 
+    static bool isUnlockedWorld(GameDataHolderAccessor, int);
+
+    static bool isUnlockedNextWorld(GameDataHolderAccessor);
+
+    static bool isUnlockedAllWorld(GameDataHolderAccessor);
+
+    static bool isUnlockedCurrentWorld(GameDataHolderAccessor);
+
+    static bool isUnlockWorld(int);
+
+    static bool isUnlockFirstForest(void);
+    
+    static bool isUnlockFirstSea(void);
+
 };

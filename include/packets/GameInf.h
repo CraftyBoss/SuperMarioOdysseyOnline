@@ -3,9 +3,9 @@
 #include "Packet.h"
 #include "al/util.hpp"
 
-struct GameInf : Packet {
+struct PACKED GameInf : Packet {
     GameInf() : Packet() {this->mType = PacketType::GAMEINF; mPacketSize = sizeof(GameInf) - sizeof(Packet);};
-    bool is2D = false;
+    bool1 is2D = false;
     u8 scenarioNo = -1;
     char stageName[0x40] = {};
 

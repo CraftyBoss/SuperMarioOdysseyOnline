@@ -33,7 +33,11 @@ namespace nn
                 return *this;
             }
 
-            inline void print() {
+            inline bool isEmpty() const {
+                return *this == EmptyId;
+            }
+
+            inline void print() const {
                 Logger::log("Player ID: 0x");
                 Logger::disableName();
                 for (size_t i = 0; i < 0x10; i++) { Logger::log("%02X", data[i]); }
@@ -41,13 +45,15 @@ namespace nn
                 Logger::enableName();
             }
 
-            inline void print(const char *prefix) {
+            inline void print(const char *prefix) const {
                 Logger::log("%s: 0x", prefix);
                 Logger::disableName();
                 for (size_t i = 0; i < 0x10; i++) { Logger::log("%02X", data[i]); }
                 Logger::log("\n");
                 Logger::enableName();
             }
+
+            static const Uid EmptyId; 
         };
 
         typedef u64 NetworkServiceAccountId;

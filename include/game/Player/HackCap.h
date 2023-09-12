@@ -14,9 +14,9 @@
 
 #include "HackCapThrowParam.h"
 #include "HackCap/HackCapJointControlKeeper.h"
+#include "HackCap/PlayerCapActionHistory.h"
 
 class PlayerWallActionHistory;
-class PlayerCapActionHistory;
 class PlayerEyeSensorHitHolder;
 class IUsePlayerHeightCheck;
 class PlayerWetControl;
@@ -201,6 +201,9 @@ class HackCap : public al::LiveActor {
         al::LiveActor *mCapEyes; // 0x120
         PlayerActorHakoniwa *mPlayerActor; // 0x128
         unsigned char padding_220[0x220-0x130];
-        HackCapThrowParam throwParam; // 0x220
+        HackCapThrowParam *throwParam; // 0x220
+        unsigned char padding_2B8[0x2B8-0x228];
+        PlayerCapActionHistory *mCapActionHistory; // 0x2B8
+        unsigned char padding_2E0[0x2E0-0x2C0];
         HackCapJointControlKeeper *mJointKeeper; // 0x2E0
 };

@@ -60,7 +60,7 @@ void initPuppetActors(al::Scene *scene, al::ActorInitInfo const &rootInfo, char 
         al::PlacementInfo playerPlacement = al::PlacementInfo();
         al::getPlacementInfoByIndex(&playerPlacement, rootPlacement, 0);
 
-        for (size_t i = 0; i < Client::sInstance->maxPuppets; i++)
+        for (size_t i = 0; i < Client::getMaxPlayerCount(); i++)
         {
             createPuppetActorFromFactory(rootInfo, playerPlacement, false);
         }

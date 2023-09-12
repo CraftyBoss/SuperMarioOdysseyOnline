@@ -1,3 +1,7 @@
+#include <cmath>
+#include <cstddef>
+#include "al/util/SensorUtil.h"
+#include "rs/util/SensorUtil.h"
 #include "server/Client.hpp"
 #include "al/LiveActor/LiveActor.h"
 #include "al/layout/BalloonMessage.h"
@@ -10,8 +14,9 @@
 #include "actors/PuppetActor.h"
 #include "math/seadQuat.h"
 #include "math/seadVector.h"
+#include "server/gamemode/GameModeManager.hpp"
 #include "server/gamemode/GameModeBase.hpp"
-#include "server/HideAndSeekMode.hpp"
+#include "server/hns/HideAndSeekMode.hpp"
 
 static const char *subActorNames[] = {
     "顔", // Face
@@ -31,7 +36,7 @@ void PuppetActor::init(al::ActorInitInfo const &initInfo) {
 
     mPuppetCap->init(initInfo);
 
-    al::initActorWithArchiveName(this, initInfo, "PlayerActorHakoniwa", nullptr);
+    al::initActorWithArchiveName(this, initInfo, "PuppetActor", nullptr);
 
     const char *bodyName = "Mario";
     const char *capName = "Mario";
@@ -185,9 +190,9 @@ void PuppetActor::control() {
         }
 
         if (mNameTag) {
-            if (Client::isSelectedMode(GameMode::HIDEANDSEEK) && Client::isModeActive()) {
+            if (GameModeManager::instance()->isModeAndActive(GameMode::HIDEANDSEEK)) {
                 mNameTag->mIsAlive =
-                    Client::getMode<HideAndSeekMode>()->isPlayerIt() && mInfo->isIt;
+                    GameModeManager::instance()->getMode<HideAndSeekMode>()->isPlayerIt() && mInfo->isIt;
                 
             } else {
                 if(!mNameTag->mIsAlive)
@@ -207,24 +212,21 @@ void PuppetActor::control() {
 }
 
 void PuppetActor::makeActorAlive() {
-
+    
     al::LiveActor *curModel = getCurrentModel();
 
     if (al::isDead(curModel)) {
         curModel->makeActorAlive();
     }
 
-    if (al::isDead(this)) {
-
-        // update name tag when puppet becomes active again
-        if (mInfo) {
-            if (mNameTag) {
-                mNameTag->setText(mInfo->puppetName);
-            }
+    // update name tag when puppet becomes active again
+    if (mInfo) {
+        if (mNameTag) {
+            mNameTag->setText(mInfo->puppetName);
         }
-
-        al::LiveActor::makeActorAlive();
     }
+
+    al::LiveActor::makeActorAlive();
 
 }
 
@@ -236,11 +238,29 @@ void PuppetActor::makeActorDead() {
         curModel->makeActorDead();
     }
 
-    if (!al::isDead(this)) {
-        mPuppetCap->makeActorDead();  // make sure we kill the cap puppet along with regular puppet
+    mPuppetCap->makeActorDead();
+    
+    al::LiveActor::makeActorDead();
+}
 
-        al::LiveActor::makeActorDead();
+void PuppetActor::attackSensor(al::HitSensor* source, al::HitSensor* target) {
+    
+    if (!al::sendMsgPush(target, source)) {
+        rs::sendMsgPushToPlayer(target, source);
     }
+
+}
+
+bool PuppetActor::receiveMsg(const al::SensorMsg* msg, al::HitSensor* source,
+                             al::HitSensor* target) {
+
+    if ((al::isMsgPlayerTrampleReflect(msg) || rs::isMsgPlayerAndCapObjHipDropReflectAll(msg)) && al::isSensorName(target, "Body"))
+    {
+        rs::requestHitReactionToAttacker(msg, target, source);
+        return true;
+    }
+
+    return false;
 }
 
 // this is more or less how nintendo does it with marios demo puppet
@@ -378,4 +398,11 @@ void PuppetActor::syncPose() {
     
     al::setTrans(curModel, al::getTrans(this));
 
+}
+
+void PuppetActor::emitJoinEffect() {
+
+    al::tryDeleteEffect(this, "Disappear"); // remove previous effect (if played previously)
+
+    al::tryEmitEffect(this, "Disappear", nullptr);
 }

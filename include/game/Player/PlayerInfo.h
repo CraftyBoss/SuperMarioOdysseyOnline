@@ -9,6 +9,10 @@
 #include "PlayerCostumeInfo.h"
 #include "PlayerModelChangerHakoniwa.h"
 
+namespace al {
+struct FootPrintHolder;
+}
+
 class PlayerInfo {
     public:
         PlayerInfo();
@@ -26,7 +30,7 @@ class PlayerInfo {
         struct PlayerJointControlKeeper *pJoinControlKeeper; // 0x50
         struct PlayerCounterIceWater *pCounterIceWater; // 0x58
         struct PlayerStainControl *pStainControl; // 0x60
-        struct FootPrintHolder *mFootPrintHolder; // 0x68
+        al::FootPrintHolder *mFootPrintHolder; // 0x68
         al::HitSensor *mHitSensor; // 0x70
         struct PlayerFormSensorCollisionArranger *pSensorCollArranger; // 0x78
         PlayerInput *pInput; // 0x80

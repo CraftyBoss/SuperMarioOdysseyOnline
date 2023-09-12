@@ -2,6 +2,6 @@
 
 #include "Packet.h"
 
-struct PlayerDC : Packet {
+struct PACKED PlayerDC : Packet {
     PlayerDC() : Packet() {this->mType = PacketType::PLAYERDC; mPacketSize = sizeof(PlayerDC) - sizeof(Packet);};
 };

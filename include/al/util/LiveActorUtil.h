@@ -7,6 +7,7 @@
 #include "al/LiveActor/LiveActor.h"
 #include "al/async/FunctorBase.h"
 #include "al/collision/Collider.h"
+#include "game/Player/PlayerActorBase.h"
 #include "game/Player/PlayerActorHakoniwa.h"
 #include "al/layout/LayoutActor.h"
 #include "al/layout/LayoutInitInfo.h"
@@ -29,7 +30,7 @@ namespace al {
     void startAction(LiveActor*, char const*);
     void startAction(IUseLayoutAction*, const char *, const char *);
     void startFreezeActionEnd(IUseLayoutAction *,char const*,char const*);
-    void startHitReaction(LiveActor*, char const*);
+    void startHitReaction(const LiveActor *, char const*);
     void invalidateClipping(const LiveActor *);
     void validateClipping(const LiveActor *);
     void setNerveAtActionEnd(LiveActor*, const al::Nerve*);
@@ -91,7 +92,7 @@ namespace al {
 
     bool tryOnSwitchDeadOn(IUseStageSwitch *);
     bool trySyncStageSwitchAppear(LiveActor *);
-    PlayerActorHakoniwa* tryFindNearestPlayerActor(const LiveActor *);
+    PlayerActorBase* tryFindNearestPlayerActor(const LiveActor *);
     bool tryFindNearestPlayerPos(sead::Vector3f *, const LiveActor *);
     bool tryAddRippleMiddle(LiveActor*);
     bool tryStartActionIfNotPlaying(LiveActor*, const char*);

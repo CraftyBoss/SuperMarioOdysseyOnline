@@ -6,8 +6,10 @@
 #pragma once
 
 #include "al/scene/SceneObjHolder.h"
+#include "container/seadPtrArray.h"
 #include "types.h"
 #include "UniqueObjInfo.h"
+#include "GameProgressData.h"
 
 #include "sead/math/seadVector.h"
 #include "sead/stream/seadStream.h"
@@ -16,7 +18,24 @@ namespace al {
     class ActorInitInfo;
     class PlacementInfo;
     class PlacementId;
-}
+    }  // namespace al
+
+class SphinxQuizData;
+class TimeBalloonSaveData;
+class WorldWarpTalkData;
+class VisitStageData;
+class MoonRockData;
+class BossSaveData;
+class AchievementSaveData;
+class SearchAmiiboDataTable;
+class NetworkUploadFlag;
+class SequenceDemoSkipData;
+class HintPhotoData;
+class ShopTalkData;
+class RaceRecord;
+
+class PlayerHitPointData;
+
 
 class GameDataHolder;
 class ShineInfo;
@@ -296,15 +315,176 @@ class GameDataFile
         bool isEmpty(void) const;
         bool isKidsMode(void) const;
         
-        undefined padding[0x5C8];
-        UniqObjInfo** mUniqueInfo;  // 0x5C8
-        void *unkPtr1; // 0x5D0
-        void *unkPtr2; // 0x5D8
-        void *unkPtr3; // 0x5E0
-        void* unkPtr4;  // 0x5E8
-        void* unkPtr5;  // 0x5F0
-        bool unkBool1; // 0x5F8
-        bool unkBool2; // 0x5F9
-        bool mIsCapEnable; // 0x5FA
+        ShineInfo **mShineInfoArray;
+        ShineInfo **mShineInfoArray2;
+        ShineInfo *mShineInfo;
+        void *qword18;
+        void *qword20;
+        int dword28;
+        int dword2C;
+        sead::FixedSafeString<0x80> char30;
+        sead::FixedSafeString<0x80> charC8;
+        sead::FixedSafeString<0x80> char160;
+        sead::FixedSafeString<0x80> char1F8;
+        sead::FixedSafeString<0x80> char290;
+        sead::FixedSafeString<0x80> char328;
+        sead::FixedSafeString<0x80> char3C0;
+        u16 word458;
+        char gap45A[6];
+        void *qword460;
+        void *qword468;
+        void *qword470;
+        void *qword478;
+        void *qword480;
+        void *qword488;
+        sead::FixedSafeString<0x100> char490;
+        void *qword5A8;
+        bool byte5B0;
+        void *qword5B4;
+        sead::FixedSafeString<0x80> *qword5C0;
+        UniqObjInfo** mUniqueObjInfoArr;
+        void *qword5D0;
+        void *qword5D8;
+        void *qword5E0;
+        void *qword5E8;
+        void *qword5F0;
+        u16 word5F8;
+        bool byte5FA;
+        void *qword600;
+        int dword608;
+        bool byte60C;
+        SphinxQuizData *mSphinxQuizData;
+        void *qword618;
+        void *qword620;
+        void *qword628;
+        TimeBalloonSaveData *qword630;
+        sead::FixedSafeString<0x40> char638;
+        int dword690;
+        WorldWarpTalkData *mWorldWarpTalkData;
+        VisitStageData *mVisitStageData;
+        GameProgressData *mGameProgressData;
+        MoonRockData *mMoonRockData;
+        BossSaveData *mBossSaveData;
+        AchievementSaveData *mAchievementSaveData;
+        SearchAmiiboDataTable *mSearchAmiiboDataTable;
+        NetworkUploadFlag *mNetworkUploadFlag;
+        SequenceDemoSkipData *mSequenceDemoSkipData;
+        HintPhotoData *mHintPhotoData;
+        void *qword6E8;
+        void *qword6F0;
+        void *qword6F8;
+        void *qword700;
+        void *qword708;
+        sead::FixedSafeString<0x40> char710;
+        sead::FixedSafeString<0x40> char768;
+        u16 word7C0;
+        void *qword7C8;
+        u16 word7D0;
+        void *qword7D8;
+        sead::PtrArray<RaceRecord> mLatestRaceRecords;
+        void *qword7F0;
+        void *qword7F8;
+        void *qword800;
+        void *qword808;
+        void *qword810;
+        bool byte818;
+        void *qword820;
+        bool byte828;
+        sead::PtrArrayImpl sead__ptrarrayimpl830;
+        u16 word840;
+        bool byte842;
+        int dword844;
+        bool byte848;
+        GameDataHolder *mGameDataHolder;
+        void *qword858;
+        PlayerHitPointData *mPlayerHintPointData;
+        sead::FixedSafeString<0x80> char868;
+        bool byte900;
+        bool byte901;
+        int dword904;
+        sead::FixedSafeString<0x80> char908;
+        void *char9A0;
+        sead::PtrArrayImpl sead__ptrarrayimpl9A8;
+        sead::PtrArrayImpl sead__ptrarrayimpl9B8;
+        sead::PtrArrayImpl sead__ptrarrayimpl9C8;
+        sead::PtrArrayImpl sead__ptrarrayimpl9D8;
+        void *qword9E8;
+        int mCurWorldID;
+        void *qword9F8;
+        void *qwordA00;
+        u16 wordA08;
+        bool byteA0A;
+        void *qwordA10;
+        void *qwordA18;
+        int dwordA20;
+        int dwordA24;
+        int dwordA28;
+        bool byteA2C;
+        ChangeStageInfo *mChangeStageInfo;
+        ChangeStageInfo *mChangeStageInfo2;
+        void *qwordA40;
+        void *qwordA48;
+        void *qwordA50;
+        void *qwordA58;
+        ShopTalkData *mShopTalkData;
+        void *qwordA68;
+        bool byteA70;
+        char gapA71[3];
+        void *qwordA74;
+        void *qwordA7C;
+        int dwordA84;
+        bool byteA88;
+        char gapA89[3];
+        void *qwordA8C;
+        int dwordA94;
+        bool byteA98;
+        char gapA99[3];
+        void *qwordA9C;
+        int dwordAA4;
+        bool byteAA8;
+        char gapAA9[3];
+        void *qwordAAC;
+        int dwordAB4;
+        bool byteAB8;
+        char gapAB9[3];
+        void *qwordABC;
+        int dwordAC4;
+        bool byteAC8;
+        char gapAC9[3];
+        void *qwordACC;
+        int dwordAD4;
+        bool byteAD8;
+        char gapAD9[3];
+        void *qwordADC;
+        int dwordAE4;
+        bool byteAE8;
+        char gapAE9[3];
+        void *qwordAEC;
+        int dwordAF4;
+        bool byteAF8;
+        char gapAF9[3];
+        void *qwordAFC;
+        int dwordB04;
+        bool byteB08;
+        char gapB09[3];
+        void *qwordB0C;
+        int dwordB14;
+        bool byteB18;
+        char gapB19[3];
+        void *qwordB1C;
+        int dwordB24;
+        bool byteB28;
+        char gapB29[7];
+        void *qwordB30;
+        bool byteB38;
+        char gapB39[7];
+        void *qwordB40;
+        int dwordB48;
+        char gapB4C[4];
+        void *qwordB50;
+        int dwordB58;
+        int dwordB5C;
+        int dwordB60;
+        u16 wordB64;
 };
         

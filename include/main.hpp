@@ -51,11 +51,15 @@
 #include "Keyboard.hpp"
 #include "server/DeltaTime.hpp"
 
-static const int playBufSize = 8;
-
 static bool isInGame = false;
 
 static bool debugMode = false;
+
+static bool isSmallMode = true;
+
+static float scale = 0.3f;
+
+extern float camDist;
 
 constexpr const char* captureNames[] = {
     "AnagramAlphabetCharacter", "Byugo", "Bubble", "Bull", "Car", "ElectricWire",
