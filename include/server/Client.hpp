@@ -88,7 +88,6 @@ class Client {
 
         bool startThread();
         void readFunc();
-        static void restartConnection();
 
         static bool isSocketActive() { return sInstance ? sInstance->mSocket->isConnected() : false; };
         bool isPlayerConnected(int index) { return mPuppetInfoArr[index]->isConnected; }
@@ -175,11 +174,8 @@ class Client {
         static bool openKeyboardIP();
         static bool openKeyboardPort();
 
-        static void showConnect();
-
-        static void showConnectError(const char16_t* msg);
-
-        static void hideConnect();
+        static void showUIMessage(const char16_t* msg);
+        static void hideUIMessage();
 
         void resetCollectedShines();
 
@@ -229,6 +225,8 @@ class Client {
         GameInf lastGameInfPacket = GameInf();
         GameInf emptyGameInfPacket = GameInf();
         CostumeInf lastCostumeInfPacket = CostumeInf();
+        TagInf lastTagInfPacket = TagInf();
+        CaptureInf lastCaptureInfPacket = CaptureInf();
 
         Keyboard* mKeyboard = nullptr; // keyboard for setting server IP
 
@@ -240,9 +238,7 @@ class Client {
         bool mIsFirstConnect = true;
 
         // --- Game Layouts ---
-
-        al::WindowConfirmWait* mConnectionWait;
-
+        al::WindowConfirmWait* mUIMessage;
         al::SimpleLayoutAppearWaitEnd *mConnectStatus;
 
         // --- Game Info ---
