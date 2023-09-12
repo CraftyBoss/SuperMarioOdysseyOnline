@@ -18,4 +18,5 @@ class GameDataHolderAccessor : public GameDataHolderWriter
     public:
         GameDataHolderAccessor(al::IUseSceneObjHolder const *IUseObjHolder) {mData = (GameDataHolder*)al::getSceneObj(IUseObjHolder, 18);}
         GameDataHolderAccessor(al::SceneObjHolder const *objHolder) {mData = (GameDataHolder*)objHolder->getObj(18); }
+        GameDataHolderAccessor() {mData = nullptr; } // default ctor
 };

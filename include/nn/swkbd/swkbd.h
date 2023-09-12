@@ -2,13 +2,23 @@
 
 #include <cstdint>
 #include <cstdlib>
+#include "types.h"
 typedef unsigned long int ulong;
 typedef unsigned short int ushort;
 typedef unsigned int uint;
 typedef unsigned char uchar;
 
-namespace nn
-{
+namespace nn {
+
+    namespace applet {
+    enum ExitReason {
+            Normal = 0,
+            Canceled = 1,
+            Abnormal = 2,
+            Unexpected = 10
+        };
+    }
+
     namespace swkbd
     {
         enum Preset
@@ -103,40 +113,18 @@ namespace nn
             Max_DictionaryLang
         };
 
+        enum CloseResult
+        {
+            Enter,
+            Cancel
+        };
+
         struct DictionaryInfo
         {
             uint offset; // 0x0
             ushort size; // 0x4
             DictionaryLang lang; // 0x6
         };
-
-        // KeyboardMode keyboardMode; // 0x0
-        // const char okText[0x8]; // 0x8
-        // char leftOptionalSymbolKey; // 0x10
-        // char rightOptionalSymbolKey; // 0x12
-        // bool isPredictionEnabled; // 0x14
-        // InvalidChar invalidCharFlag; // 0x18
-        // InitialCursorPos initialCursorPos; // 0x1C
-        // const char headerText[0x40]; // 0x20
-        // const char subText[0x80]; // 0x28
-        // const char guideText[0x100]; // 0x30
-        // int textMaxLength; // 0x38
-        // int textMinLength; // 0x3C
-        // PasswordMode passwordMode; // 0x40
-        // InputFormMode inputFormMode; // 0x44
-        // bool isUseNewLine; // 0x48
-        // bool isUseUtf8; // 0x49
-        // bool isUseBlurBackground; // 0x4A
-        // int _initialStringOffset; // 0x4C
-        // int _initialStringLength; // 0x50
-        // int _userDictionaryOffset; // 0x54
-        // int _userDictionaryNum; // 0x58
-        // bool _isUseTextCheck; // 0x5C
-        // void *_textCheckCallback; // 0x60
-        // int* separateTextPos; // 0x68
-        // DictionaryInfo* _customizedDicInfoList; // 0x70
-        // unsigned char _customizedDicCount; // 0x78
-        // unsigned char* _reserved;          // 0x80
         
         struct KeyboardConfig
         {
@@ -193,6 +181,7 @@ namespace nn
 
         ulong GetRequiredWorkBufferSize(bool);
         ulong GetRequiredStringBufferSize(void);
+        nn::applet::ExitReason getExitReason();
         void MakePreset(nn::swkbd::KeyboardConfig *,nn::swkbd::Preset);
         //void SetHeaderText(nn::swkbd::KeyboardConfig *,char16_t const*);
         //void SetSubText(nn::swkbd::KeyboardConfig*, char16_t const*);
@@ -211,7 +200,9 @@ namespace nn
         void SetInitialText(nn::swkbd::ShowKeyboardArg *,char16_t const*);
         void SetInitialTextUtf8(nn::swkbd::ShowKeyboardArg *,char const*);
         //void SetUserWordList(nn::swkbd::ShowKeyboardArg *,nn::swkbd::UserWord const*,int);
-        void ShowKeyboard(nn::swkbd::String *,nn::swkbd::ShowKeyboardArg const&);
+        int ShowKeyboard(nn::swkbd::String*, nn::swkbd::ShowKeyboardArg const&);
+
+        __attribute__((used)) static nn::applet::ExitReason g_ExitReason;
         
     } // namespace swkbd
 } // namespace nn

@@ -3,10 +3,10 @@
 #include "Packet.h"
 #include "al/util.hpp"
 
-struct GameInf : Packet {
+struct PACKED GameInf : Packet {
     GameInf() : Packet() {this->mType = PacketType::GAMEINF; mPacketSize = sizeof(GameInf) - sizeof(Packet);};
-    bool is2D = false;
-    u8 scenarioNo = -1;
+    bool1 is2D = false;
+    u8 scenarioNo = 255;
     char stageName[0x40] = {};
 
     bool operator==(const GameInf &rhs) const {

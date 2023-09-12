@@ -1,0 +1,103 @@
+name: Dev Release
+
+
+on:
+  push:
+    branches:
+    - 'dev'
+
+
+env:
+  TAG : 'latest-dev'
+
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: true
+
+
+jobs:
+
+  build:
+    strategy:
+      matrix:
+        emu : [ Switch, Ryujinx, yuzu ]
+    runs-on: ubuntu-latest
+    outputs:
+      filename1: ${{ steps.set-output.outputs.filename-Switch }}
+      filename2: ${{ steps.set-output.outputs.filename-Ryujinx }}
+      filename3: ${{ steps.set-output.outputs.filename-yuzu }}
+    steps:
+    -
+      name : Checkout
+      uses : actions/checkout@v3
+    -
+      name  : Environment
+      id    : env
+      shell : bash
+      run: |
+        echo "prefix=$(date +'%Y%m%d_%H%M%S_' --utc)" >>$GITHUB_OUTPUT
+    -
+      name : Build artifacts
+      id   : build
+      uses : ./.github/actions/build
+      with:
+        prefix : ${{ steps.env.outputs.prefix }}
+        emu    : ${{ matrix.emu }}
+    -
+      name  : Set output
+      id    : set-output
+      shell : bash
+      run   : |
+        echo "filename-${{ matrix.emu }}=${{ steps.build.outputs.filename }}" >>$GITHUB_OUTPUT
+
+  attach:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+    -
+      name : Checkout
+      uses : actions/checkout@v3
+    -
+      name  : Get release info
+      id    : release
+      shell : bash
+      run: |
+        url=`curl -sS --fail ${{ github.api_url }}/repos/${{ github.repository }}/releases/tags/${{ env.TAG }} | jq .upload_url -r`
+        echo "upload_url=$url" >>$GITHUB_OUTPUT
+    -
+      name : Attach build artifacts to release (Switch)
+      uses : ./.github/actions/attach
+      with:
+        filename     : ${{ needs.build.outputs.filename1 }}
+        upload_url   : ${{ steps.release.outputs.upload_url }}
+        GITHUB_TOKEN : ${{ secrets.GITHUB_TOKEN }}
+    -
+      name : Attach build artifacts to release (Ryujinx)
+      uses : ./.github/actions/attach
+      with:
+        filename     : ${{ needs.build.outputs.filename2 }}
+        upload_url   : ${{ steps.release.outputs.upload_url }}
+        GITHUB_TOKEN : ${{ secrets.GITHUB_TOKEN }}
+    -
+      name : Attach build artifacts to release (yuzu)
+      uses : ./.github/actions/attach
+      with:
+        filename     : ${{ needs.build.outputs.filename3 }}
+        upload_url   : ${{ steps.release.outputs.upload_url }}
+        GITHUB_TOKEN : ${{ secrets.GITHUB_TOKEN }}
+
+  move:
+    needs: attach
+    runs-on: ubuntu-latest
+    steps:
+    -
+      name : Checkout
+      uses : actions/checkout@v3
+    -
+      name  : Move ${{ env.TAG }} tag
+      shell : bash
+      run: |
+        git config user.email "${{ github.actor }}@users.noreply.github.com"
+        git tag -f ${{ env.TAG }}
+        git push --force origin ${{ env.TAG }}

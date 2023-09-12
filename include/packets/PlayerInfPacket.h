@@ -4,9 +4,9 @@
 #include "al/util.hpp"
 #include "algorithms/PlayerAnims.h"
 
-struct PlayerInf : Packet {
+struct PACKED PlayerInf : Packet {
     PlayerInf() : Packet() {mType = PacketType::PLAYERINF; mPacketSize = sizeof(PlayerInf) - sizeof(Packet);};
-    sead::Vector3f playerPos; 
+    sead::Vector3f playerPos;
     sead::Quatf playerRot;
     float animBlendWeights[6];
     PlayerAnims::Type actName;

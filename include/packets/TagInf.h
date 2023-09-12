@@ -8,10 +8,10 @@ enum TagUpdateType : u8 {
     STATE                = 1 << 1
 };
 
-struct TagInf : Packet {
+struct PACKED TagInf : Packet {
     TagInf() : Packet() { this->mType = PacketType::TAGINF; mPacketSize = sizeof(TagInf) - sizeof(Packet);};
     TagUpdateType updateType;
-    bool isIt = false;
+    bool1 isIt = false;
     u8 seconds;
     u16 minutes;
 };

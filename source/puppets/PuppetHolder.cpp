@@ -1,11 +1,51 @@
 #include "puppets/PuppetHolder.hpp"
+#include <math.h>
+#include "actors/PuppetActor.h"
 #include "al/util.hpp"
+#include "al/util/LiveActorUtil.h"
+#include "container/seadPtrArray.h"
+#include "heap/seadHeap.h"
+#include "heap/seadHeapMgr.h"
 #include "logger.hpp"
 
 PuppetHolder::PuppetHolder(int size) {
-    mPuppetArr = sead::PtrArray<PuppetActor>();
     if(!mPuppetArr.tryAllocBuffer(size, nullptr)) {
         Logger::log("Buffer Alloc Failed on Puppet Holder!\n");
+    }
+}
+/**
+ * @brief resizes puppet ptr array by creating a new ptr array and storing previous ptrs in it, before freeing the previous array
+ * 
+ * @param size the size of the new ptr array
+ * @return returns true if resizing was sucessful
+ */
+bool PuppetHolder::resizeHolder(int size) {
+
+    if (mPuppetArr.capacity() == size)
+        return true;  // no need to resize if we're already at the same capacity
+
+    sead::Heap *seqHeap = sead::HeapMgr::instance()->findHeapByName("SequenceHeap", 0);
+
+    if (!mPuppetArr.isBufferReady())
+        return mPuppetArr.tryAllocBuffer(size, seqHeap);
+        
+    sead::PtrArray<PuppetActor> newPuppets = sead::PtrArray<PuppetActor>();
+
+    if (newPuppets.tryAllocBuffer(size, seqHeap)) {
+        
+        int curPupCount = mPuppetArr.size();
+
+        for (int i = 0; i < curPupCount > size ? size : curPupCount; i++) {
+            newPuppets.pushBack(mPuppetArr[i]);
+        }
+
+        mPuppetArr.freeBuffer();
+
+        mPuppetArr = newPuppets;
+
+        return true;
+    } else {
+        return false;
     }
 }
 
@@ -39,10 +79,14 @@ void PuppetHolder::update() {
 
         curInfo->isInSameStage = checkInfoIsInStage(curInfo);
 
-        if(curInfo->isInSameStage) {
+        if(curInfo->isInSameStage && al::isDead(curPuppet)) {
             curPuppet->makeActorAlive();
-        }else if(!curInfo->isInSameStage) {
+
+            curPuppet->emitJoinEffect();
+        }else if(!curInfo->isInSameStage && !al::isDead(curPuppet)) {
             curPuppet->makeActorDead();
+            
+            curPuppet->emitJoinEffect();
         }
     }
 }

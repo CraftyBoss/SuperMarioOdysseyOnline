@@ -1,34 +1,13 @@
 #include "server/Client.hpp"
-#include <cstring>
-#include "al/actor/ActorSceneInfo.h"
-#include "al/layout/WindowConfirmWait.h"
+#include "al/layout/SimpleLayoutAppearWaitEnd.h"
 #include "al/util/LiveActorUtil.h"
-#include "algorithms/PlayerAnims.h"
-#include "game/GameData/GameDataFunction.h"
-#include "game/GameData/GameDataHolderAccessor.h"
-#include "game/Info/QuestInfo.h"
-#include "game/Player/PlayerActorHakoniwa.h"
-#include "game/StageScene/StageScene.h"
+#include "game/SaveData/SaveDataAccessFunction.h"
 #include "heap/seadHeapMgr.h"
-#include "helpers.hpp"
-#include "layouts/HideAndSeekIcon.h"
 #include "logger.hpp"
-#include "math/seadVector.h"
-#include "nn/err.h"
-#include "nn/result.h"
-#include "packets/ChangeStagePacket.h"
-#include "packets/InitPacket.h"
 #include "packets/Packet.h"
-#include "packets/PlayerConnect.h"
-#include "packets/TagInf.h"
-#include "sead/basis/seadRawPrint.h"
-#include "sead/math/seadQuat.h"
-#include "server/gamemode/GameModeBase.hpp"
-#include "server/gamemode/GameModeFactory.hpp"
-#include "server/HideAndSeekConfigMenu.hpp"
-#include "server/HideAndSeekMode.hpp"
+#include "server/hns/HideAndSeekMode.hpp"
 
-Client* Client::sInstance;
+SEAD_SINGLETON_DISPOSER_IMPL(Client)
 
 typedef void (Client::*ClientThreadFunc)(void);
 
@@ -37,21 +16,22 @@ typedef void (Client::*ClientThreadFunc)(void);
  * 
  * @param bufferSize defines the maximum amount of puppets the client can handle
  */
-Client::Client(int bufferSize) {
-    this->mReadThread = new al::AsyncFunctorThread("ClientReadThread", al::FunctorV0M<Client*, ClientThreadFunc>(this, &Client::readFunc), 0, 0x10000, {0});
-    // this->recvThread = new al::AsyncFunctorThread("ClientRecvThread",
-    // al::FunctorV0M<typeof(this), typeof(&Client::recvFunc)>(this, &Client::recvFunc), 0, 0x10000,
-    // {0});
+Client::Client() {
+
+    mHeap = sead::ExpHeap::create(0x50000, "ClientHeap", sead::HeapMgr::instance()->getCurrentHeap(), 8, sead::Heap::cHeapDirection_Forward, false);
+
+    sead::ScopedCurrentHeapSetter heapSetter(
+        mHeap);  // every new call after this will use ClientHeap instead of SequenceHeap
+
+    mReadThread = new al::AsyncFunctorThread("ClientReadThread", al::FunctorV0M<Client*, ClientThreadFunc>(this, &Client::readFunc), 0, 0x1000, {0});
 
     mKeyboard = new Keyboard(nn::swkbd::GetRequiredStringBufferSize());
 
-    mSocket = new SocketClient("SocketClient");
+    mSocket = new SocketClient("SocketClient", mHeap, this);
     
-    maxPuppets = bufferSize - 1;
-
     mPuppetHolder = new PuppetHolder(maxPuppets);
 
-    for (size_t i = 0; i < bufferSize + 1; i++)
+    for (size_t i = 0; i < MAXPUPINDEX; i++)
     {
         mPuppetInfoArr[i] = new PuppetInfo();
 
@@ -59,8 +39,6 @@ Client::Client(int bufferSize) {
     }
 
     strcpy(mDebugPuppetInfo.puppetName, "PuppetDebug");
-
-    puppetPlayerID.fill({0, 0});
 
     mConnectCount = 0;
 
@@ -72,26 +50,18 @@ Client::Client(int bufferSize) {
 
     nn::account::GetLastOpenedUser(&mUserID);
 
-    mUserID.print();
-
     nn::account::Nickname playerName;
     nn::account::GetNickname(&playerName, mUserID);
+    Logger::setLogName(playerName.name);  // set Debug logger name to player name
 
     mUsername = playerName.name;
+    
+    mUserID.print();
 
     Logger::log("Player Name: %s\n", playerName.name);
 
-    #ifdef BUILDVER
-    Logger::log("%s Build Number: %s\n", playerName.name, TOSTRING(BUILDVER));
-    #endif
+    Logger::log("%s Build Number: %s\n", playerName.name, TOSTRING(BUILDVERSTR));
 
-    Logger::setLogName(playerName.name);  // set Debug logger name to player name
-
-    mServerMode = GameMode::HIDEANDSEEK; // temp for testing
-
-    if(!sInstance) {
-        sInstance = this;
-    }
 }
 
 /**
@@ -99,99 +69,40 @@ Client::Client(int bufferSize) {
  * 
  * @param initInfo init info used to create layouts used by client
  */
-void Client::init(al::LayoutInitInfo const &initInfo) {
+void Client::init(al::LayoutInitInfo const &initInfo, GameDataHolderAccessor holder) {
 
-    mConnectionWait = new al::WindowConfirmWait("ServerWaitConnect", "WindowConfirmWait", initInfo);
+    mConnectStatus = new (mHeap) al::SimpleLayoutAppearWaitEnd("", "SaveMessage", initInfo, 0, false);
+    al::setPaneString(mConnectStatus, "TxtSave", u"Connecting to Server.", 0);
+    al::setPaneString(mConnectStatus, "TxtSaveSh", u"Connecting to Server.", 0);
 
-    mConnectionWait->setTxtMessage(u"Connecting to Server.");
+    mUIMessage = new (mHeap) al::WindowConfirmWait("ServerWaitConnect", "WindowConfirmWait", initInfo);
+    mUIMessage->setTxtMessage(u"a");
+    mUIMessage->setTxtMessageConfirm(u"b");
 
-    mConnectionWait->setTxtMessageConfirm(u"Failed to Connect!");
+    mHolder = holder;
 
-    StartThreads();
+    startThread();
 
-    // mConnectionWait->tryEndForce();
+    Logger::log("Heap Free Size: %f/%f\n", mHeap->getFreeSize() * 0.001f, mHeap->getSize() * 0.001f);
 }
 
-/**
- * @brief creates and initializes the gamemode selected by either server or client settings
- * 
- * @param initInfo init info used to initialize gamemode
- */
-void Client::initMode(GameModeInitInfo const& initInfo) {
-
-    if (!sInstance) {
-        Logger::log("Static Instance is null!\n");
-        return;
-    }
-
-    GameModeInitInfo newInfo = initInfo;
-
-    newInfo.initServerInfo(sInstance->mServerMode, sInstance->mPuppetHolder);
-
-    GameModeFactory modeFactory("GameModeFactory");
-
-    const char* modeName = GameModeFactory::getModeString(newInfo.mMode);
-
-    if (modeName) {
-        auto creator = modeFactory.getCreator(modeName);
-        if (creator) {
-            sInstance->mCurMode = creator(modeName);
-        }
-    }
-
-    if (sInstance->mCurMode) {
-        sInstance->mCurMode->init(newInfo);
-    } else {
-        Logger::log("Failed to Create Gamemode! Mode: \n", modeName ? modeName : "Unknown");
-    }
-}
 /**
  * @brief starts client read thread
  * 
  * @return true if read thread was sucessfully started
  * @return false if read thread was unable to start, or thread was already started.
  */
-bool Client::StartThreads() {
-    if(this->mReadThread->isDone()) { // && this->recvThread->isDone()) {
-        this->mReadThread->start();
-        //this->recvThread->start();
-        Logger::log("Threads Sucessfully Started.\n");
+bool Client::startThread() {
+    if(mReadThread->isDone() ) {
+        mReadThread->start();
+        Logger::log("Read Thread Sucessfully Started.\n");
         return true;
     }else {
-        Logger::log("Thread(s) has/have already started! Or other unknown reason.\n");
+        Logger::log("Read Thread has already started! Or other unknown reason.\n");
         return false;
     }
 }
-/**
- * @brief restarts currently active connection to server
- * 
- */
-void Client::stopConnection() {
 
-    if (!sInstance) {
-        Logger::log("Static Instance is null!\n");
-        return;
-    }
-
-    sInstance->mSocket->closeSocket();
-
-    sInstance->puppetPlayerID.fill({0,0});
-
-    sInstance->mConnectCount = 0;
-
-    sInstance->mSocket->init(sInstance->mServerIP.cstr(), sInstance->mServerPort);
-
-    if(sInstance->mSocket->getLogState() == SOCKET_LOG_CONNECTED) {
-
-        Logger::log("Connected!\n");
-
-        PlayerConnect initPacket;
-        initPacket.mUserID = sInstance->mUserID;
-        strcpy(initPacket.clientName, sInstance->mUsername.cstr());
-        initPacket.conType = ConnectionTypes::RECONNECT;
-        sInstance->mSocket->SEND(&initPacket);
-    }
-}
 /**
  * @brief starts a connection using client's TCP socket class, pulling up the software keyboard for user inputted IP if save file does not have one saved.
  * 
@@ -199,32 +110,46 @@ void Client::stopConnection() {
  * @return false if connection was unable to establish
  */
 bool Client::startConnection() {
-    if (mServerIP.isEmpty()) {
 
+    bool isNeedSave = false;
+
+    bool isOverride = al::isPadHoldZL(-1);
+
+    if (mServerIP.isEmpty() || isOverride) {
         mKeyboard->setHeaderText(u"Save File does not contain an IP!");
         mKeyboard->setSubText(u"Please set a Server IP Below.");
-
-        mKeyboard->openKeyboard("0.0.0.0");
-
-        while (true) {
-            if (mKeyboard->isThreadDone()) {
-                mServerIP = mKeyboard->getResult();
-                break;
-            }
-            nn::os::YieldThread(); // allow other threads to run
-        }
+        mServerIP = "127.0.0.1";
+        Client::openKeyboardIP();
+        isNeedSave = true;
     }
 
-    bool result = mSocket->init(mServerIP.cstr(), mServerPort).isSuccess();
+    if (!mServerPort || isOverride) {
+        mKeyboard->setHeaderText(u"Save File does not contain a port!");
+        mKeyboard->setSubText(u"Please set a Server Port Below.");
+        mServerPort = 1027;
+        Client::openKeyboardPort();
+        isNeedSave = true;
+    }
 
-    if (result) {
+    if (isNeedSave) {
+        SaveDataAccessFunction::startSaveDataWrite(mHolder.mData);
+    }
+
+    mIsConnectionActive = mSocket->init(mServerIP.cstr(), mServerPort).isSuccess();
+
+    if (mIsConnectionActive) {
+
+        Logger::log("Sucessful Connection. Waiting to recieve init packet.\n");
+
+        bool waitingForInitPacket = true;
         // wait for client init packet
-        while (true) {
 
-            if (mSocket->RECV()) {
+        while (waitingForInitPacket) {
 
-                Packet* curPacket = mSocket->mPacketQueue.popFront();
+            Packet *curPacket = mSocket->tryGetPacket();
 
+            if (curPacket) {
+                
                 if (curPacket->mType == PacketType::CLIENTINIT) {
                     InitPacket* initPacket = (InitPacket*)curPacket;
 
@@ -232,279 +157,325 @@ bool Client::startConnection() {
 
                     maxPuppets = initPacket->maxPlayers - 1;
 
-                }else {
-                    Logger::log("First Packet was not Init!\n");
-                    result = false;
+                    waitingForInitPacket = false;
                 }
 
-                free(curPacket);
+                mHeap->free(curPacket);
 
+            } else {
+                Logger::log("Recieve failed! Stopping Connection.\n");
+                mIsConnectionActive = false;
+                waitingForInitPacket = false;
             }
-
-            break;
         }
     }
-    
-    
-    return result;
+
+    return mIsConnectionActive;
 }
 
 /**
  * @brief Opens up OS's software keyboard in order to change the currently used server IP.
- * 
+ * @returns whether or not a new IP has been defined and needs to be saved.
  */
-void Client::openKeyboardIP() {
+bool Client::openKeyboardIP() {
 
     if (!sInstance) {
         Logger::log("Static Instance is null!\n");
-        return;
+        return false;
     }
 
-    sInstance->mKeyboard->openKeyboard(sInstance->mServerIP.cstr());  // opens swkbd with the initial text set to the last saved IP
+    // opens swkbd with the initial text set to the last saved IP
+    sInstance->mKeyboard->openKeyboard(
+        sInstance->mServerIP.cstr(), [](nn::swkbd::KeyboardConfig& config) {
+            config.keyboardMode = nn::swkbd::KeyboardMode::ModeASCII;
+            config.textMaxLength = MAX_HOSTNAME_LENGTH;
+            config.textMinLength = 1;
+            config.isUseUtf8 = true;
+            config.inputFormMode = nn::swkbd::InputFormMode::OneLine;
+        });
+
+    hostname prevIp = sInstance->mServerIP;
 
     while (true) {
         if (sInstance->mKeyboard->isThreadDone()) {
-            sInstance->mServerIP = sInstance->mKeyboard->getResult();
+            if(!sInstance->mKeyboard->isKeyboardCancelled())
+                sInstance->mServerIP = sInstance->mKeyboard->getResult();
             break;
         }
         nn::os::YieldThread(); // allow other threads to run
     }
+
+    bool isFirstConnect = prevIp != sInstance->mServerIP;
+
+    sInstance->mSocket->setIsFirstConn(isFirstConnect);
+
+    return isFirstConnect;
 }
 
 /**
- * @brief main thread function for read thread, responsible for receiving and processing packets from server
+ * @brief Opens up OS's software keyboard in order to change the currently used server port.
+ * @returns whether or not a new port has been defined and needs to be saved.
+ */
+bool Client::openKeyboardPort() {
+
+    if (!sInstance) {
+        Logger::log("Static Instance is null!\n");
+        return false;
+    }
+
+    // opens swkbd with the initial text set to the last saved port
+    char buf[6];
+    nn::util::SNPrintf(buf, 6, "%u", sInstance->mServerPort);
+
+    sInstance->mKeyboard->openKeyboard(buf, [](nn::swkbd::KeyboardConfig& config) {
+        config.keyboardMode = nn::swkbd::KeyboardMode::ModeNumeric;
+        config.textMaxLength = 5;
+        config.textMinLength = 2;
+        config.isUseUtf8 = true;
+        config.inputFormMode = nn::swkbd::InputFormMode::OneLine;
+    });
+
+    int prevPort = sInstance->mServerPort;
+
+    while (true) {
+        if (sInstance->mKeyboard->isThreadDone()) {
+            if(!sInstance->mKeyboard->isKeyboardCancelled())
+                sInstance->mServerPort = ::atoi(sInstance->mKeyboard->getResult());
+            break;
+        }
+        nn::os::YieldThread(); // allow other threads to run
+    }
+
+    bool isFirstConnect = prevPort != sInstance->mServerPort;
+
+    sInstance->mSocket->setIsFirstConn(isFirstConnect);
+
+    return isFirstConnect;
+}
+
+
+void Client::showUIMessage(const char16_t* msg) {
+    if (!sInstance) {
+        return;
+    }
+
+    sInstance->mUIMessage->setTxtMessageConfirm(msg);
+
+    al::hidePane(sInstance->mUIMessage, "Page01");  // hide A button prompt
+
+    if (!sInstance->mUIMessage->mIsAlive) {
+        sInstance->mUIMessage->appear();
+
+        sInstance->mUIMessage->playLoop();
+    }
+
+    al::startAction(sInstance->mUIMessage, "Confirm", "State");
+}
+
+void Client::hideUIMessage() {
+    if (!sInstance) {
+        return;
+    }
+
+    sInstance->mUIMessage->tryEnd();
+}
+
+/**
+ * @brief main thread function for read thread, responsible for processing packets from server
  * 
  */
 void Client::readFunc() {
 
-    if (isFirstConnect) {
+    if (waitForGameInit) {
         nn::os::YieldThread(); // sleep the thread for the first thing we do so that game init can finish
         nn::os::SleepThread(nn::TimeSpan::FromSeconds(2));
+        waitForGameInit = false;
     }
 
-    // we can use the start of readFunc to display an al::WindowConfirmWait while the server
-    // connects
+    mConnectStatus->appear();
 
-    mConnectionWait->appear();
-
-    mConnectionWait->playLoop();
+    al::startAction(mConnectStatus, "Loop", "Loop");
 
     if (!startConnection()) {
 
-        al::hidePane(mConnectionWait, "Page01"); // hide A button prompt since connection message automatically hides after 0.25 seconds
-
-        al::startAction(mConnectionWait, "Confirm", "State");
+        Logger::log("Failed to Connect to Server.\n");
 
         nn::os::SleepThread(nn::TimeSpan::FromNanoSeconds(250000000)); // sleep active thread for 0.25 seconds
 
-        mConnectionWait->tryEnd();
-        
+        mConnectStatus->end();
+                
         return;
     }
 
-    if (isFirstConnect) {
-        sead::Heap* seqHeap = sead::HeapMgr::instance()->findHeapByName("SequenceHeap", 0);
-
-        if (seqHeap) {
-            Logger::log("Current Heap Name: %s\n", seqHeap->getName().cstr());
-        }
-
-        
-    }
-
-    PlayerConnect initPacket;
-    initPacket.mUserID = mUserID;
-    strcpy(initPacket.clientName, mUsername.cstr());
-
-    if (isFirstConnect) {
-        initPacket.conType = ConnectionTypes::INIT;
-    } else {
-        initPacket.conType = ConnectionTypes::RECONNECT;
-    }
-
-    mSocket->SEND(&initPacket);  // send initial packet
-    
     nn::os::SleepThread(nn::TimeSpan::FromNanoSeconds(500000000)); // sleep for 0.5 seconds to let connection layout fully show (probably should find a better way to do this)
 
-    mConnectionWait->tryEnd();
+    mConnectStatus->end();
 
-    isFirstConnect = false;
+    while(mIsConnectionActive) {
 
-    while(true) {
+        Packet *curPacket = mSocket->tryGetPacket();  // will block until a packet has been recieved, or socket disconnected
 
-        if (mSocket->getLogState() != SOCKET_LOG_CONNECTED) {
-            
-            if (!mConnectionWait->mIsAlive) {
-                
-                mConnectionWait->appear();
+        if (curPacket) {
 
-                mConnectionWait->playLoop();
-            }
-            
-            // if we ever disconnect, reset all our values until we reconnect
+            switch (curPacket->mType)
+            {
+            case PacketType::PLAYERINF:
+                updatePlayerInfo((PlayerInf*)curPacket);
+                break;
+            case PacketType::GAMEINF:
+                updateGameInfo((GameInf*)curPacket);
+                break;
+            case PacketType::HACKCAPINF:
+                updateHackCapInfo((HackCapInf *)curPacket);
+                break;
+            case PacketType::CAPTUREINF:                    
+                updateCaptureInfo((CaptureInf*)curPacket);
+                break;
+            case PacketType::PLAYERCON:
+                updatePlayerConnect((PlayerConnect*)curPacket);
 
-            puppetPlayerID.fill({0,0});
-            mConnectCount = 0;
+                // Send relevant info packets when another client is connected
 
-            mSocket->closeSocket();
-
-            mSocket->init(mServerIP.cstr(), mServerPort);
-
-            if (mSocket->getLogState() == SOCKET_LOG_CONNECTED) {
-
-                Logger::log("Connected!\n");
-
-                initPacket.conType = ConnectionTypes::RECONNECT;
-                mSocket->SEND(&initPacket);  // re-send init packet as reconnect packet
-                mConnectionWait->tryEnd();
-                continue;
-
-            }
-
-            nn::os::YieldThread(); // if we're currently waiting on the socket to be initialized, wait until it is
-            nn::os::SleepThread(nn::TimeSpan::FromSeconds(5));
-
-            // TODO: if a reconnect is sucessful, we should let the server know that this client has already connected, and that their player ID is already active
-            
-        }
-
-        if(mSocket->RECV()) { // will block until a packet has been recieved, or socket disconnected
-
-            while(!mSocket->mPacketQueue.isEmpty()) {
-
-                Packet *curPacket = mSocket->mPacketQueue.popFront();
-
-                switch (curPacket->mType)
-                {
-                case PacketType::PLAYERINF:
-                    if(mIsInGame) {
-                        updatePlayerInfo((PlayerInf*)curPacket);
-                    }
-                    break;
-                case PacketType::GAMEINF:
-                    updateGameInfo((GameInf*)curPacket);
-                    break;
-                case PacketType::HACKCAPINF:
-                    updateHackCapInfo((HackCapInf *)curPacket);
-                    break;
-                case PacketType::CAPTUREINF:                    
-                    updateCaptureInfo((CaptureInf*)curPacket);
-                    break;
-                case PacketType::PLAYERCON:
-                    updatePlayerConnect((PlayerConnect*)curPacket);
-                    // send game info packet when client recieves connection
-
-                    if (lastGameInfPacket.mUserID != mUserID) {
-                        // assume game info packet is empty from first connection
+                if (lastGameInfPacket != emptyGameInfPacket) {
+                    // Assume game packets are empty from first connection
+                    if (lastGameInfPacket.mUserID != mUserID)
                         lastGameInfPacket.mUserID = mUserID;
-                        // leave rest blank
-                    }
-
-                    mSocket->SEND(&lastGameInfPacket);
-                    break;
-                case PacketType::COSTUMEINF:
-                    updateCostumeInfo((CostumeInf*)curPacket);
-                    break;
-                case PacketType::SHINECOLL:
-                    updateShineInfo((ShineCollect*)curPacket);
-                    break;
-                case PacketType::PLAYERDC:
-                    Logger::log("Recieved Player Disconnect!\n");
-                    curPacket->mUserID.print();
-                    disconnectPlayer((PlayerDC*)curPacket);
-                    break;
-                case PacketType::TAGINF:
-                    updateTagInfo((TagInf*)curPacket);
-                    break;
-                case PacketType::CHANGESTAGE:
-                    sendToStage((ChangeStagePacket*)curPacket);
-                    break;
-                case PacketType::CLIENTINIT: {
-                    InitPacket* initPacket = (InitPacket*)curPacket;
-                    Logger::log("Server Max Player Size: %d\n", initPacket->maxPlayers);
-                    maxPuppets = initPacket->maxPlayers - 1;
-                    break;
-                }
-                default:
-                    break;
+                    mSocket->send(&lastGameInfPacket);
                 }
 
-                free(curPacket);
+                // No need to send player/costume packets if they're empty
+                if (lastPlayerInfPacket.mUserID == mUserID)
+                    mSocket->send(&lastPlayerInfPacket);
+                if (lastCostumeInfPacket.mUserID == mUserID)
+                    mSocket->send(&lastCostumeInfPacket);
+                if (lastTagInfPacket.mUserID == mUserID)
+                    mSocket->send(&lastTagInfPacket);
+                if (lastCaptureInfPacket.mUserID == mUserID)
+                    mSocket->send(&lastCaptureInfPacket);
 
+                break;
+            case PacketType::COSTUMEINF:
+                updateCostumeInfo((CostumeInf*)curPacket);
+                break;
+            case PacketType::SHINECOLL:
+                updateShineInfo((ShineCollect*)curPacket);
+                break;
+            case PacketType::PLAYERDC:
+                Logger::log("Received Player Disconnect!\n");
+                curPacket->mUserID.print();
+                disconnectPlayer((PlayerDC*)curPacket);
+                break;
+            case PacketType::TAGINF:
+                updateTagInfo((TagInf*)curPacket);
+                break;
+            case PacketType::CHANGESTAGE:
+                sendToStage((ChangeStagePacket*)curPacket);
+                break;
+            case PacketType::CLIENTINIT: {
+                InitPacket* initPacket = (InitPacket*)curPacket;
+                Logger::log("Server Max Player Size: %d\n", initPacket->maxPlayers);
+                maxPuppets = initPacket->maxPlayers - 1;
+                break;
             }
+            default:
+                Logger::log("Discarding Unknown Packet Type.\n");
+                break;
+            }
+
+            mHeap->free(curPacket);
 
         }else { // if false, socket has errored or disconnected, so close the socket and end this thread.
-            Logger::log("Client Socket Encountered an Error!\n");
+            Logger::log("Client Socket Encountered an Error! Errno: 0x%x\n", mSocket->socket_errno);
         }
 
-        nn::os::YieldThread(); // allow other threads to run
     }
+
+    Logger::log("Client Read Thread ending.\n");
 }
-/**
- * @brief unused thread function for receiving thread
- * 
- */
-void Client::recvFunc() {}
 
 /**
  * @brief sends player info packet to current server
  * 
  * @param player pointer to current player class, used to get translation, animation, and capture data
  */
-void Client::sendPlayerInfPacket(const PlayerActorHakoniwa *player) {
+void Client::sendPlayerInfPacket(const PlayerActorBase *playerBase, bool isYukimaru) {
 
     if (!sInstance) {
         Logger::log("Static Instance is Null!\n");
         return;
     }
     
-    if(!player) {
+    if(!playerBase) {
         Logger::log("Error: Null Player Reference\n");
         return;
     }
 
-    PlayerInf packet = PlayerInf();
-    packet.mUserID = sInstance->mUserID;
+    sead::ScopedCurrentHeapSetter setter(sInstance->mHeap);
 
-    packet.playerPos = al::getTrans(player);
+    PlayerInf *packet = new PlayerInf();
+    packet->mUserID = sInstance->mUserID;
 
-    al::calcQuat(&packet.playerRot, player); // calculate rotation based off pose instead of using quat rotation
+    packet->playerPos = al::getTrans(playerBase);
 
-    for (size_t i = 0; i < 6; i++)
-    {
-        packet.animBlendWeights[i] = player->mPlayerAnimator->getBlendWeight(i);
-    }
+    al::calcQuat(&packet->playerRot,
+                 playerBase);  // calculate rotation based off pose instead of using quat rotation
 
-    const char *hackName = player->mHackKeeper->getCurrentHackName();
+    if (!isYukimaru) { 
+        
+        PlayerActorHakoniwa* player = (PlayerActorHakoniwa*)playerBase;
 
-    if (hackName != nullptr) {
-
-        sInstance->isClientCaptured = true;
-
-        const char* actName = al::getActionName(player->mHackKeeper->currentHackActor);
-
-        if (actName) {
-            packet.actName = PlayerAnims::FindType(actName);
-            packet.subActName = PlayerAnims::Type::Unknown;
-            //strcpy(packet.actName, actName); 
-        } else {
-            packet.actName = PlayerAnims::Type::Unknown;
-            packet.subActName = PlayerAnims::Type::Unknown;
+        for (size_t i = 0; i < 6; i++)
+        {
+            packet->animBlendWeights[i] = player->mPlayerAnimator->getBlendWeight(i);
         }
+
+        const char *hackName = player->mHackKeeper->getCurrentHackName();
+
+        if (hackName != nullptr) {
+
+            sInstance->isClientCaptured = true;
+
+            const char* actName = al::getActionName(player->mHackKeeper->currentHackActor);
+
+            if (actName) {
+                packet->actName = PlayerAnims::FindType(actName);
+                packet->subActName = PlayerAnims::Type::Unknown;
+                //strcpy(packet.actName, actName); 
+            } else {
+                packet->actName = PlayerAnims::Type::Unknown;
+                packet->subActName = PlayerAnims::Type::Unknown;
+            }
+        } else {
+            packet->actName = PlayerAnims::FindType(player->mPlayerAnimator->mAnimFrameCtrl->getActionName());
+            packet->subActName = PlayerAnims::FindType(player->mPlayerAnimator->curSubAnim.cstr());
+
+            sInstance->isClientCaptured = false;
+        }
+
     } else {
-        packet.actName = PlayerAnims::FindType(player->mPlayerAnimator->mAnimFrameCtrl->getActionName());
-        packet.subActName = PlayerAnims::FindType(player->mPlayerAnimator->curSubAnim.cstr());
+
+        // TODO: implement YukimaruRacePlayer syncing
+        
+        for (size_t i = 0; i < 6; i++)
+        {
+            packet->animBlendWeights[i] = 0;
+        }
 
         sInstance->isClientCaptured = false;
-    }
 
-    if(sInstance->lastPlayerInfPacket != packet) {
-        sInstance->mSocket->SEND(&packet);
+        packet->actName = PlayerAnims::Type::Unknown;
+        packet->subActName = PlayerAnims::Type::Unknown;
     }
-
-    sInstance->lastPlayerInfPacket = packet;
+    
+    if(sInstance->lastPlayerInfPacket != *packet) {
+        sInstance->lastPlayerInfPacket = *packet; // deref packet and store in client memory
+        sInstance->mSocket->queuePacket(packet);
+    } else {
+        sInstance->mHeap->free(packet); // free packet if we're not using it
+    }
 
 }
+
 /**
  * @brief sends info related to player's cap actor to server
  * 
@@ -516,42 +487,44 @@ void Client::sendHackCapInfPacket(const HackCap* hackCap) {
         Logger::log("Static Instance is Null!\n");
         return;
     }
+
+    sead::ScopedCurrentHeapSetter setter(sInstance->mHeap);
     
     bool isFlying = hackCap->isFlying();
 
     // if cap is in flying state, send packet as often as this function is called
     if (isFlying) {
-        HackCapInf packet = HackCapInf();
-        packet.mUserID = sInstance->mUserID;
-        packet.capPos = al::getTrans(hackCap);
+        HackCapInf *packet = new HackCapInf();
+        packet->mUserID = sInstance->mUserID;
+        packet->capPos = al::getTrans(hackCap);
 
-        packet.isCapVisible = hackCap->isFlying();
+        packet->isCapVisible = isFlying;
 
-        packet.capQuat.x = hackCap->mJointKeeper->mJointRot.x;
-        packet.capQuat.y = hackCap->mJointKeeper->mJointRot.y;
-        packet.capQuat.z = hackCap->mJointKeeper->mJointRot.z;
-        packet.capQuat.w = hackCap->mJointKeeper->mSkew;
+        packet->capQuat.x = hackCap->mJointKeeper->mJointRot.x;
+        packet->capQuat.y = hackCap->mJointKeeper->mJointRot.y;
+        packet->capQuat.z = hackCap->mJointKeeper->mJointRot.z;
+        packet->capQuat.w = hackCap->mJointKeeper->mSkew;
 
-        strcpy(packet.capAnim, al::getActionName(hackCap));
+        strcpy(packet->capAnim, al::getActionName(hackCap));
 
-        sInstance->mSocket->SEND(&packet);
+        sInstance->mSocket->queuePacket(packet);
 
         sInstance->isSentHackInf = true;
 
     } else if (sInstance->isSentHackInf) { // if cap is not flying, check to see if previous function call sent a packet, and if so, send one final packet resetting cap data.
-        HackCapInf packet = HackCapInf();
-        packet.mUserID = sInstance->mUserID;
-        packet.isCapVisible = false;
-        packet.capPos = sead::Vector3f::zero;
-        packet.capQuat = sead::Quatf::unit;
-        sInstance->mSocket->SEND(&packet);
+        HackCapInf *packet = new HackCapInf();
+        packet->mUserID = sInstance->mUserID;
+        packet->isCapVisible = false;
+        packet->capPos = sead::Vector3f::zero;
+        packet->capQuat = sead::Quatf::unit;
+        sInstance->mSocket->queuePacket(packet);
         sInstance->isSentHackInf = false;
     }
 }
 
 /**
  * @brief 
- * 
+ * Sends both stage info and player 2D info to the server.
  * @param player 
  * @param holder 
  */
@@ -561,29 +534,33 @@ void Client::sendGameInfPacket(const PlayerActorHakoniwa* player, GameDataHolder
         Logger::log("Static Instance is Null!\n");
         return;
     }
+
+    sead::ScopedCurrentHeapSetter setter(sInstance->mHeap);
     
-    GameInf packet = GameInf();
-    packet.mUserID = sInstance->mUserID;
+    GameInf *packet = new GameInf();
+    packet->mUserID = sInstance->mUserID;
 
     if (player) {
-        packet.is2D = player->mDimKeeper->is2DModel;
+        packet->is2D = player->mDimKeeper->is2DModel;
     } else {
-        packet.is2D = false;
+        packet->is2D = false;
     }
 
-    packet.scenarioNo = holder.mData->mGameDataFile->getScenarioNo();
+    packet->scenarioNo = holder.mData->mGameDataFile->getScenarioNo();
 
-    strcpy(packet.stageName, GameDataFunction::getCurrentStageName(holder));
+    strcpy(packet->stageName, GameDataFunction::getCurrentStageName(holder));
 
-    if(packet != sInstance->lastGameInfPacket) {
-        sInstance->mSocket->SEND(&packet);
+    if (*packet != sInstance->lastGameInfPacket && *packet != sInstance->emptyGameInfPacket) {
+        sInstance->lastGameInfPacket = *packet;
+        sInstance->mSocket->queuePacket(packet);
+    } else {
+        sInstance->mHeap->free(packet); // free packet if we're not using it
     }
-
-    sInstance->lastGameInfPacket = packet;
 }
+
 /**
  * @brief 
- * 
+ * Sends only stage info to the server.
  * @param holder 
  */
 void Client::sendGameInfPacket(GameDataHolderAccessor holder) {
@@ -592,19 +569,22 @@ void Client::sendGameInfPacket(GameDataHolderAccessor holder) {
         Logger::log("Static Instance is Null!\n");
         return;
     }
+
+    sead::ScopedCurrentHeapSetter setter(sInstance->mHeap);
     
-    GameInf packet = GameInf();
-    packet.mUserID = sInstance->mUserID;
+    GameInf *packet = new GameInf();
+    packet->mUserID = sInstance->mUserID;
 
-    packet.is2D = false;
+    packet->is2D = false;
 
-    packet.scenarioNo = holder.mData->mGameDataFile->getScenarioNo();
+    packet->scenarioNo = holder.mData->mGameDataFile->getScenarioNo();
 
-    strcpy(packet.stageName, GameDataFunction::getCurrentStageName(holder));
+    strcpy(packet->stageName, GameDataFunction::getCurrentStageName(holder));
 
-    sInstance->mSocket->SEND(&packet);
-
-    sInstance->lastGameInfPacket = packet;
+    if (*packet != sInstance->emptyGameInfPacket) {
+        sInstance->lastGameInfPacket = *packet;
+        sInstance->mSocket->queuePacket(packet);
+    }
 }
 
 /**
@@ -618,25 +598,30 @@ void Client::sendTagInfPacket() {
         return;
     }
 
-    if (sInstance->mServerMode != GameMode::HIDEANDSEEK) {
+    sead::ScopedCurrentHeapSetter setter(sInstance->mHeap);
+
+    HideAndSeekMode* hsMode = GameModeManager::instance()->getMode<HideAndSeekMode>();
+
+    if (!GameModeManager::instance()->isMode(GameMode::HIDEANDSEEK)) {
         Logger::log("State is not Hide and Seek!\n");
         return;
     }
 
-    HideAndSeekMode* hsMode = (HideAndSeekMode*)sInstance->mCurMode;
-    HideAndSeekInfo* curInfo = (HideAndSeekInfo*)sInstance->mModeInfo;
+    HideAndSeekInfo* curInfo = GameModeManager::instance()->getInfo<HideAndSeekInfo>();
 
-    TagInf packet = TagInf();
+    TagInf *packet = new TagInf();
 
-    packet.mUserID = sInstance->mUserID;
+    packet->mUserID = sInstance->mUserID;
 
-    packet.isIt = hsMode->isPlayerIt();
+    packet->isIt = hsMode->isPlayerIt() && hsMode->isModeActive();
 
-    packet.minutes = curInfo->mHidingTime.mMinutes;
-    packet.seconds = curInfo->mHidingTime.mSeconds;
-    packet.updateType = static_cast<TagUpdateType>(TagUpdateType::STATE | TagUpdateType::TIME);
+    packet->minutes = curInfo->mHidingTime.mMinutes;
+    packet->seconds = curInfo->mHidingTime.mSeconds;
+    packet->updateType = static_cast<TagUpdateType>(TagUpdateType::STATE | TagUpdateType::TIME);
 
-    sInstance->mSocket->SEND(&packet);
+    sInstance->mSocket->queuePacket(packet);
+
+    sInstance->lastTagInfPacket = *packet;
 }
 
 /**
@@ -651,10 +636,15 @@ void Client::sendCostumeInfPacket(const char* body, const char* cap) {
         Logger::log("Static Instance is Null!\n");
         return;
     }
+
+    if (!strcmp(body, "") && !strcmp(cap, "")) { return; }
+
+    sead::ScopedCurrentHeapSetter setter(sInstance->mHeap);
     
-    CostumeInf packet = CostumeInf(body, cap);
-    packet.mUserID = sInstance->mUserID;
-    sInstance->mSocket->SEND(&packet);
+    CostumeInf *packet = new CostumeInf(body, cap);
+    packet->mUserID = sInstance->mUserID;
+    sInstance->lastCostumeInfPacket = *packet;
+    sInstance->mSocket->queuePacket(packet);
 }
 
 /**
@@ -668,19 +658,48 @@ void Client::sendCaptureInfPacket(const PlayerActorHakoniwa* player) {
         Logger::log("Static Instance is Null!\n");
         return;
     }
+
+    sead::ScopedCurrentHeapSetter setter(sInstance->mHeap);
     
     if (sInstance->isClientCaptured && !sInstance->isSentCaptureInf) {
-        CaptureInf packet = CaptureInf();
-        packet.mUserID = sInstance->mUserID;
-        strcpy(packet.hackName, tryConvertName(player->mHackKeeper->getCurrentHackName()));
-        sInstance->mSocket->SEND(&packet);
+        CaptureInf *packet = new CaptureInf();
+        packet->mUserID = sInstance->mUserID;
+        strcpy(packet->hackName, tryConvertName(player->mHackKeeper->getCurrentHackName()));
+        sInstance->mSocket->queuePacket(packet);
+        sInstance->lastCaptureInfPacket = *packet;
         sInstance->isSentCaptureInf = true;
     } else if (!sInstance->isClientCaptured && sInstance->isSentCaptureInf) {
-        CaptureInf packet = CaptureInf();
-        packet.mUserID = sInstance->mUserID;
-        strcpy(packet.hackName, "");
-        sInstance->mSocket->SEND(&packet);
+        CaptureInf *packet = new CaptureInf();
+        packet->mUserID = sInstance->mUserID;
+        strcpy(packet->hackName, "");
+        sInstance->mSocket->queuePacket(packet);
+        sInstance->lastCaptureInfPacket = *packet;
         sInstance->isSentCaptureInf = false;
+    }
+}
+
+/**
+ * @brief
+ */
+void Client::resendInitPackets() {
+    // CostumeInfPacket
+    if (lastCostumeInfPacket.mUserID == mUserID) {
+        mSocket->queuePacket(&lastCostumeInfPacket);
+    }
+
+    // GameInfPacket
+    if (lastGameInfPacket != emptyGameInfPacket) {
+        mSocket->queuePacket(&lastGameInfPacket);
+    }
+
+    // TagInfPacket
+    if (lastTagInfPacket.mUserID == mUserID) {
+        mSocket->queuePacket(&lastTagInfPacket);
+    }
+
+    // CaptureInfPacket
+    if (lastCaptureInfPacket.mUserID == mUserID) {
+        mSocket->queuePacket(&lastCaptureInfPacket);
     }
 }
 
@@ -696,14 +715,16 @@ void Client::sendShineCollectPacket(int shineID) {
         return;
     }
 
+    sead::ScopedCurrentHeapSetter setter(sInstance->mHeap);
+
     if(sInstance->lastCollectedShine != shineID) {
-        ShineCollect packet = ShineCollect();
-        packet.mUserID = sInstance->mUserID;
-        packet.shineId = shineID;
+        ShineCollect *packet = new ShineCollect();
+        packet->mUserID = sInstance->mUserID;
+        packet->shineId = shineID;
 
         sInstance->lastCollectedShine = shineID;
 
-        sInstance->mSocket->SEND(&packet);
+        sInstance->mSocket->queuePacket(packet);
     }
 }
 
@@ -713,61 +734,59 @@ void Client::sendShineCollectPacket(int shineID) {
  * @param packet 
  */
 void Client::updatePlayerInfo(PlayerInf *packet) {
-    
-    int puppetIndex = findPuppetID(packet->mUserID);
 
-    if(puppetIndex >= 0) {
+    PuppetInfo* curInfo = findPuppetInfo(packet->mUserID, false);
 
-        PuppetInfo* curInfo = mPuppetInfoArr[puppetIndex];
+    if (!curInfo) {
+        return;
+    }
 
-        if (!curInfo) {
-            Logger::log("Attempting to Access Puppet Out of Bounds! Value: %d\n", puppetIndex);
-            return;
+    if(!curInfo->isConnected) {
+        curInfo->isConnected = true;
+    }
+
+    curInfo->playerPos = packet->playerPos;
+
+    // check if rotation is larger than zero and less than or equal to 1
+    if(abs(packet->playerRot.x) > 0.f || abs(packet->playerRot.y) > 0.f || abs(packet->playerRot.z) > 0.f || abs(packet->playerRot.w) > 0.f) {
+        if(abs(packet->playerRot.x) <= 1.f || abs(packet->playerRot.y) <= 1.f || abs(packet->playerRot.z) <= 1.f || abs(packet->playerRot.w) <= 1.f) {
+            curInfo->playerRot = packet->playerRot;
         }
-
-        if(!curInfo->isConnected) {
-            curInfo->isConnected = true;
-        }
-
-        curInfo->playerPos = packet->playerPos;
-
-        // check if rotation is larger than zero and less than or equal to 1
-        if(abs(packet->playerRot.x) > 0.f || abs(packet->playerRot.y) > 0.f || abs(packet->playerRot.z) > 0.f || abs(packet->playerRot.w) > 0.f) {
-            if(abs(packet->playerRot.x) <= 1.f || abs(packet->playerRot.y) <= 1.f || abs(packet->playerRot.z) <= 1.f || abs(packet->playerRot.w) <= 1.f) {
-                curInfo->playerRot = packet->playerRot;
-            }
-        }
+    }
 
         if (packet->actName != PlayerAnims::Type::Unknown) {
             strcpy(curInfo->curAnimStr, PlayerAnims::FindStr(packet->actName));
+            if (curInfo->curAnimStr[0] == '\0')
+                Logger::log("[ERROR] %s: actName was out of bounds: %d\n", __func__, packet->actName);
         } else {
             strcpy(curInfo->curAnimStr, "Wait");
         }
 
         if(packet->subActName != PlayerAnims::Type::Unknown) {
             strcpy(curInfo->curSubAnimStr, PlayerAnims::FindStr(packet->subActName));
+            if (curInfo->curSubAnimStr[0] == '\0')
+                Logger::log("[ERROR] %s: subActName was out of bounds: %d\n", __func__, packet->subActName);
         } else {
             strcpy(curInfo->curSubAnimStr, "");
         }
 
-        curInfo->curAnim = packet->actName;
-        curInfo->curSubAnim = packet->subActName;
+    curInfo->curAnim = packet->actName;
+    curInfo->curSubAnim = packet->subActName;
 
-        for (size_t i = 0; i < 6; i++)
-        {
-            // weights can only be between 0 and 1
-            if(packet->animBlendWeights[i] >= 0.f && packet->animBlendWeights[i] <= 1.f) {
-                curInfo->blendWeights[i] = packet->animBlendWeights[i];
-            }
+    for (size_t i = 0; i < 6; i++)
+    {
+        // weights can only be between 0 and 1
+        if(packet->animBlendWeights[i] >= 0.f && packet->animBlendWeights[i] <= 1.f) {
+            curInfo->blendWeights[i] = packet->animBlendWeights[i];
         }
-
-        //TEMP
-
-        if(!curInfo->isCapThrow) {
-            curInfo->capPos = packet->playerPos;
-        }
-
     }
+
+    //TEMP
+
+    if(!curInfo->isCapThrow) {
+        curInfo->capPos = packet->playerPos;
+    }
+
 }
 
 /**
@@ -777,24 +796,15 @@ void Client::updatePlayerInfo(PlayerInf *packet) {
  */
 void Client::updateHackCapInfo(HackCapInf *packet) {
 
-    int puppetIndex = findPuppetID(packet->mUserID);
+    PuppetInfo* curInfo = findPuppetInfo(packet->mUserID, false);
 
-    if(puppetIndex >= 0) {
+    if (curInfo) {
+        curInfo->capPos = packet->capPos;
+        curInfo->capRot = packet->capQuat;
 
-        PuppetInfo* curInfo = mPuppetInfoArr[puppetIndex];
+        curInfo->isCapThrow = packet->isCapVisible;
 
-        if (curInfo) {
-            curInfo->capPos = packet->capPos;
-            curInfo->capRot = packet->capQuat;
-
-            curInfo->isCapThrow = packet->isCapVisible;
-
-            if (curInfo->capAnim && packet->capAnim) {
-                strcpy(curInfo->capAnim, packet->capAnim);
-            }
-        } else {
-            Logger::log("Attempting to Access Puppet Out of Bounds! Value: %d\n", puppetIndex);
-        }
+        strcpy(curInfo->capAnim, packet->capAnim);
     }
 }
 
@@ -803,22 +813,18 @@ void Client::updateHackCapInfo(HackCapInf *packet) {
  * 
  * @param packet 
  */
-void Client::updateCaptureInfo(CaptureInf *packet) {
-    int puppetIndex = findPuppetID(packet->mUserID);
-    if (puppetIndex >= 0) {
+void Client::updateCaptureInfo(CaptureInf* packet) {
+    
+    PuppetInfo* curInfo = findPuppetInfo(packet->mUserID, false);
         
-        PuppetInfo* curInfo = mPuppetInfoArr[puppetIndex];
-        
-        if (!curInfo) {
-            Logger::log("Attempting to Access Puppet Out of Bounds! Value: %d\n", puppetIndex);
-            return;
-        }
+    if (!curInfo) {
+        return;
+    }
 
-        curInfo->isCaptured = strlen(packet->hackName) > 0;
+    curInfo->isCaptured = strlen(packet->hackName) > 0;
 
-        if (curInfo->isCaptured) {
-            strcpy(curInfo->curHack, packet->hackName);
-        }
+    if (curInfo->isCaptured) {
+        strcpy(curInfo->curHack, packet->hackName);
     }
 }
 
@@ -828,21 +834,15 @@ void Client::updateCaptureInfo(CaptureInf *packet) {
  * @param packet 
  */
 void Client::updateCostumeInfo(CostumeInf *packet) {
-    if(packet->bodyModel && packet->capModel) {
-        int puppetIndex = findPuppetID(packet->mUserID);
-        if(puppetIndex >= 0) {
-            PuppetInfo* curInfo = mPuppetInfoArr[puppetIndex];
 
-            if (!curInfo) {
-                Logger::log("Attempting to Access Puppet Out of Bounds! Value: %d\n", puppetIndex);
-                return;
-            }
+    PuppetInfo* curInfo = findPuppetInfo(packet->mUserID, false);
 
-            strcpy(curInfo->costumeBody, packet->bodyModel);
-            strcpy(curInfo->costumeHead, packet->capModel);
-            
-        }
+    if (!curInfo) {
+        return;
     }
+
+    strcpy(curInfo->costumeBody, packet->bodyModel);
+    strcpy(curInfo->costumeHead, packet->capModel);
 }
 
 /**
@@ -862,46 +862,54 @@ void Client::updateShineInfo(ShineCollect* packet) {
  * 
  * @param packet 
  */
-void Client::updatePlayerConnect(PlayerConnect *packet) {
-    int puppetIndex = findPuppetID(packet->mUserID);
-    if(puppetIndex >= 0) {
-        PuppetInfo* curInfo = mPuppetInfoArr[puppetIndex];
+void Client::updatePlayerConnect(PlayerConnect* packet) {
+    
+    PuppetInfo* curInfo = findPuppetInfo(packet->mUserID, true);
 
-        if (!curInfo) {
-            Logger::log("Attempting to Access Puppet Out of Bounds! Value: %d\n", puppetIndex);
-            return;
-        }
+    if (!curInfo) {
+        return;
+    }
+
+    if (curInfo->isConnected) {
+
+        Logger::log("Info is already being used by another connected player!\n");
+        packet->mUserID.print("Connection ID");
+        curInfo->playerID.print("Target Info");
+
+    } else {
+
+        packet->mUserID.print("Player Connected! ID");
+
         curInfo->playerID = packet->mUserID;
         curInfo->isConnected = true;
         strcpy(curInfo->puppetName, packet->clientName);
+
+        mConnectCount++;
     }
 }
+
 /**
  * @brief 
  * 
  * @param packet 
  */
 void Client::updateGameInfo(GameInf *packet) {
-    int puppetIndex = findPuppetID(packet->mUserID);
 
-    if(puppetIndex >= 0) {
-        PuppetInfo* curInfo = mPuppetInfoArr[puppetIndex];
+    PuppetInfo* curInfo = findPuppetInfo(packet->mUserID, false);
 
-        if (!curInfo) {
-            Logger::log("Attempting to Access Puppet Out of Bounds! Value: %d\n", puppetIndex);
-            return;
+    if (!curInfo) {
+        return;
+    }
+
+    if(curInfo->isConnected) {
+
+        curInfo->scenarioNo = packet->scenarioNo;
+
+        if(strcmp(packet->stageName, "") != 0 && strlen(packet->stageName) > 3) {
+            strcpy(curInfo->stageName, packet->stageName);
         }
 
-        if(curInfo->isConnected) {
-
-            curInfo->scenarioNo = packet->scenarioNo;
-
-            if(strcmp(packet->stageName, "") != 0 && strlen(packet->stageName) > 3) {
-                strcpy(curInfo->stageName, packet->stageName);
-            }
-
-            curInfo->is2D = packet->is2D;
-        }
+        curInfo->is2D = packet->is2D;
     }
 }
 
@@ -913,10 +921,10 @@ void Client::updateGameInfo(GameInf *packet) {
 void Client::updateTagInfo(TagInf *packet) {
     
     // if the packet is for our player, edit info for our player
-    if (packet->mUserID == mUserID && mCurMode->getMode() == GameMode::HIDEANDSEEK) {
+    if (packet->mUserID == mUserID && GameModeManager::instance()->isMode(GameMode::HIDEANDSEEK)) {
 
-        HideAndSeekMode* mMode = (HideAndSeekMode*)mCurMode;
-        HideAndSeekInfo* curInfo = (HideAndSeekInfo*)mModeInfo;
+        HideAndSeekMode* mMode = GameModeManager::instance()->getMode<HideAndSeekMode>();
+        HideAndSeekInfo* curInfo = GameModeManager::instance()->getInfo<HideAndSeekInfo>();
 
         if (packet->updateType & TagUpdateType::STATE) {
             mMode->setPlayerTagState(packet->isIt);
@@ -931,20 +939,15 @@ void Client::updateTagInfo(TagInf *packet) {
 
     }
 
-    int puppetIndex = findPuppetID(packet->mUserID);
+    PuppetInfo* curInfo = findPuppetInfo(packet->mUserID, false);
 
-    if(puppetIndex >= 0) {
-        PuppetInfo* curInfo = mPuppetInfoArr[puppetIndex];
-
-        if (!curInfo) {
-            Logger::log("Attempting to Access Puppet Out of Bounds! Value: %d\n", puppetIndex);
-            return;
-        }
-
-        curInfo->isIt = packet->isIt;
-        curInfo->seconds = packet->seconds;
-        curInfo->minutes = packet->minutes;
+    if (!curInfo) {
+        return;
     }
+
+    curInfo->isIt = packet->isIt;
+    curInfo->seconds = packet->seconds;
+    curInfo->minutes = packet->minutes;
 }
 
 /**
@@ -971,29 +974,20 @@ void Client::sendToStage(ChangeStagePacket* packet) {
  * @param packet 
  */
 void Client::disconnectPlayer(PlayerDC *packet) {
-    int puppetIndex = findPuppetID(packet->mUserID);
 
-    if(puppetIndex >= 0) {
-        PuppetInfo* curInfo = mPuppetInfoArr[puppetIndex];
+    PuppetInfo* curInfo = findPuppetInfo(packet->mUserID, false);
 
-        if (!curInfo) {
-            Logger::log("Attempting to Access Puppet Out of Bounds! Value: %d\n", puppetIndex);
-            return;
-        }
-        
-        curInfo->isConnected = false;
-
-        curInfo->scenarioNo = -1;
-        strcpy(curInfo->stageName, "");
-        curInfo->isInSameStage = false;
-
-        mConnectCount--;
-
-        if (mConnectCount < 0) {
-            Logger::log("Connection Count went Negative!\n");
-            mConnectCount = 0;
-        }
+    if (!curInfo || !curInfo->isConnected) {
+        return;
     }
+    
+    curInfo->isConnected = false;
+
+    curInfo->scenarioNo = -1;
+    strcpy(curInfo->stageName, "");
+    curInfo->isInSameStage = false;
+
+    mConnectCount--;
 }
 
 /**
@@ -1024,23 +1018,27 @@ bool Client::isShineCollected(int shineId) {
  * @param id 
  * @return int 
  */
-int Client::findPuppetID(const nn::account::Uid &id) {
-    for (size_t i = 0; i < this->puppetPlayerID.size(); i++)
-    {
-        if(this->puppetPlayerID[i].uid == id) {
-            return this->puppetPlayerID[i].puppetIndex;
+PuppetInfo* Client::findPuppetInfo(const nn::account::Uid& id, bool isFindAvailable) {
+
+    PuppetInfo *firstAvailable = nullptr;
+
+    for (size_t i = 0; i < getMaxPlayerCount() - 1; i++) {
+
+        PuppetInfo* curInfo = mPuppetInfoArr[i];
+
+        if (curInfo->playerID == id) {
+            return curInfo;
+        } else if (isFindAvailable && !firstAvailable && !curInfo->isConnected) {
+            firstAvailable = curInfo;
         }
     }
 
-    if(this->puppetPlayerID.size() > mConnectCount) {
-        int newIndex = mConnectCount;
-        this->puppetPlayerID[newIndex].puppetIndex = newIndex;
-        this->puppetPlayerID[newIndex].uid = id;
-        mConnectCount++;
-        return newIndex;
+    if (!firstAvailable) {
+        Logger::log("Unable to find Assigned Puppet for Player!\n");
+        id.print("User ID");
     }
 
-    return -1;
+    return firstAvailable;
 }
 
 /**
@@ -1054,7 +1052,7 @@ void Client::setStageInfo(GameDataHolderAccessor holder) {
         sInstance->mStageName = GameDataFunction::getCurrentStageName(holder);
         sInstance->mScenario = holder.mData->mGameDataFile->getScenarioNo(); //holder.mData->mGameDataFile->getMainScenarioNoCurrent();
         
-        Client::sInstance->mPuppetHolder->setStageInfo(sInstance->mStageName.cstr(), sInstance->mScenario);
+        sInstance->mPuppetHolder->setStageInfo(sInstance->mStageName.cstr(), sInstance->mScenario);
     }
 }
 
@@ -1066,8 +1064,8 @@ void Client::setStageInfo(GameDataHolderAccessor holder) {
  * @return false 
  */
 bool Client::tryAddPuppet(PuppetActor *puppet) {
-    if(Client::sInstance) {
-        return Client::sInstance->mPuppetHolder->tryRegisterPuppet(puppet);
+    if(sInstance) {
+        return sInstance->mPuppetHolder->tryRegisterPuppet(puppet);
     }else {
         return false;
     }
@@ -1081,8 +1079,8 @@ bool Client::tryAddPuppet(PuppetActor *puppet) {
  * @return false 
  */
 bool Client::tryAddDebugPuppet(PuppetActor *puppet) {
-    if(Client::sInstance) {
-        return Client::sInstance->mPuppetHolder->tryRegisterDebugPuppet(puppet);
+    if(sInstance) {
+        return sInstance->mPuppetHolder->tryRegisterDebugPuppet(puppet);
     }else {
         return false;
     }
@@ -1095,8 +1093,8 @@ bool Client::tryAddDebugPuppet(PuppetActor *puppet) {
  * @return PuppetActor* 
  */
 PuppetActor *Client::getPuppet(int idx) {
-    if(Client::sInstance) {
-        return Client::sInstance->mPuppetHolder->getPuppetActor(idx);
+    if(sInstance) {
+        return sInstance->mPuppetHolder->getPuppetActor(idx);
     }else {
         return nullptr;
     }
@@ -1108,8 +1106,8 @@ PuppetActor *Client::getPuppet(int idx) {
  * @return PuppetInfo* 
  */
 PuppetInfo *Client::getLatestInfo() {
-    if(Client::sInstance) {
-        return Client::getPuppetInfo(Client::sInstance->mPuppetHolder->getSize() - 1);
+    if(sInstance) {
+        return Client::getPuppetInfo(sInstance->mPuppetHolder->getSize() - 1);
     }else {
         return nullptr;
     }
@@ -1122,9 +1120,9 @@ PuppetInfo *Client::getLatestInfo() {
  * @return PuppetInfo* 
  */
 PuppetInfo *Client::getPuppetInfo(int idx) {
-    if(Client::sInstance) {
+    if(sInstance) {
         // unsafe get
-        PuppetInfo *curInfo = Client::sInstance->mPuppetInfoArr[idx];
+        PuppetInfo *curInfo = sInstance->mPuppetInfoArr[idx];
 
         if (!curInfo) {
             Logger::log("Attempting to Access Puppet Out of Bounds! Value: %d\n", idx);
@@ -1192,10 +1190,17 @@ void Client::updateShines() {
     {
         int shineID = sInstance->getShineID(i);
 
-        if (shineID >= 0) {
-            Shine* stageShine = findStageShine(shineID);
+        if(shineID < 0) continue;
 
-            if (!GameDataFunction::isGotShine(accessor, shineID)) {
+        Logger::log("Shine UID: %d\n", shineID);
+
+        GameDataFile::HintInfo* shineInfo = CustomGameDataFunction::getHintInfoByUniqueID(accessor, shineID);
+
+        if (shineInfo) {
+            if (!GameDataFunction::isGotShine(accessor, shineInfo->mStageName.cstr(), shineInfo->mObjId.cstr())) {
+
+                Shine* stageShine = findStageShine(shineID);
+                
                 if (stageShine) {
 
                     if (al::isDead(stageShine)) {
@@ -1204,58 +1209,32 @@ void Client::updateShines() {
                     
                     stageShine->getDirect();
                     stageShine->onSwitchGet();
-
-                    accessor.mData->mGameDataFile->setGotShine(shineID);
-
-                    // TODO: add a system for displaying moon get layout when this runs
-
-                } else {
-                    accessor.mData->mGameDataFile->setGotShine(shineID);
                 }
+
+                accessor.mData->mGameDataFile->setGotShine(shineInfo);
             }
         }
     }
     
     sInstance->resetCollectedShines();
-    sInstance->mCurStageScene->stageSceneLayout->startShineCountAnim(false);
+    sInstance->mCurStageScene->mSceneLayout->startShineCountAnim(false);
+    sInstance->mCurStageScene->mSceneLayout->updateCounterParts(); // updates shine chip layout to (maybe) prevent softlocks
 }
 
 /**
  * @brief 
  * 
  */
-void Client::updateStates() {
-    if(sInstance) {
+void Client::update() {
+    if (sInstance) {
+        
         sInstance->mPuppetHolder->update();
 
-        if(sInstance->mCurMode && sInstance->mCurMode->isModeActive())
-            sInstance->mCurMode->update();
-    }
-}
-
-/**
- * @brief 
- * 
- * @param state 
- */
-void Client::setGameActive(bool state) {
-    if (sInstance) {
-
-        sInstance->mIsInGame = state;
-        
-        // only modify mode state if mode should be active
-        if (sInstance->mIsModeActive) {
-
-            bool modeActive = sInstance->mCurMode->isModeActive();
-
-            if (state && !modeActive) {
-                Logger::log("Resuming Current Mode.\n");
-                sInstance->mCurMode->begin();
-            } else if (!state && modeActive) {
-                Logger::log("Pausing Current Mode.\n");
-                sInstance->mCurMode->end();
-            }
+        if (isNeedUpdateShines()) {
+            updateShines();
         }
+
+        GameModeManager::instance()->update();
     }
 }
 
@@ -1277,8 +1256,8 @@ void Client::clearArrays() {
  * @return PuppetInfo* 
  */
 PuppetInfo *Client::getDebugPuppetInfo() {
-    if(Client::sInstance) {
-        return &Client::sInstance->mDebugPuppetInfo;
+    if(sInstance) {
+        return &sInstance->mDebugPuppetInfo;
     }else {
         return nullptr;
     }
@@ -1290,11 +1269,23 @@ PuppetInfo *Client::getDebugPuppetInfo() {
  * @return PuppetActor* 
  */
 PuppetActor *Client::getDebugPuppet() {
-    if(Client::sInstance) {
-        return Client::sInstance->mPuppetHolder->getDebugPuppet();
+    if(sInstance) {
+        return sInstance->mPuppetHolder->getDebugPuppet();
     }else {
         return nullptr;
     }
+}
+
+/**
+ * @brief 
+ * 
+ * @return Keyboard* 
+ */
+Keyboard* Client::getKeyboard() {
+    if (sInstance) {
+        return sInstance->mKeyboard;
+    }
+    return nullptr;
 }
 
 /**
@@ -1310,6 +1301,18 @@ const char* Client::getCurrentIP() {
 }
 
 /**
+ * @brief 
+ * 
+ * @return const int 
+ */
+const int Client::getCurrentPort() {
+    if (sInstance) {
+        return sInstance->mServerPort;
+    }
+    return -1;
+}
+
+/**
  * @brief sets server IP to supplied string, used specifically for loading IP from the save file.
  * 
  * @param ip 
@@ -1317,6 +1320,17 @@ const char* Client::getCurrentIP() {
 void Client::setLastUsedIP(const char* ip) {
     if (sInstance) {
         sInstance->mServerIP = ip;
+    }
+}
+
+/**
+ * @brief sets server port to supplied string, used specifically for loading port from the save file.
+ * 
+ * @param port 
+ */
+void Client::setLastUsedPort(const int port) {
+    if (sInstance) {
+        sInstance->mServerPort = port;
     }
 }
 
@@ -1368,71 +1382,19 @@ bool Client::tryRegisterShine(Shine* shine) {
 Shine* Client::findStageShine(int shineID) {
     if (sInstance) {
         for (int i = 0; i < sInstance->mShineArray.size(); i++) {
+
             Shine* curShine = sInstance->mShineArray[i];
+
             if (curShine) {
-                if (curShine->shineId == shineID) {
+
+                auto hintInfo =
+                    CustomGameDataFunction::getHintInfoByIndex(curShine, curShine->mShineIdx);
+                
+                if (hintInfo->mUniqueID == shineID) {
                     return curShine;
                 }
             }
         }
     }
     return nullptr;
-}
-
-/**
- * @brief gets the client's currently selected gamemode
- * 
- * @return GameMode 
- */
-GameMode Client::getCurrentMode() {
-    return sInstance && sInstance->mCurMode ? sInstance->mCurMode->getMode() : GameMode::NONE;
-}
-
-/**
- * @brief enables or disables currently selected gamemode
- * 
- */
-void Client::toggleCurrentMode() {
-    if (!sInstance || !sInstance->mCurMode) {
-        return;
-    }
-
-    GameModeBase* curMode = sInstance->mCurMode;
-
-    if (curMode->isModeActive()) {
-        Logger::log("Ending Gamemode: %s\n", curMode->getName());
-        curMode->end();
-        sInstance->mIsModeActive = false;
-    } else {
-        Logger::log("Starting Gamemode: %s\n", curMode->getName());
-        curMode->begin();
-        sInstance->mIsModeActive = true;
-    }
-}
-
-/**
- * @brief re-enables current gamemode if previously activated (if a stage reload occurs while the gamemode was previously active, this will turn it back on after initialized)
- * 
- */
-void Client::tryRestartCurrentMode() {
-    if (!sInstance || !sInstance->mCurMode) {
-        return;
-    }
-    // restart mode if previous scene had one active
-    if (sInstance->mIsModeActive) {
-        sInstance->mCurMode->begin();
-    }
-}
-
-GameModeConfigMenu* Client::tryCreateModeMenu() {
-    if (!sInstance)
-        return nullptr;
-
-    switch (sInstance->mServerMode) {
-    case HIDEANDSEEK: {
-        return new HideAndSeekConfigMenu();
-    }
-    default:
-        return nullptr;
-    }
 }

@@ -28,8 +28,10 @@ class PuppetHolder {
 
         void clearPuppets() { mPuppetArr.clear(); }
 
+        bool resizeHolder(int size);
+
     private:
-        sead::PtrArray<PuppetActor> mPuppetArr;
+        sead::PtrArray<PuppetActor> mPuppetArr = sead::PtrArray<PuppetActor>();
 
         PuppetActor *mDebugPuppet;
 

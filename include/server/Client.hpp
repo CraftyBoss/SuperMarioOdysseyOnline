@@ -2,9 +2,9 @@
  * @file server/Client.hpp
  * @author CraftyBoss (https://github.com/CraftyBoss)
  * @brief main class responsible for handing all client-server related communications, as well as any gamemodes.
- * 
+ *
  * @copyright Copyright (c) 2022
- * 
+ *
  */
 #pragma once
 
@@ -15,6 +15,7 @@
 #include "al/async/FunctorV0M.hpp"
 #include "al/LiveActor/LiveActor.h"
 #include "al/layout/LayoutInitInfo.h"
+#include "al/layout/SimpleLayoutAppearWaitEnd.h"
 #include "al/layout/WindowConfirmWait.h"
 #include "al/util.hpp"
 #include "al/layout/LayoutActor.h"
@@ -24,6 +25,7 @@
 
 #include "container/seadPtrArray.h"
 #include "game/Actors/Shine.h"
+#include "game/GameData/GameDataHolderAccessor.h"
 #include "game/Player/PlayerActorHakoniwa.h"
 #include "game/StageScene/StageScene.h"
 #include "game/Layouts/CoinCounter.h"
@@ -31,6 +33,7 @@
 #include "game/GameData/GameDataHolderWriter.h"
 #include "game/GameData/GameDataFunction.h"
 
+#include "heap/seadExpHeap.h"
 #include "layouts/HideAndSeekIcon.h"
 #include "rs/util.hpp"
 
@@ -63,7 +66,10 @@
 
 #include "puppets/PuppetInfo.h"
 
+#include <cstddef>
 #include <stdlib.h>
+
+#define MAXPUPINDEX 32
 
 struct UIDIndexNode {
     nn::account::Uid uid;
@@ -73,45 +79,43 @@ struct UIDIndexNode {
 class HideAndSeekIcon;
 
 class Client {
+    SEAD_SINGLETON_DISPOSER(Client)
+
     public:
-        static Client *sInstance;
+        Client();
 
-        Client(int bufferSize);
+        void init(al::LayoutInitInfo const &initInfo, GameDataHolderAccessor holder);
 
-        void init(al::LayoutInitInfo const &initInfo);
-
-        bool StartThreads();
+        bool startThread();
         void readFunc();
-        void recvFunc();
-        static void stopConnection();
 
-        bool isDone() { return mReadThread->isDone(); };
         static bool isSocketActive() { return sInstance ? sInstance->mSocket->isConnected() : false; };
         bool isPlayerConnected(int index) { return mPuppetInfoArr[index]->isConnected; }
         static bool isNeedUpdateShines();
         bool isShineCollected(int shineId);
 
-        static void initMode(GameModeInitInfo const &initInfo);
-        
         static void sendHackCapInfPacket(const HackCap *hackCap);
-        static void sendPlayerInfPacket(const PlayerActorHakoniwa *player);
+        static void sendPlayerInfPacket(const PlayerActorBase *player, bool isYukimaru);
         static void sendGameInfPacket(const PlayerActorHakoniwa *player, GameDataHolderAccessor holder);
         static void sendGameInfPacket(GameDataHolderAccessor holder);
         static void sendCostumeInfPacket(const char *body, const char *cap);
         static void sendShineCollectPacket(int shineId);
         static void sendTagInfPacket();
         static void sendCaptureInfPacket(const PlayerActorHakoniwa *player);
+        void resendInitPackets();
 
         int getCollectedShinesCount() { return curCollectedShines.size(); }
         int getShineID(int index) { if (index < curCollectedShines.size()) { return curCollectedShines[index]; } return -1; }
 
-        static void setGameActive(bool state);
+        static void update();
 
-        static void setStageInfo(GameDataHolderAccessor holder);
+        static void clearArrays();
 
         static bool tryAddPuppet(PuppetActor *puppet);
 
         static bool tryAddDebugPuppet(PuppetActor* puppet);
+
+        static bool isFirstConnect() { return sInstance ? sInstance->mIsFirstConnect : false;}
 
         static const char *getClientName() { return sInstance ? sInstance->mUsername.cstr() : "Player"; }
 
@@ -125,42 +129,39 @@ class Client {
 
         static PuppetActor* getDebugPuppet();
 
-        static GameMode getServerMode() {
-            return sInstance ? sInstance->mServerMode : GameMode::NONE;
-        }
+        static sead::Heap *getClientHeap() { return sInstance ? sInstance->mHeap : nullptr; }
 
-        static void setServerMode(GameMode mode) {
-            if (sInstance) sInstance->mServerMode = mode;
-        }
+        static int getMaxPlayerCount() { return sInstance ? sInstance->maxPuppets + 1 : 10;}
 
-        static GameMode getCurrentMode();
-
-        static GameModeBase* getModeBase() { return sInstance ? sInstance->mCurMode : nullptr; }
-
-        template <typename T>
-        static T* getMode() {return sInstance ? (T*)sInstance->mCurMode : nullptr;}
-
-        static GameModeConfigMenu* tryCreateModeMenu();
-
-        static int getMaxPlayerCount() { return sInstance ? sInstance->maxPuppets : 10;}
-
-        static void toggleCurrentMode();
-
-        static void updateStates();
-
-        static void clearArrays();
-
-        static const char* getCurrentIP();
-
-        static void setLastUsedIP(const char* ip);
-
-        static void setTagState(bool state);
+        static const int getCurrentPort();
 
         static int getConnectCount() {
             if (sInstance)
                 return sInstance->mConnectCount;
             return 0;
         }
+
+        static PuppetHolder* getPuppetHolder() {
+            if (sInstance)
+                return sInstance->mPuppetHolder;
+            return nullptr;
+        }
+
+        static Keyboard* getKeyboard();
+
+        static const char* getCurrentIP();
+
+        static nn::account::Uid getClientId() { return sInstance ? sInstance->mUserID : nn::account::Uid::EmptyId;}
+        
+        static sead::FixedSafeString<0x20> getUsername() { return sInstance ? sInstance->mUsername : sead::FixedSafeString<0x20>::cEmptyString;}
+
+        static void setStageInfo(GameDataHolderAccessor holder);
+
+        static void setLastUsedIP(const char* ip);
+
+        static void setLastUsedPort(const int port);
+
+        static void setTagState(bool state);
 
         static void setSceneInfo(const al::ActorInitInfo& initInfo, const StageScene *stageScene);
 
@@ -170,22 +171,11 @@ class Client {
 
         static void updateShines();
 
-        static void openKeyboardIP();
+        static bool openKeyboardIP();
+        static bool openKeyboardPort();
 
-        static GameModeInfoBase* getModeInfo() {
-            return sInstance ? sInstance->mModeInfo : nullptr;
-        }
-
-        // should only be called during mode init
-        static void setModeInfo(GameModeInfoBase* info) {
-            if(sInstance) sInstance->mModeInfo = info;
-        }
-
-        static void tryRestartCurrentMode();
-
-        static bool isModeActive() { return sInstance ? sInstance->mIsModeActive : false; }
-        
-        static bool isSelectedMode(GameMode mode) { return sInstance ? sInstance->mCurMode->getMode() == mode: false; }
+        static void showUIMessage(const char16_t* msg);
+        static void hideUIMessage();
 
         void resetCollectedShines();
 
@@ -193,8 +183,6 @@ class Client {
 
         // public for debug purposes
         SocketClient *mSocket;
-
-        int maxPuppets;
 
     private:
         void updatePlayerInfo(PlayerInf *packet);
@@ -208,52 +196,52 @@ class Client {
         void sendToStage(ChangeStagePacket* packet);
         void disconnectPlayer(PlayerDC *packet);
 
-        int findPuppetID(const nn::account::Uid& id);
+        PuppetInfo* findPuppetInfo(const nn::account::Uid& id, bool isFindAvailable);
 
         bool startConnection();
 
         // --- General Server Members ---
 
-        // currently, only readThread is used to recieve and update PuppetInfo, while the main game thread is used to send packets without queueing them up first, which might cause performance issues
-        al::AsyncFunctorThread *mReadThread = nullptr;    // TODO: use this thread to send any queued packets
-        // al::AsyncFunctorThread *mRecvThread; // TODO: use this thread to recieve packets and update PuppetInfo
+        al::AsyncFunctorThread *mReadThread = nullptr; // processes data queued in the SocketClient's RecvQueue
         
-        sead::SafeArray<UIDIndexNode, 16> puppetPlayerID;
-
         int mConnectCount = 0;
 
         nn::account::Uid mUserID;
 
         sead::FixedSafeString<0x20> mUsername;
 
+        bool mIsConnectionActive = false;
+
         // --- Server Syncing Members --- 
         
         // array of shine IDs for checking if multiple shines have been collected in quick sucession, all moons within the players stage that match the ID will be deleted
-        sead::SafeArray<int, 128> curCollectedShines; 
+        sead::SafeArray<int, 128> curCollectedShines;
         int collectedShineCount = 0;
 
         int lastCollectedShine = -1;
 
-        PlayerInf lastPlayerInfPacket =
-            PlayerInf();  // Info struct for storing our currently logged player information
-
+        // Backups for our last player/game packets, used for example to re-send them for newly connected clients
+        PlayerInf lastPlayerInfPacket = PlayerInf();
         GameInf lastGameInfPacket = GameInf();
+        GameInf emptyGameInfPacket = GameInf();
+        CostumeInf lastCostumeInfPacket = CostumeInf();
+        TagInf lastTagInfPacket = TagInf();
+        CaptureInf lastCaptureInfPacket = CaptureInf();
 
         Keyboard* mKeyboard = nullptr; // keyboard for setting server IP
 
-        sead::FixedSafeString<0x10> mServerIP;
+        hostname mServerIP;
 
-        int mServerPort = 1027; // TODO: implement a way to set this the same way the IP can
+        int mServerPort = 0;
 
-        bool isFirstConnect = true;
+        bool waitForGameInit = true;
+        bool mIsFirstConnect = true;
 
         // --- Game Layouts ---
-
-        al::WindowConfirmWait* mConnectionWait;
+        al::WindowConfirmWait* mUIMessage;
+        al::SimpleLayoutAppearWaitEnd *mConnectStatus;
 
         // --- Game Info ---
-
-        bool mIsInGame = false;
 
         bool isClientCaptured = false;
 
@@ -270,21 +258,17 @@ class Client {
 
         sead::FixedSafeString<0x40> mStageName;
 
+        GameDataHolderAccessor mHolder;
+
         u8 mScenario = 0;
 
-        // --- Mode Info ---
-
-        GameModeBase* mCurMode = nullptr;
-
-        GameMode mServerMode = GameMode::NONE; // current mode set by server, will sometimes not match up with current game mode (until scene re-init) if server switches gamemodes
-
-        GameModeInfoBase *mModeInfo = nullptr;
-
-        bool mIsModeActive = false;
+        sead::ExpHeap *mHeap = nullptr; // Custom FrameHeap used for all Client related memory
 
         // --- Puppet Info ---
 
-        PuppetInfo *mPuppetInfoArr[32];
+        int maxPuppets = 9;  // default max player count is 10, so default max puppets will be 9
+        
+        PuppetInfo *mPuppetInfoArr[MAXPUPINDEX] = {};
 
         PuppetHolder *mPuppetHolder = nullptr;
 

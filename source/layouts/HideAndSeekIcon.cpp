@@ -5,7 +5,7 @@
 #include "al/string/StringTmp.h"
 #include "prim/seadSafeString.h"
 #include "server/gamemode/GameModeTimer.hpp"
-#include "server/HideAndSeekMode.hpp"
+#include "server/hns/HideAndSeekMode.hpp"
 #include "server/Client.hpp"
 #include "al/util.hpp"
 #include "logger.hpp"
@@ -16,7 +16,7 @@ HideAndSeekIcon::HideAndSeekIcon(const char* name, const al::LayoutInitInfo& ini
 
     al::initLayoutActor(this, initInfo, "HideAndSeekIcon", 0);
 
-    mInfo = (HideAndSeekInfo*)Client::getModeInfo();
+    mInfo = GameModeManager::instance()->getInfo<HideAndSeekInfo>();
 
     initNerve(&nrvHideAndSeekIconEnd, 0);
 
@@ -80,7 +80,7 @@ void HideAndSeekIcon::exeWait() {
 
     
 
-    int playerCount = Client::getConnectCount();
+    int playerCount = Client::getMaxPlayerCount();
 
     if (playerCount > 0) {
 
@@ -91,7 +91,7 @@ void HideAndSeekIcon::exeWait() {
     
         for (size_t i = 0; i < playerCount; i++) {
             PuppetInfo* curPuppet = Client::getPuppetInfo(i);
-            if (curPuppet->isConnected && (curPuppet->isIt == mInfo->mIsPlayerIt)) {
+            if (curPuppet && curPuppet->isConnected && (curPuppet->isIt == mInfo->mIsPlayerIt)) {
                 playerList.appendWithFormat("%s\n", curPuppet->puppetName);
             }
         }

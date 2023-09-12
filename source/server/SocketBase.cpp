@@ -6,8 +6,11 @@
 SocketBase::SocketBase(const char *name)
 {
     strcpy(this->sockName, name);
-
+#if EMU
+    this->sock_flags = 0x80;
+#else
     this->sock_flags = 0;
+#endif
 }
 
 const char *SocketBase::getStateChar() {
@@ -59,7 +62,7 @@ s32 SocketBase::socket_read_char(char *out) {
     return valread;
 }
 
-s32 SocketBase::getSocket() {
+s32 SocketBase::getFd() {
     if(this->socket_log_state == SOCKET_LOG_CONNECTED) {
         return this->socket_log_socket;
     }else {
@@ -69,14 +72,13 @@ s32 SocketBase::getSocket() {
 
 bool SocketBase::closeSocket() {
 
-    nn::Result result = nn::socket::Close(this->socket_log_socket);
+	if (this->socket_log_state != SOCKET_LOG_DISCONNECTED) {
+		nn::Result result = nn::socket::Close(this->socket_log_socket);
+		if (result.isSuccess()) {
+			this->socket_log_state = SOCKET_LOG_DISCONNECTED;
+		}
+		return result.isSuccess();
+	}
 
-    if (result.isSuccess()) {
-        this->socket_log_state = SOCKET_LOG_DISCONNECTED;
-    }
-
-    return result.isSuccess();
+	return true;
 }
-
-
-

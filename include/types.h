@@ -5,6 +5,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#include "sead/prim/seadSafeString.h"
 
 typedef unsigned char       u8;
 typedef unsigned short      u16;
@@ -17,6 +18,10 @@ typedef signed short        s16;
 typedef signed int          s32;
 typedef int64_t             s64;
 typedef __int128_t          s128;
+
+// bool size is implementation defined, so use these where it's important
+typedef u8                  bool1;
+typedef u32                 bool4;
 
 typedef float               f32;
 typedef double              f64;
@@ -37,6 +42,9 @@ typedef unsigned int    undefined3;
 typedef unsigned int    undefined4;
 typedef unsigned long    undefined8;
 
+const u8 MAX_HOSTNAME_LENGTH = 50;
+typedef sead::FixedSafeString<MAX_HOSTNAME_LENGTH + 1> hostname;
+
 enum SocketLogState {
     SOCKET_LOG_UNINITIALIZED = 0,
     SOCKET_LOG_CONNECTED = 1,
@@ -52,6 +60,14 @@ enum SocketLogState {
 typedef __builtin_va_list va_list;
 #define va_start(v,l) __builtin_va_start(v,l)
 #define va_end(v) __builtin_va_end(v)
+
+#define RAD(deg) (deg * (M_PI / 180)) // converts Degrees to Radians
+#define DEG(rad) (rad * (180 / M_PI)) // converts Radians to Degrees
+#define BTOC(bool) (bool ? "True" : "False") // converts boolean to true/false char
+#define ACNT(arr) (sizeof(arr) / sizeof(arr[0]))  // returns size of inputted array
+// used to convert macro values to strings
+#define STRINGIFY(x) #x
+#define TOSTRING(x) STRINGIFY(x)
 
 //using u64 = std::uint64_t;
 //using s64 = std::int64_t;
@@ -76,3 +92,6 @@ struct Rect
 	float right;
 	float top;
 };
+
+#define PACKED __attribute__((packed))
+#define USED __attribute__((used))

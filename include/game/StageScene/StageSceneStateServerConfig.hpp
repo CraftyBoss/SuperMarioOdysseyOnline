@@ -17,6 +17,7 @@
 
 #include "logger.hpp"
 #include "server/gamemode/GameModeConfigMenu.hpp"
+#include "server/gamemode/GameModeConfigMenuFactory.hpp"
 
 class FooterParts;
 
@@ -28,8 +29,8 @@ class StageSceneStateServerConfig : public al::HostStateBase<al::Scene>, public 
         enum ServerConfigOption {
             GAMEMODECONFIG,
             GAMEMODESWITCH,
-            RECONNECT,
-            SETIP
+            SETIP,
+            SETPORT
         };
 
         virtual al::MessageSystem* getMessageSystem(void) const override;
@@ -38,10 +39,11 @@ class StageSceneStateServerConfig : public al::HostStateBase<al::Scene>, public 
         virtual void kill(void) override;
 
         void exeMainMenu();
-        void exeOpenKeyboard();
-        void exeRestartServer();
+        void exeOpenKeyboardIP();
+        void exeOpenKeyboardPort();
         void exeGamemodeConfig();
         void exeGamemodeSelect();
+        void exeSaveData();
 
         void endSubMenu();
 
@@ -58,25 +60,30 @@ class StageSceneStateServerConfig : public al::HostStateBase<al::Scene>, public 
         
         SimpleLayoutMenu* mCurrentMenu = nullptr;
         CommonVerticalList* mCurrentList = nullptr;
-        // Root Page, contains buttons for gamemode config, server reconnecting, and server ip address changing
+        // Root Page, contains buttons for gamemode config, and server ip address changing
         SimpleLayoutMenu* mMainOptions = nullptr;
         CommonVerticalList *mMainOptionsList = nullptr;
-        // Sub-Page for Mode configuration, has buttons for selecting current gamemode and configuring currently selected mode (if no mode is chosen, button will not do anything)
-        SimpleLayoutMenu* mGamemodeConfig = nullptr;
-        CommonVerticalList* mGameModeConfigList = nullptr;
         // Sub-Page of Mode config, used to select a gamemode for the client to use
         SimpleLayoutMenu* mModeSelect = nullptr;
         CommonVerticalList* mModeSelectList = nullptr;
-        // Controls what shows up in specific gamemode config page
-        GameModeConfigMenu *mGamemodeConfigMenu = nullptr;
+
+        // Sub-Pages for Mode configuration, has buttons for selecting current gamemode and configuring currently selected mode (if no mode is chosen, button will not do anything)
+        struct GameModeEntry {
+            GameModeConfigMenu* mMenu;
+            SimpleLayoutMenu* mLayout = nullptr;
+            CommonVerticalList* mList = nullptr;
+        };
+        sead::SafeArray<GameModeEntry, GameModeConfigMenuFactory::getMenuCount()> mGamemodeConfigMenus;
+        GameModeEntry *mGamemodeConfigMenu = nullptr;
 
         bool mIsDecideConfig = false;
 };
 
 namespace {
     NERVE_HEADER(StageSceneStateServerConfig, MainMenu)
-    NERVE_HEADER(StageSceneStateServerConfig, OpenKeyboard)
-    NERVE_HEADER(StageSceneStateServerConfig, RestartServer)
+    NERVE_HEADER(StageSceneStateServerConfig, OpenKeyboardIP)
+    NERVE_HEADER(StageSceneStateServerConfig, OpenKeyboardPort)
     NERVE_HEADER(StageSceneStateServerConfig, GamemodeConfig)
     NERVE_HEADER(StageSceneStateServerConfig, GamemodeSelect)
+    NERVE_HEADER(StageSceneStateServerConfig, SaveData)
 }

@@ -7,14 +7,15 @@
 #include "nn/swkbd/swkbd.h"
 
 #include "logger.hpp"
-#include "sead/prim/seadSafeString.h"
+
+typedef void (*KeyboardSetup)(nn::swkbd::KeyboardConfig&);
 
 class Keyboard {
     public:
         Keyboard(ulong strSize);
         void keyboardThread();
 
-        void openKeyboard(const char* initialText);
+        void openKeyboard(const char* initialText, KeyboardSetup setup);
 
         const char* getResult() {
             if (mThread->isDone()) {
@@ -22,6 +23,8 @@ class Keyboard {
             }
             return nullptr;
         };
+
+        bool isKeyboardCancelled() const { return mIsCancelled; }
 
         bool isThreadDone() { return mThread->isDone(); }
 
@@ -33,12 +36,13 @@ class Keyboard {
         al::AsyncFunctorThread* mThread;
         nn::swkbd::String mResultString;
 
-        bool mIsDoneKeyboard;
-
-        sead::FixedSafeString<0x10> mInitialText;
+        hostname mInitialText;
+        KeyboardSetup mSetupFunc;
 
         const char16_t *mHeaderText = u"Enter Server IP Here!";
-        const char16_t *mSubText = u"Must be a Valid Address.";
+        const char16_t* mSubText = u"Must be a Valid Address.";
+
+        bool mIsCancelled = false;
         
         char* mWorkBuf;
         int mWorkBufSize;

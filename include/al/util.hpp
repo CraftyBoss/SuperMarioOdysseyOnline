@@ -10,6 +10,7 @@
 #include "al/util/MathUtil.h"
 #include "al/util/NerveUtil.h"
 #include "al/util/CameraUtil.h"
+#include "al/util/KitUtil.h"
 
 namespace al
 {
@@ -72,6 +73,9 @@ namespace al
     PlayerActorBase *tryGetPlayerActor(al::PlayerHolder const *, int);
 
     sead::Heap *getCurrentHeap(void);
+    sead::Heap* getStationedHeap();
+    sead::Heap* getSequenceHeap();
+    sead::Heap* getSceneHeap();
 
     al::Projection *getProjection(al::IUseCamera const *, int);
 
@@ -242,7 +246,7 @@ namespace al
     bool tryGetByamlColor(sead::Color4f *,al::ByamlIter const&);
     bool tryGetByamlColor(sead::Color4f *,al::ByamlIter const&,char const*);
     bool tryGetByamlBool(bool *,al::ByamlIter const&,char const*);
-    bool tryGetByamlKeyStringOrNULL(al::ByamlIter const&,char const*);
+    const char * tryGetByamlKeyStringOrNULL(al::ByamlIter const&,char const*);
     bool tryGetByamlKeyIntOrZero(al::ByamlIter const&,char const*);
     bool tryGetByamlKeyU32OrZero(al::ByamlIter const&,char const*);
     bool tryGetByamlKeyFloatOrZero(al::ByamlIter const&,char const*);
