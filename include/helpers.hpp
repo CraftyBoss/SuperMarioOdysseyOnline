@@ -14,14 +14,6 @@
 
 #include "game/GameData/GameDataFunction.h"
 
-#define RAD(deg) (deg * (M_PI / 180)) // converts Degrees to Radians
-#define DEG(rad) (rad * (180 / M_PI)) // converts Radians to Degrees
-#define BTOC(bool) (bool ? "True" : "False") // converts boolean to true/false char
-#define ACNT(arr) (sizeof(arr) / sizeof(arr[0]))  // returns size of inputted array
-// used to convert macro values to strings
-#define STRINGIFY(x) #x
-#define TOSTRING(x) STRINGIFY(x)
-
 bool isPartOf(const char* w1, const char* w2);
 
 int indexOf(char *w1, char c1);

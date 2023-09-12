@@ -45,7 +45,7 @@
 //4EAE58: // forces StageSceneStatePauseMenu to immediately select continue
 //    MOV X0, #1
 
-20CB4C BL modeE3Hook // PlayGuideMenuLyt at StageSceneStateLayout::start+140
-20CA5C BL modeE3Hook // MapMini::appearSlideIn at StageSceneStateLayout::start+50
-20D160 BL modeE3Hook // MapMini::end at StageSceneStateLayout::exeEnd+8C
-20D154 BL playGuideEndHook
+// very wip stuff for implementing custom executors
+// 4D1814 BL updateStateHook
+
+// 87C90C BL updateDrawHook

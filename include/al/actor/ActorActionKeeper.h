@@ -1,14 +1,13 @@
 #pragma once
-
-#include "al/LiveActor/LiveActor.h"
 #include "al/action/ActionEffectCtrl.h"
 
+#include "al/resource/ActorResource.h"
 #include "sead/math/seadVector.h"
 
 namespace al
 {
+    class LiveActor;
 
-    class ActorResource;
     class ActionAnimCtrl;
     class NerveActionCtrl;
     class ActionFlagCtrl;

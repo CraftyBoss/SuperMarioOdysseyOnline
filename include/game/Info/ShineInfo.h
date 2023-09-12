@@ -30,7 +30,7 @@ class ShineInfo {
 
         sead::FixedSafeString<0x80> stageName = sead::FixedSafeString<0x80>(); // 0x0 (Size: 0x98)
         sead::FixedSafeString<0x80> objectId = sead::FixedSafeString<0x80>(); // 0xA0
-        sead::FixedSafeString<0x80> scenObjId = sead::FixedSafeString<0x80>(); // 0x138
+        sead::FixedSafeString<0x80> mShineLabel = sead::FixedSafeString<0x80>(); // 0x138
 
         int shineId; // 1C8
         const QuestInfo *curQuest; // 1D0

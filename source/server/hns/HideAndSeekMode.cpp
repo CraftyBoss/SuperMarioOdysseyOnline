@@ -32,8 +32,6 @@ void HideAndSeekMode::init(const GameModeInitInfo& info) {
 
     GameModeInfoBase* curGameInfo = GameModeManager::instance()->getInfo<HideAndSeekInfo>();
 
-    sead::ScopedCurrentHeapSetter heapSetter(GameModeManager::instance()->getHeap());
-
     if (curGameInfo) Logger::log("Gamemode info found: %s %s\n", GameModeFactory::getModeString(curGameInfo->mMode), GameModeFactory::getModeString(info.mMode));
     else Logger::log("No gamemode info found\n");
     if (curGameInfo && curGameInfo->mMode == mMode) {
@@ -74,6 +72,8 @@ void HideAndSeekMode::begin() {
     MapMini* compass = mCurScene->mSceneLayout->mMapMiniLyt;
     al::SimpleLayoutAppearWaitEnd* playGuideLyt = mCurScene->mSceneLayout->mPlayGuideMenuLyt;
 
+    mInvulnTime = 0;
+
     if(coinCounter->mIsAlive)
         coinCounter->tryEnd();
     if(coinCollect->mIsAlive)
@@ -96,6 +96,8 @@ void HideAndSeekMode::end() {
     CoinCounter* coinCounter = mCurScene->mSceneLayout->mCoinCountLyt;
     MapMini* compass = mCurScene->mSceneLayout->mMapMiniLyt;
     al::SimpleLayoutAppearWaitEnd* playGuideLyt = mCurScene->mSceneLayout->mPlayGuideMenuLyt;
+
+    mInvulnTime = 0.0f;
 
     if(!coinCounter->mIsAlive)
         coinCounter->tryStart();

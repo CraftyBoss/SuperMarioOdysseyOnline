@@ -1,13 +1,28 @@
 #include "server/SocketClient.hpp"
 #include <cstdlib>
 #include <cstring>
+#include <basis/seadNew.h>
 
 #include "SocketBase.hpp"
+#include "al/async/FunctorV0M.hpp"
 #include "logger.hpp"
 #include "nn/result.h"
 #include "nn/socket.h"
 #include "packets/Packet.h"
+#include "server/Client.hpp"
+#include "thread/seadMessageQueue.h"
 #include "types.h"
+
+SocketClient::SocketClient(const char* name, sead::Heap* heap, Client* client) : mHeap(heap), SocketBase(name) {
+
+    this->client = client;
+
+    mRecvThread = new al::AsyncFunctorThread("SocketRecvThread", al::FunctorV0M<SocketClient*, SocketThreadFunc>(this, &SocketClient::recvFunc), 0, 0x1000, {0});
+    mSendThread = new al::AsyncFunctorThread("SocketSendThread", al::FunctorV0M<SocketClient*, SocketThreadFunc>(this, &SocketClient::sendFunc), 0, 0x1000, {0});
+    
+    mRecvQueue.allocate(maxBufSize, mHeap);
+    mSendQueue.allocate(maxBufSize, mHeap);
+};
 
 nn::Result SocketClient::init(const char* ip, u16 port) {
 
@@ -69,11 +84,33 @@ nn::Result SocketClient::init(const char* ip, u16 port) {
 
     Logger::log("Socket fd: %d\n", socket_log_socket);
 
+    startThreads();  // start recv and send threads after sucessful connection
+
+    // send init packet to server once we connect (an issue with the server prevents this from working properly, waiting for a fix to implement)
+    
+    PlayerConnect initPacket;
+    initPacket.mUserID = Client::getClientId();
+    strcpy(initPacket.clientName, Client::getUsername().cstr());
+
+    if (mIsFirstConnect) {
+        initPacket.conType = ConnectionTypes::INIT;
+        mIsFirstConnect = false;
+    } else {
+        initPacket.conType = ConnectionTypes::RECONNECT;
+    }
+
+    send(&initPacket);
+
+    // on a reconnect, resend some maybe missing packets
+    if (initPacket.conType == ConnectionTypes::RECONNECT) {
+      client->resendInitPackets();
+    }
+
     return result;
 
 }
 
-bool SocketClient::SEND(Packet *packet) {
+bool SocketClient::send(Packet *packet) {
 
     if (this->socket_log_state != SOCKET_LOG_CONNECTED)
         return false;
@@ -90,18 +127,18 @@ bool SocketClient::SEND(Packet *packet) {
     } else {
         Logger::log("Failed to Fully Send Packet! Result: %d Type: %s Packet Size: %d\n", valread, packetNames[packet->mType], packet->mPacketSize);
         this->socket_errno = nn::socket::GetLastErrno();
-        this->closeSocket();
+        this->tryReconnect();
         return false;
     }
     return true;
 }
 
-bool SocketClient::RECV() {
+bool SocketClient::recv() {
 
     if (this->socket_log_state != SOCKET_LOG_CONNECTED) {
         Logger::log("Unable To Receive! Socket Not Connected.\n");
         this->socket_errno = nn::socket::GetLastErrno();
-        return false;
+        return this->tryReconnect();
     }
     
     int headerSize = sizeof(Packet);
@@ -122,8 +159,7 @@ bool SocketClient::RECV() {
                 return true;
             } else {
                 Logger::log("Header Read Failed! Value: %d Total Read: %d\n", result, valread);
-                this->closeSocket();
-                return false;
+                return this->tryReconnect(); // if we sucessfully reconnect, we dont want 
             }
         }
     }
@@ -146,9 +182,8 @@ bool SocketClient::RECV() {
                     Logger::log(" Type String: %s\n", packetNames[header->mType]);
                 Logger::enableName();
             }
-                
 
-            char* packetBuf = (char*)malloc(fullSize);
+            char* packetBuf = (char*)mHeap->alloc(fullSize);
 
             if (packetBuf) {
                 
@@ -164,19 +199,18 @@ bool SocketClient::RECV() {
                     if (result > 0) {
                         valread += result;
                     } else {
-                        free(packetBuf);
+                        mHeap->free(packetBuf);
                         Logger::log("Packet Read Failed! Value: %d\nPacket Size: %d\nPacket Type: %s\n", result, header->mPacketSize, packetNames[header->mType]);
-                        this->closeSocket();
-                        return false;
+                        return this->tryReconnect();
                     }
                 }
 
-                Packet *packet = reinterpret_cast<Packet*>(packetBuf);
+                Packet* packet = reinterpret_cast<Packet*>(packetBuf);
 
-                if(mPacketQueue.size() < maxBufSize - 1) {
-                    mPacketQueue.pushBack(packet);
+                if (!mRecvQueue.isFull()) {
+                    mRecvQueue.push((s64)packet, sead::MessageQueue::BlockType::NonBlocking);
                 } else {
-                    free(packetBuf);
+                    mHeap->free(packetBuf);
                 }
             }
         } else {
@@ -187,8 +221,7 @@ bool SocketClient::RECV() {
     } else {  // if we error'd, close the socket
         Logger::log("valread was zero! Disconnecting.\n");
         this->socket_errno = nn::socket::GetLastErrno();
-        this->closeSocket();
-        return false;
+        return this->tryReconnect();
     }
 }
 
@@ -206,6 +239,20 @@ void SocketClient::printPacket(Packet *packet) {
     default:
         break;
     }
+}
+
+bool SocketClient::tryReconnect() {
+
+    Logger::log("Attempting to Reconnect.\n");
+
+    if (closeSocket()) { // unfortunately we cannot use the same fd from the previous connection, so close the socket entirely and attempt a new connection.
+        if (init(sock_ip, port).isSuccess()) { // call init again
+            Logger::log("Reconnect Successful.\n");
+            return true;
+        }
+    }
+
+    return false;
 }
 
 bool SocketClient::closeSocket() {
@@ -239,4 +286,82 @@ bool SocketClient::stringToIPAddress(const char* str, in_addr* out) {
     }
 
     return false;
+}
+
+/**
+ * @brief starts client read thread
+ * 
+ * @return true if read thread was sucessfully started
+ * @return false if read thread was unable to start, or thread was already started.
+ */
+bool SocketClient::startThreads() {
+
+    Logger::log("Recv Thread isDone: %s\n", BTOC(this->mRecvThread->isDone()));
+    Logger::log("Send Thread isDone: %s\n", BTOC(this->mSendThread->isDone()));
+
+    if(this->mRecvThread->isDone() && this->mSendThread->isDone()) {
+        this->mRecvThread->start();
+        this->mSendThread->start();
+        Logger::log("Socket threads sucessfully started.\n");
+        return true;
+    }else {
+        Logger::log("Socket threads failed to start.\n");
+        return false;
+    }
+}
+
+void SocketClient::endThreads() {
+    mRecvThread->mDelegateThread->destroy();
+    mSendThread->mDelegateThread->destroy();
+}
+
+void SocketClient::sendFunc() {
+
+    Logger::log("Starting Send Thread.\n");
+
+    while (true) {
+        trySendQueue();
+    }
+
+    Logger::log("Ending Send Thread.\n");
+}
+
+void SocketClient::recvFunc() {
+
+    nn::socket::Recv(this->socket_log_socket, nullptr, 0, 0);
+
+    Logger::log("Starting Recv Thread.\n");
+
+    while (true) {
+        if (!recv()) {
+            Logger::log("Receiving Packet Failed!\n");
+        }
+    }
+
+    Logger::log("Ending Recv Thread.\n");
+}
+
+bool SocketClient::queuePacket(Packet* packet) {
+    if (socket_log_state == SOCKET_LOG_CONNECTED) {
+        mSendQueue.push((s64)packet,
+                        sead::MessageQueue::BlockType::NonBlocking);  // as this is non-blocking, it
+                                                                      // will always return true.
+        return true;
+    } else {
+        mHeap->free(packet);
+        return false;
+    }
+}
+
+void SocketClient::trySendQueue() {
+
+    Packet* curPacket = (Packet*)mSendQueue.pop(sead::MessageQueue::BlockType::Blocking);
+
+    send(curPacket);
+
+    mHeap->free(curPacket);
+}
+
+Packet* SocketClient::tryGetPacket(sead::MessageQueue::BlockType blockType) {
+    return socket_log_state == SOCKET_LOG_CONNECTED ? (Packet*)mRecvQueue.pop(blockType) : nullptr;
 }

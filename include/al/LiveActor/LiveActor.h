@@ -19,6 +19,7 @@
 #include "al/sensor/HitSensorKeeper.h"
 #include "al/switch/StageSwitchKeeper.h"
 #include "al/actor/SubActorKeeper.h"
+#include "al/model/ModelKeeper.h"
 
 // vtable for LiveActor: 1C4EB58
 
@@ -31,7 +32,6 @@ namespace al
     class ActorScoreKeeper;
     class Collider;
     class CollisionParts;
-    class ModelKeeper;
     class ShadowKeeper;
     class ActorPrePassLightKeeper;
     class ActorOcclusionKeeper;
@@ -93,10 +93,12 @@ namespace al
         virtual al::CameraDirector *getCameraDirector() const { return this->mSceneInfo->mCameraDirector; };
 
         virtual void initStageSwitchKeeper() { this->mStageSwitchKeeper = new StageSwitchKeeper(); };
-
+        
         virtual void control();
 
         virtual void updateCollider();
+
+        void initSubActorKeeper(al::SubActorKeeper *);
 
         const char *mActorName;                                // 0x48
         al::ActorPoseKeeperBase *mPoseKeeper;                  // 0x50

@@ -34,6 +34,11 @@ public:
     Element peek(BlockType block_type) const;
     bool jam(Element message, BlockType block_type);
 
+    // custom funcs
+    inline u32 getCount() {return mMessageQueueInner.Count;}
+    inline u32 getMaxCount() {return mMessageQueueInner.MaxCount;}
+    inline bool isFull() const {return mMessageQueueInner.Count == mMessageQueueInner.MaxCount;}
+
     static constexpr Element cNullElement = 0;
 
 private:

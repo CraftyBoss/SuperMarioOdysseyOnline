@@ -6,5 +6,6 @@ Crash Reports/**
 .cache/**
 Custom Stage Builds/**
 *.lst
+*.disabled
 
 compile_commands.json
