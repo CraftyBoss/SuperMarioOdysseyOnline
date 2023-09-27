@@ -17,7 +17,7 @@ PuppetHolder::PuppetHolder(int size) {
  * @brief resizes puppet ptr array by creating a new ptr array and storing previous ptrs in it, before freeing the previous array
  * 
  * @param size the size of the new ptr array
- * @return returns true if resizing was sucessful
+ * @return returns true if resizing was successful
  */
 bool PuppetHolder::resizeHolder(int size) {
 

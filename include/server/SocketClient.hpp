@@ -31,12 +31,13 @@ class SocketClient : public SocketBase {
 
         bool startThreads();
         void endThreads();
+        void waitForThreads();
 
         bool send(Packet* packet);
         bool recv();
 
         bool queuePacket(Packet *packet);
-        void trySendQueue();
+        bool trySendQueue();
 
         void sendFunc();
         void recvFunc();
@@ -45,6 +46,10 @@ class SocketClient : public SocketBase {
 
         void printPacket(Packet* packet);
         bool isConnected() { return socket_log_state == SOCKET_LOG_CONNECTED; }
+
+        u16 getLocalUdpPort();
+        s32 setPeerUdpPort(u16 port);
+        const char* getUdpStateChar();
 
         u32 getSendCount() { return mSendQueue.getCount(); }
         u32 getSendMaxCount() { return mSendQueue.getMaxCount(); }
@@ -67,11 +72,20 @@ class SocketClient : public SocketBase {
         
         sead::MessageQueue mRecvQueue;
         sead::MessageQueue mSendQueue;
+        char* recvBuf = nullptr;
 
         int maxBufSize = 100;
         bool mIsFirstConnect = true;
         bool mPacketQueueOpen = true;
+        int pollTime = 0;
 
+
+        bool mHasRecvUdp;
+        s32 mUdpSocket;
+        sockaddr mUdpAddress;
+
+        bool recvTcp();
+        bool recvUdp();
 
         /**
          * @param str a string containing an IPv4 address or a hostname that can be resolved via DNS

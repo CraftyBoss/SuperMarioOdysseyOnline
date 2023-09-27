@@ -72,13 +72,13 @@ s32 SocketBase::getFd() {
 
 bool SocketBase::closeSocket() {
 
-	if (this->socket_log_state != SOCKET_LOG_DISCONNECTED) {
-		nn::Result result = nn::socket::Close(this->socket_log_socket);
-		if (result.isSuccess()) {
-			this->socket_log_state = SOCKET_LOG_DISCONNECTED;
-		}
-		return result.isSuccess();
-	}
+    if (this->socket_log_state != SOCKET_LOG_DISCONNECTED) {
+        nn::Result result = nn::socket::Close(this->socket_log_socket);
+        if (result.isSuccess()) {
+            this->socket_log_state = SOCKET_LOG_DISCONNECTED;
+        }
+        return result.isSuccess();
+    }
 
-	return true;
+    return true;
 }
