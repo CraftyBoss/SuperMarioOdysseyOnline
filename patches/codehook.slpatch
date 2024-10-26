@@ -126,3 +126,9 @@ B59E28 B seadPrintHook // sead::system::print
 
 // 891394 BL drawInitHook
 // 91328 BL updateInitHook
+
+// Unlocks costume doors
+262850 MOV W0, #0 // Sand, DeepWoods, Snow, Seaside, Luncheon, Bowser, Mushroom
+2609B4 MOV W0, #0 // Lake
+25FF74 MOV X0, #1 // Metro (open w/ doors)
+25FFAC MOV X0, #0 // Metro (open w/o doors) (not needed?)
