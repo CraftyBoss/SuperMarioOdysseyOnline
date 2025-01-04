@@ -54,5 +54,8 @@ class SardineMode : public GameModeBase {
         float pullDistanceMinSq = 1000000.f;
         float pullPowerRate     = 75.f;
 
+        int mSardineToggleCooldown = 0;
+        const int mSardineToggleCooldownLength = 600;
+
         void updateTagState(bool isIt);
 };

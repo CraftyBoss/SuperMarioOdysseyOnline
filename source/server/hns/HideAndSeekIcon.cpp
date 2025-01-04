@@ -63,7 +63,7 @@ void HideAndSeekIcon::exeWait() {
         al::startAction(this, "Wait", 0);
     }
 
-    al::setPaneStringFormat(this, "TxtCounter", mInfo->mHidingTime.to_string().c_str());
+    al::setPaneStringFormat(this, "TxtCounter", mInfo->mHidingTime.to_string().cstr());
 
     auto playerList = getPlayerList();
     if (!playerList.isEmpty()) {

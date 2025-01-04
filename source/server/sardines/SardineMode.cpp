@@ -155,6 +155,9 @@ void SardineMode::update() {
     float closestDistanceSq = 0.f;
 
     bool isPackEmpty = true;
+    
+    if (mSardineToggleCooldown > 0)
+        mSardineToggleCooldown--;
 
     if (mIsFirstFrame) {
         if (mInfo->mIsUseGravityCam && mTicket) {
@@ -191,10 +194,12 @@ void SardineMode::update() {
              if (  isPlayerAlone()                                                          // we're a single sardine
                 && other->is2D == ((PlayerActorHakoniwa*)playerBase)->mDimKeeper->is2DModel // we are in the same dimension
                 && !PlayerFunction::isPlayerDeadStatus(playerBase)                          // we're not dead
+                && mSardineToggleCooldown == 0                                              // cooldown isn't active
             ) {
                 // in range?
                 float distanceSq = vecDistanceSq(playerPos, other->playerPos);
                 if (distanceSq < 90000.0f) { // non-squared: 300.0
+                    mSardineToggleCooldown = mSardineToggleCooldownLength;
                     updateTagState(true);
                     break;
                 }

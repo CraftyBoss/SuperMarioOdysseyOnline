@@ -1,7 +1,6 @@
 #pragma once
 
-#include <format>
-#include <string>
+#include "sead/prim/seadSafeString.h"
 
 struct GameTime {
     float mMilliseconds = 0;
@@ -9,11 +8,11 @@ struct GameTime {
     int   mMinutes      = 0;
     int   mHours        = 0;
 
-    const std::string to_string() {
+    const sead::SafeString to_string() {
         if (mHours > 0) {
-            return std::format("{:01}:{:02}:{:02}", mHours, mMinutes, mSeconds);
+            return sead::FormatFixedSafeString<0x20>("%01d:%02d:%02d", mHours, mMinutes, mSeconds);
         }
-        return std::format("{:02}:{:02}", mMinutes, mSeconds);
+        return sead::FormatFixedSafeString<0x20>("%02d:%02d", mMinutes, mSeconds);
     }
 };
 
