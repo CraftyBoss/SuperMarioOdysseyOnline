@@ -303,7 +303,7 @@ bool SocketClient::recvTcp() {
         Logger::enableName();
     }
 
-    char* packetBuf = (char*)mHeap->alloc(fullSize);
+    char* packetBuf = (char*)malloc(fullSize);
 
     if (!packetBuf) {
         return true;
@@ -319,7 +319,7 @@ bool SocketClient::recvTcp() {
         if (result > 0) {
             valread += result;
         } else {
-            mHeap->free(packetBuf);
+            free(packetBuf);
             Logger::log("Packet Read Failed! Value: %d\nPacket Size: %d\nPacket Type: %s\n", result, header->mPacketSize, packetNames[header->mType]);
             return this->tryReconnect();
         }
@@ -327,7 +327,7 @@ bool SocketClient::recvTcp() {
 
     if (!(header->mType > PacketType::UNKNOWN && header->mType < PacketType::End)) {
         Logger::log("Failed to acquire valid packet type! Packet Type: %d Full Packet Size %d valread size: %d\n", header->mType, fullSize, valread);
-        mHeap->free(packetBuf);
+        free(packetBuf);
         return true;
     }
 
@@ -336,7 +336,7 @@ bool SocketClient::recvTcp() {
     if (!mRecvQueue.isFull() && mPacketQueueOpen) {
         mRecvQueue.push((s64)packet, sead::MessageQueue::BlockType::NonBlocking);
     } else {
-        mHeap->free(packetBuf);
+        free(packetBuf);
     }
 
     return true;
@@ -372,7 +372,7 @@ bool SocketClient::recvUdp() {
 
     this->mHasRecvUdp = true;
 
-    char* packetBuf = (char*)mHeap->alloc(fullSize);
+    char* packetBuf = (char*)malloc(fullSize);
     if (!packetBuf) {
         return true;
     }
@@ -384,7 +384,7 @@ bool SocketClient::recvUdp() {
     if (!mRecvQueue.isFull()) {
         mRecvQueue.push((s64)packet, sead::MessageQueue::BlockType::NonBlocking);
     } else {
-        mHeap->free(packetBuf);
+        free(packetBuf);
     }
 
     return true;
@@ -529,7 +529,7 @@ bool SocketClient::queuePacket(Packet* packet) {
         mSendQueue.push((s64)packet, sead::MessageQueue::BlockType::NonBlocking);
         return true;
     } else {
-        mHeap->free(packet);
+        free(packet);
         return false;
     }
 }
@@ -559,7 +559,7 @@ void SocketClient::clearMessageQueues() {
 
     while (mRecvQueue.getCount() > 0) {
         Packet* curPacket = (Packet*)mRecvQueue.pop(sead::MessageQueue::BlockType::Blocking);
-        mHeap->free(curPacket);
+        free(curPacket);
     }
 
     this->mPacketQueueOpen = prevQueueOpenness;
