@@ -40,6 +40,7 @@ void killMainPlayer(PlayerActorHakoniwa* mainPlayer);
 
 __attribute__((used)) static const char* costumeNames[] = {
     "Mario",
+    "MarioCaptain",
     "Mario64",
     "Mario64Metal",
     "MarioAloha",
