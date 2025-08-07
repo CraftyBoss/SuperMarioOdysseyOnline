@@ -6,6 +6,8 @@
 #include "logger.hpp"
 #include "packets/Packet.h"
 #include "server/hns/HideAndSeekMode.hpp"
+#include "server/ctf/CaptureTheFlagMode.hpp"
+
 
 SEAD_SINGLETON_DISPOSER_IMPL(Client)
 
@@ -392,6 +394,9 @@ void Client::readFunc() {
 			case PacketType::HOLEPUNCH: 
 				sendUdpHolePunch();
 				break;
+            case PacketType::CAPTURETHEFLAGPACKET:
+                updateCTFInfo((CaptureTheFlagPacket*)curPacket);
+                break;
             default:
                 Logger::log("Discarding Unknown Packet Type.\n");
                 break;
@@ -406,6 +411,45 @@ void Client::readFunc() {
     }
 
     Logger::log("Client Read Thread ending.\n");
+}
+/*
+* @brief updates the client with the current game info packet
+ * 
+ * @param packet pointer to game info packet
+*/
+void Client::updateCTFInfo(CaptureTheFlagPacket* packet) {
+    if (!GameModeManager::instance()->isMode(GameMode::CAPTURETHEFLAG)) {
+        return;
+    }
+
+    CaptureTheFlagInfo* ctfInfo = (CaptureTheFlagInfo*)GameModeManager::instance()->getInfo<CaptureTheFlagInfo>();
+
+    // Update based on packet type
+    if (packet->updateType & CTFUpdateType::SCORE_UPDATE) {
+        ctfInfo->mRedScore = packet->redScore;
+        ctfInfo->mBlueScore = packet->blueScore;
+    }
+    
+    if (packet->updateType & CTFUpdateType::FLAG_DROPPED) {
+        if (packet->flagTeam == CTFTeam::RED_TEAM) {
+            ctfInfo->mRedFlagPos = packet->flagPos;
+            ctfInfo->mIsRedFlagHome = false;
+        } else {
+            ctfInfo->mBlueFlagPos = packet->flagPos;
+            ctfInfo->mIsBlueFlagHome = false;
+        }
+    }
+    
+    // Handle other update types...
+    
+    // Update puppet info for flag carriers
+    PuppetInfo* puppetInfo = findPuppetInfo(packet->mUserID,false);
+     if (!puppetInfo) {
+        Logger::log("PuppetInfo not found for user ID: %d\n", packet->mUserID);
+        return;
+    }
+    // Update the puppet's flag carrying state
+   //TODO
 }
 
 /**

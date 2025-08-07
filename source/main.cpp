@@ -33,6 +33,7 @@
 #include "rs/util.hpp"
 #include "server/gamemode/GameModeBase.hpp"
 #include "server/hns/HideAndSeekMode.hpp"
+#include "server/ctf/CaptureTheFlagMode.hpp"
 #include "server/gamemode/GameModeManager.hpp"
 
 static int pInfSendTimer = 0;
@@ -74,7 +75,7 @@ int debugPuppetIndex = 0;
 int debugCaptureIndex = 0;
 static int pageIndex = 0;
 
-static const int maxPages = 3;
+static const int maxPages = 4;
 
 void drawMainHook(HakoniwaSequence *curSequence, sead::Viewport *viewport, sead::DrawContext *drawContext) {
 
@@ -84,7 +85,8 @@ void drawMainHook(HakoniwaSequence *curSequence, sead::Viewport *viewport, sead:
     // if(Application::sInstance->mFramework) {
     //     Application::sInstance->mFramework->mGpuPerf->drawResult((agl::DrawContext *)drawContext, frameBuffer);
     // }
-
+    //Logger::createInstance();
+    Logger::log("Drawing Main Hook\n");
     Time::calcTime();  // this needs to be ran every frame, so running it here works
 
     if(!debugMode) {
@@ -245,6 +247,35 @@ void drawMainHook(HakoniwaSequence *curSequence, sead::Viewport *viewport, sead:
             
             }
             break;
+        case 3:
+            {
+                if (!GameModeManager::instance()->isMode(GameMode::CAPTURETHEFLAG)) {
+                    break;
+                }
+                
+                CaptureTheFlagInfo* ctfInfo = (CaptureTheFlagInfo*)GameModeManager::instance()->getInfo<CaptureTheFlagInfo>();
+                
+                if (ctfInfo) {
+                    gTextWriter->printf("=== CTF Debug Info ===\n");
+                    gTextWriter->printf("Team: %s\n", 
+                        ctfInfo->mPlayerTeam == RED_TEAM ? "RED" : 
+                        ctfInfo->mPlayerTeam == BLUE_TEAM ? "BLUE" : "SPECTATOR");
+                    gTextWriter->printf("Score - Red: %d, Blue: %d\n", 
+                        ctfInfo->mRedScore, ctfInfo->mBlueScore);
+                    gTextWriter->printf("Has Flag: %s\n", 
+                        ctfInfo->mHasFlag ? "YES" : "NO");
+                    if (ctfInfo->mHasFlag) {
+                        gTextWriter->printf("Carrying: %s Flag\n",
+                            ctfInfo->mFlagTeam == RED_TEAM ? "RED" : "BLUE");
+                    }
+                    gTextWriter->printf("Red Flag Home: %s\n", 
+                        ctfInfo->mIsRedFlagHome ? "YES" : "NO");
+                    gTextWriter->printf("Blue Flag Home: %s\n", 
+                        ctfInfo->mIsBlueFlagHome ? "YES" : "NO");
+                    
+                }
+            }
+            break;
         default:
             break;
         }
@@ -356,7 +387,6 @@ bool hakoniwaSequenceHook(HakoniwaSequence* sequence) {
     Client::setStageInfo(stageScene->mHolder);
 
     Client::update();
-
     updatePlayerInfo(stageScene->mHolder, playerBase, isYukimaru);
 
     static bool isDisableMusic = false;
@@ -369,6 +399,7 @@ bool hakoniwaSequenceHook(HakoniwaSequence* sequence) {
             pageIndex = maxPages - 1;
         }
         if(pageIndex >= maxPages) pageIndex = 0;
+        Logger::log("Page Index: %d\n", pageIndex);
 
     } else if (al::isPadHoldZL(-1)) {
 

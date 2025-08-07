@@ -66,6 +66,8 @@
 
 #include "puppets/PuppetInfo.h"
 
+#include "packets/CaptureTheFlagPacket.h"
+
 #include <cstddef>
 #include <stdlib.h>
 
@@ -197,6 +199,8 @@ class Client {
         void sendUdpHolePunch();
         void sendUdpInit();
         void disconnectPlayer(PlayerDC *packet);
+        void updateCTFInfo(CaptureTheFlagPacket *packet);
+
 
         PuppetInfo* findPuppetInfo(const nn::account::Uid& id, bool isFindAvailable);
 

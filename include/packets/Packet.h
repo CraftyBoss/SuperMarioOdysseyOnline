@@ -28,6 +28,7 @@ enum PacketType : short {
     CMD,
     UDPINIT,
     HOLEPUNCH,
+    CAPTURETHEFLAGPACKET ,
     End // end of enum for bounds checking
 };
 
