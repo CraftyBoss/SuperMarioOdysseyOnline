@@ -197,15 +197,22 @@ void drawMainHook(HakoniwaSequence* curSequence, sead::Viewport* viewport, sead:
                     Client::getMaxPlayerCount() < 10 ? "-" : ""
                 );
 
+                // Hide sensitive player information while an in a gamemode
+                GameMode currentMode = GameModeManager::instance()->getGameMode();
+                bool hideGameModeInfo = GameModeManager::instance()->isActive() &&
+                (currentMode == GameMode::HIDEANDSEEK || currentMode == GameMode::SARDINE || currentMode == GameMode::FREEZETAG);
+
                 if (debugPuppetIndex == 0) {
                     gTextWriter->printf("Player Name: %s\n",       Client::getClientName());
                     gTextWriter->printf("Connection Status: %s\n", isConnected ? "Online" : "Offline");
                     gTextWriter->printf("Game mode: %i | %s\n",    gameMode, GameModeFactory::getModeName(gameMode));
                     gTextWriter->printf("Is in same Stage: Yes\n");
+                    gTextWriter->printf("Costume: H: %s B: %s\n",client->getLastCostumeInfPacket()->capModel, client->getLastCostumeInfPacket()->bodyModel);
+
+                // Only shows Stage, Scenario, Capture and Animation information when a player is NOT in a gamemode
+                if (!hideGameModeInfo) {
                     gTextWriter->printf("Stage: %s\n",            client->getLastGameInfPacket()->stageName);
                     gTextWriter->printf("Scenario: %u\n",         client->getLastGameInfPacket()->scenarioNo);
-                    gTextWriter->printf("Costume: H: %s B: %s\n", client->getLastCostumeInfPacket()->capModel, client->getLastCostumeInfPacket()->bodyModel);
-                    gTextWriter->printf("Capture: %s\n",          client->getLastCaptureInfPacket()->hackName);
 
                     PlayerHackKeeper* hackKeeper = playerBase->getPlayerHackKeeper();
                     if (hackKeeper) {
@@ -216,13 +223,13 @@ void drawMainHook(HakoniwaSequence* curSequence, sead::Viewport* viewport, sead:
                             gTextWriter->printf("Animation: %s\n", p1->mPlayerAnimator->mAnimFrameCtrl->getActionName());
                         }
                     }
+                }
 
                     if (gameModeBase) {
                         gameModeBase->debugMenuPlayer(gTextWriter);
                     }
                 } else if (curPuppet) {
                     al::LiveActor* curModel = curPuppet->getCurrentModel();
-
                     PuppetInfo* curPupInfo = curPuppet->getInfo();
 
                     if (curModel && curPupInfo) {
@@ -230,14 +237,18 @@ void drawMainHook(HakoniwaSequence* curSequence, sead::Viewport* viewport, sead:
                         gTextWriter->printf("Connection Status: %s\n", curPupInfo->isConnected ? "Online" : "Offline");
                         gTextWriter->printf("Game mode: %i | %s\n",    curPupInfo->gameMode, GameModeFactory::getModeName(curPupInfo->gameMode));
                         gTextWriter->printf("Is in same Stage: %s\n",  curPupInfo->isInSameStage ? "Yes" : "No");
+                        gTextWriter->printf("Costume: H: %s B: %s\n",  curPupInfo->costumeHead, curPupInfo->costumeBody);
+
+                    // Hide the information that could reveal a player's position in a gamemode
+                    if (!hideGameModeInfo) {
                         gTextWriter->printf("Stage: %s\n",             curPupInfo->stageName);
                         gTextWriter->printf("Scenario: %u\n",          curPupInfo->scenarioNo);
-                        gTextWriter->printf("Costume: H: %s B: %s\n",  curPupInfo->costumeHead, curPupInfo->costumeBody);
                         gTextWriter->printf("Capture: %s\n",           curPupInfo->isCaptured ? curPupInfo->curHack : "");
                         gTextWriter->printf("Animation:  %d  %s\n",    curPupInfo->curAnim, curPupInfo->curAnimStr);
-                        if (!curPupInfo->isCaptured) {
+                       if (!curPupInfo->isCaptured) {
                             gTextWriter->printf("Model Animation: %s\n", al::getActionName(curModel));
                         }
+                    }
                         if (gameModeBase) {
                             gameModeBase->debugMenuPlayer(gTextWriter, curPupInfo);
                         }
