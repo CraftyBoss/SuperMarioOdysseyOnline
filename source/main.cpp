@@ -206,11 +206,11 @@ void drawMainHook(HakoniwaSequence* curSequence, sead::Viewport* viewport, sead:
                     gTextWriter->printf("Player Name: %s\n",       Client::getClientName());
                     gTextWriter->printf("Connection Status: %s\n", isConnected ? "Online" : "Offline");
                     gTextWriter->printf("Game mode: %i | %s\n",    gameMode, GameModeFactory::getModeName(gameMode));
-                    gTextWriter->printf("Is in same Stage: Yes\n");
                     gTextWriter->printf("Costume: H: %s B: %s\n",client->getLastCostumeInfPacket()->capModel, client->getLastCostumeInfPacket()->bodyModel);
 
                 // Only shows Stage, Scenario, Capture and Animation information when a player is NOT in a gamemode
                 if (!hideGameModeInfo) {
+                    gTextWriter->printf("Is in same Stage: Yes\n");
                     gTextWriter->printf("Stage: %s\n",            client->getLastGameInfPacket()->stageName);
                     gTextWriter->printf("Scenario: %u\n",         client->getLastGameInfPacket()->scenarioNo);
 
@@ -236,11 +236,11 @@ void drawMainHook(HakoniwaSequence* curSequence, sead::Viewport* viewport, sead:
                         gTextWriter->printf("Player Name: %s\n",       curPupInfo->puppetName);
                         gTextWriter->printf("Connection Status: %s\n", curPupInfo->isConnected ? "Online" : "Offline");
                         gTextWriter->printf("Game mode: %i | %s\n",    curPupInfo->gameMode, GameModeFactory::getModeName(curPupInfo->gameMode));
-                        gTextWriter->printf("Is in same Stage: %s\n",  curPupInfo->isInSameStage ? "Yes" : "No");
                         gTextWriter->printf("Costume: H: %s B: %s\n",  curPupInfo->costumeHead, curPupInfo->costumeBody);
 
                     // Hide the information that could reveal a player's position in a gamemode
                     if (!hideGameModeInfo) {
+                        gTextWriter->printf("Is in same Stage: %s\n",  curPupInfo->isInSameStage ? "Yes" : "No");
                         gTextWriter->printf("Stage: %s\n",             curPupInfo->stageName);
                         gTextWriter->printf("Scenario: %u\n",          curPupInfo->scenarioNo);
                         gTextWriter->printf("Capture: %s\n",           curPupInfo->isCaptured ? curPupInfo->curHack : "");
