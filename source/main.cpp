@@ -246,7 +246,7 @@ void drawMainHook(HakoniwaSequence* curSequence, sead::Viewport* viewport, sead:
                         gTextWriter->printf("Scenario: %u\n",          curPupInfo->scenarioNo);
                         gTextWriter->printf("Capture: %s\n",           curPupInfo->isCaptured ? curPupInfo->curHack : "");
                         gTextWriter->printf("Animation:  %d  %s\n",    curPupInfo->curAnim, curPupInfo->curAnimStr);
-                       if (!curPupInfo->isCaptured) {
+                    if (!curPupInfo->isCaptured) {
                         gTextWriter->printf("Model Animation: %s\n", al::getActionName(curModel));
                         }
                     }
