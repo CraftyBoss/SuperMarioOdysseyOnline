@@ -234,7 +234,7 @@ void drawMainHook(HakoniwaSequence* curSequence, sead::Viewport* viewport, sead:
                         gTextWriter->printf("Connection Status: %s\n", curPupInfo->isConnected ? "Online" : "Offline");
                         gTextWriter->printf("Game mode: %i | %s\n",    curPupInfo->gameMode, GameModeFactory::getModeName(curPupInfo->gameMode));
                         gTextWriter->printf("Costume: H: %s B: %s\n",  curPupInfo->costumeHead, curPupInfo->costumeBody);
-                        if(hideInfo) {
+                        if(!hideInfo) {
                             gTextWriter->printf("Stage: %s\n",             curPupInfo->stageName);
                             gTextWriter->printf("Scenario: %u\n",         curPupInfo->scenarioNo);
                             gTextWriter->printf("Capture: %s\n",           curPupInfo->isCaptured ? curPupInfo->curHack : "");
