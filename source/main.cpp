@@ -213,6 +213,7 @@ void drawMainHook(HakoniwaSequence* curSequence, sead::Viewport* viewport, sead:
                     gTextWriter->printf("Is in same Stage: Yes\n");
                     gTextWriter->printf("Stage: %s\n",            client->getLastGameInfPacket()->stageName);
                     gTextWriter->printf("Scenario: %u\n",         client->getLastGameInfPacket()->scenarioNo);
+                    gTextWriter->printf("Capture: %s\n",          client->getLastCaptureInfPacket()->hackName);
 
                     PlayerHackKeeper* hackKeeper = playerBase->getPlayerHackKeeper();
                     if (hackKeeper) {
