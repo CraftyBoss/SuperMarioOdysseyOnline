@@ -205,7 +205,14 @@ void drawMainHook(HakoniwaSequence* curSequence, sead::Viewport* viewport, sead:
                     gTextWriter->printf("Stage: %s\n",            client->getLastGameInfPacket()->stageName);
                     gTextWriter->printf("Scenario: %u\n",         client->getLastGameInfPacket()->scenarioNo);
                     gTextWriter->printf("Costume: H: %s B: %s\n", client->getLastCostumeInfPacket()->capModel, client->getLastCostumeInfPacket()->bodyModel);
-                    gTextWriter->printf("Capture: %s\n",          client->getLastCaptureInfPacket()->hackName);
+                    if(!GameModeManager::instance()->isActive()) {
+                        gTextWriter->printf("Stage: %s | %u\n",             curPupInfo->stageName, curPupInfo->scenarioNo);
+                        gTextWriter->printf("Capture: %s\n",           curPupInfo->isCaptured ? curPupInfo->curHack : "");
+                        gTextWriter->printf("Animation:  %d  %s\n",    curPupInfo->curAnim, curPupInfo->curAnimStr);
+                        if (!curPupInfo->isCaptured) {
+                            gTextWriter->printf("Model Animation: %s\n", al::getActionName(curModel));
+                        }
+                    }
 
                     PlayerHackKeeper* hackKeeper = playerBase->getPlayerHackKeeper();
                     if (hackKeeper) {
