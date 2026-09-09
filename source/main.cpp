@@ -202,6 +202,7 @@ void drawMainHook(HakoniwaSequence* curSequence, sead::Viewport* viewport, sead:
                     gTextWriter->printf("Connection Status: %s\n", isConnected ? "Online" : "Offline");
                     gTextWriter->printf("Game mode: %i | %s\n",    gameMode, GameModeFactory::getModeName(gameMode));
                     gTextWriter->printf("Is in same Stage: Yes\n");
+                    gTextWriter->printf("Costume: H: %s B: %s\n", client->getLastCostumeInfPacket()->capModel, client->getLastCostumeInfPacket()->bodyModel);
                     gTextWriter->printf("Stage: %s\n",            client->getLastGameInfPacket()->stageName);
                     gTextWriter->printf("Scenario: %u\n",         client->getLastGameInfPacket()->scenarioNo);
                     gTextWriter->printf("Costume: H: %s B: %s\n", client->getLastCostumeInfPacket()->capModel, client->getLastCostumeInfPacket()->bodyModel);
@@ -225,18 +226,22 @@ void drawMainHook(HakoniwaSequence* curSequence, sead::Viewport* viewport, sead:
 
                     PuppetInfo* curPupInfo = curPuppet->getInfo();
 
+                    GameMode currentMode = GameModeManager::instance()->getGameMode();
+                    bool hideInfo = GameModeManager::instance()->isActive() && currentMode != GameMode::NONE;
+
                     if (curModel && curPupInfo) {
                         gTextWriter->printf("Player Name: %s\n",       curPupInfo->puppetName);
                         gTextWriter->printf("Connection Status: %s\n", curPupInfo->isConnected ? "Online" : "Offline");
                         gTextWriter->printf("Game mode: %i | %s\n",    curPupInfo->gameMode, GameModeFactory::getModeName(curPupInfo->gameMode));
-                        gTextWriter->printf("Is in same Stage: %s\n",  curPupInfo->isInSameStage ? "Yes" : "No");
-                        gTextWriter->printf("Stage: %s\n",             curPupInfo->stageName);
-                        gTextWriter->printf("Scenario: %u\n",          curPupInfo->scenarioNo);
                         gTextWriter->printf("Costume: H: %s B: %s\n",  curPupInfo->costumeHead, curPupInfo->costumeBody);
-                        gTextWriter->printf("Capture: %s\n",           curPupInfo->isCaptured ? curPupInfo->curHack : "");
-                        gTextWriter->printf("Animation:  %d  %s\n",    curPupInfo->curAnim, curPupInfo->curAnimStr);
-                        if (!curPupInfo->isCaptured) {
-                            gTextWriter->printf("Model Animation: %s\n", al::getActionName(curModel));
+                        if(!hideInfo) {
+                            gTextWriter->printf("Stage: %s\n",             curPupInfo->stageName);
+                            gTextWriter->printf("Scenario: %u\n",         curPupInfo->scenarioNo);
+                            gTextWriter->printf("Capture: %s\n",           curPupInfo->isCaptured ? curPupInfo->curHack : "");
+                            gTextWriter->printf("Animation:  %d  %s\n",    curPupInfo->curAnim, curPupInfo->curAnimStr);
+                            if (!curPupInfo->isCaptured) {
+                                gTextWriter->printf("Model Animation: %s\n", al::getActionName(curModel));
+                            }
                         }
                         if (gameModeBase) {
                             gameModeBase->debugMenuPlayer(gTextWriter, curPupInfo);
