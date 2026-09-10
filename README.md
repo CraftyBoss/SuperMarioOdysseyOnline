@@ -5,7 +5,7 @@
 
 ## TODO
 - Fix Freeze tag keyboard crashing
-- Making the `dev branch stable
+- Making the `dev` branch stable
 
 ### VV everything at bottom is completely unchanged VV
 
