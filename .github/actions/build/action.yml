@@ -74,7 +74,7 @@ runs:
       rm  -rf  ./atmosphere/
   -
     name : Upload artifacts
-    uses : actions/upload-artifact@v3
+    uses : actions/upload-artifact@v7
     with:
       name              : ${{ steps.env.outputs.filename }}
       path              : ./starlight_patch_100/
