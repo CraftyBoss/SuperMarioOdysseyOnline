@@ -1,3 +1,14 @@
+# This fork adds the following features to the `dev` branch
+- No poof particles
+- Hide important things in debug menu when in gamemode
+- Adds captain's hat
+
+##TODO
+- Fix Freeze tag keyboard crashing
+- Making the `dev branch stable
+
+### VV everything at bottom is completely unchanged VV
+
 # Super Mario Odyssey - Online Multiplayer Mod
 
 Welcome to the official repository for the Super Mario Odyssey Online mod! Have fun exploring kingdoms with friends, playing gamemodes, or beating the game as fast as possible! This mod is still early in development, so expect bugs and un-refined aspects as we work hard to improve it and make the mod as polished as possible.
