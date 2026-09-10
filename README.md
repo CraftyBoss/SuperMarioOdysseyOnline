@@ -3,7 +3,7 @@
 - Hide important things in debug menu when in gamemode
 - Adds captain's hat
 
-##TODO
+## TODO
 - Fix Freeze tag keyboard crashing
 - Making the `dev branch stable
 
